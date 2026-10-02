@@ -194,6 +194,8 @@ const ETIKET = {
   esik_alti: "Eşik altı",
   yeniden_uretildi: "Yeniden üretildi",
   ozet_yok: "Özet yok",
+  kaynak_alintisi: "Birincil kaynak alıntısı",
+  atlandi_resmi_kaynak: "Birincil metin kullanıldı",
   // kurulum/servis eksiklikleri — ham snake_case kullanıcıya sızmasın
   piper_kurulu_degil: "Piper kurulu değil",
   model_bos: "Model boş döndü",
@@ -223,6 +225,7 @@ const RENK = {
   durumlu: {
     uretildi: "basari",
     atlandi: "atlandi",
+    atlandi_resmi_kaynak: "atlandi",
     model_bos: "uyari",
     icerik_yok: "uyari",
     hata: "hata",
@@ -233,6 +236,7 @@ const RENK = {
     web_hata: "uyari",
     hepsi_atlandi: "uyari",
     atlandi: "atlandi",
+    atlandi_resmi_kaynak: "atlandi",
     icerik_yok: "uyari",
     hata: "hata",
   },
@@ -501,6 +505,8 @@ function paragrafYaz(hedef, metin) {
 
 function renderOzet(d) {
   const bolum = $("ozet-bolum");
+  const kaynakAlintisi = d.analysis_mode === "source_extracts";
+  $("ozet-baslik").textContent = kaynakAlintisi ? "Birincil metinden okuma özeti" : "Özet";
   const kisa = (d.ozet_kisa || "").trim();
   const detay = (d.ozet_detay || d.ozet_orta || "").trim();
   if (!kisa && !detay) {
@@ -510,7 +516,10 @@ function renderOzet(d) {
   bolum.classList.remove("gizli");
   $("ozet-kisa").textContent = kisa;
   paragrafYaz($("ozet-detay"), detay || kisa);
-  $("ozet-model-not").classList.toggle("gizli", d.ozet_faithfulness == null);
+  $("ozet-model-not").textContent = kaynakAlintisi
+    ? "Madde ve fıkralar birincil metinden alınmıştır. Modelin yeniden yazdığı hukuki hükümler veya doğruluk puanı kullanılmaz."
+    : "Model destek tahmini, detay özet ile analiz metnini karşılaştırır; doğruluk onayı değildir.";
+  $("ozet-model-not").classList.toggle("gizli", !kaynakAlintisi && d.ozet_faithfulness == null);
 }
 
 function renderKaynakSinyalleri(d) {
@@ -548,6 +557,7 @@ function renderKaynakSinyalleri(d) {
 
 function renderKisisel(d) {
   const bolum = $("kisisel-bolum");
+  $("kisisel-baslik").textContent = d.analysis_mode === "source_extracts" ? "Okuma notları" : "Kişisel analiz";
   const metin = (d.kisisel_analiz || "").trim();
   if (!metin) {
     bolum.classList.add("gizli");
@@ -602,6 +612,12 @@ function renderFactcheck(d) {
   const bolum = $("factcheck-bolum");
   const iddialar = d.factcheck_iddialar || [];
   if (!iddialar.length) {
+    if (d.factcheck_reason) {
+      bolum.classList.remove("gizli");
+      $("factcheck-ozet").textContent = "birincil kaynak";
+      $("factcheck-liste").replaceChildren(el("p", { class: "kart field-note" }, d.factcheck_reason));
+      return;
+    }
     bolum.classList.add("gizli");
     return;
   }

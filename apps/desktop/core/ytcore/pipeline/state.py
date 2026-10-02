@@ -18,6 +18,7 @@ class GState(TypedDict, total=False):
     kaynak_durumu: str
     kaynak_sinyalleri: list[dict[str, Any]]
     kaynak_ozel: dict[str, Any]
+    analysis_mode: str
     transkript_metni: str
     transkript_durumu: str
     transkript_kaynak_dil: str | None
@@ -55,6 +56,7 @@ class GState(TypedDict, total=False):
     kisisel_hata: str
     factcheck_iddialar: list[dict[str, Any]]
     factcheck_durum: str
+    factcheck_reason: str
     factcheck_hata: str
     klasor: str
     # Faz 4 üretim & sunum

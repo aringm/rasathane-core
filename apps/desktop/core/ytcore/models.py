@@ -98,6 +98,7 @@ class AnalizSonucu(BaseModel):
     ozet_faithfulness_durum: str | None = None
     # Model tahmininin karşılaştırdığı metin ve sınırları. Skor doğruluk onayı değildir.
     quality_provenance: dict[str, Any] = Field(default_factory=dict)
+    analysis_mode: str = "model_analysis"
     # Faz 9: çıktı İÇERİĞİ ekrana taşınır (dosyada da yazılı; GUI inline gösterim için). KVKK:
     # local-only, egress yok — yalnız WebView'a (127.0.0.1) gider. Boş = üretilmedi (durum kanıt).
     ozet_kisa: str = ""  # TL;DR (tek cümle)
@@ -110,6 +111,7 @@ class AnalizSonucu(BaseModel):
     kisisel_analiz: str = ""  # Faz 9: avukat-lens analiz metni (GUI inline gösterim)
     # uretildi|web_yok|web_hata|hepsi_atlandi|atlandi|icerik_yok|hata
     factcheck_durum: str = "atlandi"
+    factcheck_reason: str = ""
     factcheck_iddia_sayisi: int = 0
     factcheck_iddialar: list[FactIddia] = Field(default_factory=list)  # Faz 9: iddia kartları
     index_eklendi: bool = False

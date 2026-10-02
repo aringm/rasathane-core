@@ -4,6 +4,7 @@ from pathlib import Path
 
 from ytcore.config import get_config
 from ytcore.content.llm import llm_al
+from ytcore.content.resmi import resmi_belge
 from ytcore.errors import KOD_HATALARI as _KOD_HATALARI
 from ytcore.obs.tracer import span_baslat
 from ytcore.pipeline.state import GState
@@ -39,7 +40,10 @@ def harita_node(state: GState) -> GState:
         meta = state.get("metadata") or {}
         klasor = Path(state["klasor"])
         try:
-            agac = harita_agaci(govde, llm_al(cfg.harita_model), model=cfg.harita_model)
+            if resmi := resmi_belge(state):
+                agac = resmi.harita()
+            else:
+                agac = harita_agaci(govde, llm_al(cfg.harita_model), model=cfg.harita_model)
             n = dugum_say(agac)
             if n <= 1:  # graceful tek-düğüm = anlamlı ağaç üretilemedi (boş≠başarı)
                 return {

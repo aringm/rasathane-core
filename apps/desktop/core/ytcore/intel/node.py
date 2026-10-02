@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ytcore.config import get_config
 from ytcore.content.llm import llm_al
+from ytcore.content.resmi import SKIP_REASON, SKIP_STATUS, resmi_belge
 from ytcore.errors import KOD_HATALARI as _KOD_HATALARI
 from ytcore.infra.embedding import embedding_al
 from ytcore.infra.index import index_al
@@ -60,6 +61,16 @@ def degerleme_node(state: GState) -> GState:
 
 
 def kisisel_node(state: GState) -> GState:
+    if resmi := resmi_belge(state):
+        return {
+            "kisisel_durum": SKIP_STATUS,
+            "kisisel_analiz": (
+                "Bu resmî düzenleme için kişisel hukuki yorum otomatik üretilmedi. "
+                "Kaynak alıntıları MADDE/fıkra yapısını korur. Değişikliğin asıl mevzuata "
+                "uygulanması için bağlı ekler ve güncel konsolide metin ayrıca incelenmelidir."
+                f"\n\nResmî kaynak: {resmi.url}"
+            ),
+        }
     govde = _govde(state)
     with span_baslat("kisisel", {}):
         if not govde:
@@ -84,6 +95,12 @@ def kisisel_node(state: GState) -> GState:
 
 
 def factcheck_node(state: GState) -> GState:
+    if resmi_belge(state):
+        return {
+            "factcheck_iddialar": [],
+            "factcheck_durum": SKIP_STATUS,
+            "factcheck_reason": SKIP_REASON,
+        }
     import os
 
     from ytcore.router.ner import ner_al

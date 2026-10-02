@@ -15,6 +15,7 @@ const SCHEME = "rasathane";
 const APP_ORIGIN = `${SCHEME}://app`;
 const SMOKE_MODE = process.argv.includes("--smoke-test");
 const SMOKE_ANALYSIS = SMOKE_MODE && process.argv.includes("--smoke-analysis");
+const SMOKE_GENERIC = SMOKE_ANALYSIS && process.argv.includes("--smoke-generic");
 // Motor portu artık sabit değil: 8765'i başka bir uygulama tutuyorsa sidecar bind
 // hatasıyla ölüyor ve arayüzde yalnız "Motor başlatılamadı" kalıyordu. Açılışta
 // listedeki ilk boş port seçilir, sidecar'a env ile sürülür ve arayüze query ile
@@ -379,10 +380,13 @@ async function smokeAnaliz(pencere) {
   // Sabit kamu test sayfası kullanılır; hesap/ödeme veya kişisel içerik gönderilmez.
   const before = await pencere.webContents.executeJavaScript(`window.rasathane.request('/api/rasathane/jobs')`);
   const known = new Set(before.data.items.map(job => job.id));
+  const sourceURL = SMOKE_GENERIC
+    ? "https://arxiv.org/abs/1706.03762"
+    : "https://www.resmigazete.gov.tr/eskiler/2026/10/20261003-1.htm";
   await pencere.webContents.executeJavaScript(`(() => {
     document.getElementById('ilk-kurulum')?.close();
     document.getElementById('sekme-analiz').click();
-    const input = document.getElementById('url'); input.value = 'https://www.resmigazete.gov.tr/eskiler/2026/10/20261003-1.htm'; input.dispatchEvent(new Event('input', { bubbles: true }));
+    const input = document.getElementById('url'); input.value = ${JSON.stringify(sourceURL)}; input.dispatchEvent(new Event('input', { bubbles: true }));
     const button = document.getElementById('analiz-btn'); if (button.disabled) throw new Error('Analiz UI hazır değil'); button.click();
   })()`);
   const deadline = Date.now() + 15 * 60000; let selected;
@@ -398,9 +402,17 @@ async function smokeAnaliz(pencere) {
         console.log(JSON.stringify({ smoke: "analysis", jobId: job.id, status: job.status, error: job.error, resultFields: Object.keys(job.result || {}) }));
         if (job.status !== "completed") throw new Error("Gerçek analiz tamamlanamadı.");
         const result = job.result;
-        if (result?.transkript_kaynak_dil !== "tr" || result.ceviri_durumu !== "atlandi" ||
+        if (SMOKE_GENERIC) {
+          if (result?.stub !== false || result.cloud_cagrisi_sayisi !== 0 ||
+              result.kaynak_turu !== "arxiv" || !(result.ozet_detay || "").trim() ||
+              result.analysis_mode === "source_extracts") {
+            throw new Error("Genel kaynak yerel analiz yolu doğrulanamadı.");
+          }
+        } else if (result?.transkript_kaynak_dil !== "tr" || result.ceviri_durumu !== "atlandi" ||
             !["cp1254", "windows-1254"].includes(result.quality_provenance?.source?.encoding) ||
-            result.quality_provenance?.faithfulness?.independent_verification !== false) {
+            result.quality_provenance?.faithfulness?.independent_verification !== false ||
+            result.analysis_mode !== "source_extracts" || result.ozet_faithfulness !== null ||
+            result.factcheck_durum !== "atlandi_resmi_kaynak" || !result.factcheck_reason) {
           throw new Error("Resmî kaynağın encoding/dil/kalite kökeni doğrulanamadı.");
         }
         for (const name of ["03_dokum.docx", "03_dokum.pdf", "04_ozet-sunum.pdf"]) {
@@ -427,7 +439,9 @@ async function smokeArtifact(pencere) {
       return { mapReady: map?.dataset.ready, nodes: Number(map?.dataset.nodes || 0),
         pdfReady: pdf?.dataset.ready, worker: pdf?.dataset.worker,
         pages: Number(pdf?.dataset.pages || 0), page: Number(pdf?.dataset.page || 0),
-        canvas: Boolean(pdf?.querySelector('canvas')?.width) };
+        canvas: Boolean(pdf?.querySelector('canvas')?.width),
+        summaryHeading: document.getElementById('ozet-baslik')?.textContent,
+        sourceReason: document.getElementById('factcheck-liste')?.textContent };
     })()`);
     if (!pdfOpened && status.mapReady === "true" && status.nodes > 0) {
       await pencere.webContents.executeJavaScript(`(() => {
@@ -437,6 +451,9 @@ async function smokeArtifact(pencere) {
       pdfOpened = true;
     }
     if (pdfOpened && status.pdfReady === "true" && status.worker === "ready" && status.pages > 0 && status.canvas) {
+      if (!SMOKE_GENERIC && (status.summaryHeading !== "Birincil metinden okuma özeti" || !status.sourceReason?.trim())) {
+        throw new Error("Birincil kaynak okuma yöntemi arayüzde açıklanmadı.");
+      }
       console.log(JSON.stringify({ smoke: "packaged-artifacts", ...status }));
       await pencere.webContents.executeJavaScript(`document.getElementById('izleyici-kapat').click()`);
       return;

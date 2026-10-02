@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Rasathane",
+  "mainBinaryName": "Rasathane",
+  "version": "0.3.0",
+  "identifier": "ai.muhakeme.rasathane",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Rasathane — Yerel İçerik Gözlemevi",
+        "width": 1320,
+        "height": 880,
+        "minWidth": 720,
+        "minHeight": 600
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self' customprotocol: asset:",
+        "connect-src": "ipc: http://ipc.localhost http://127.0.0.1:8765",
+        "font-src": "'self'",
+        "img-src": "'self' asset: http://asset.localhost blob: data:",
+        "style-src": "'self' 'unsafe-inline'",
+        "frame-src": "'self' http://127.0.0.1:8765",
+        "object-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "publisher": "Av. Mehmet Arın Gülüm",
+    "copyright": "© 2026 Av. Mehmet Arın Gülüm",
+    "category": "Productivity",
+    "shortDescription": "Yerel-öncelikli çok kaynaklı içerik gözlemevi",
+    "longDescription": "Rasathane; YouTube, GitHub, arXiv, Reddit, Hugging Face ve public web kaynaklarını tek bir KVKK duyarlı masaüstü hattında inceler. Kaynağı otomatik tanır; yerel modelle özet, yapısal döküm, BilgiDeğeri, fact-check, zihin haritası ve sesli özet üretir. Cloud özellikleri yalnız açık izin ve gerekli anahtarlarla çalışır.",
+    "externalBin": ["binaries/ytanaliz-sidecar"],
+    "windows": {
+      "nsis": {
+        "languages": ["Turkish"],
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico"
+      }
+    }
+  }
+}

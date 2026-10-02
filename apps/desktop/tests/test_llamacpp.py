@@ -375,6 +375,9 @@ def lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path):
 def test_foreign_healthy_model_is_verified_over_models_api(
     monkeypatch: pytest.MonkeyPatch, stub_sunucu
 ):
+    # CI model/vendor taşımadığı için auto backend Ollama seçebilir. Bu testin
+    # doğruladığı dış llama sunucusunu raporlamak için backend açıkça seçilir.
+    monkeypatch.setenv("YT_MOTOR_BACKEND", "llamacpp")
     monkeypatch.setenv("YT_LLAMACPP_HOST", _stub_url(stub_sunucu))
     assert llamacpp.sunucu_baslat_gerekirse("llm") == _stub_url(stub_sunucu)
     provenance = llamacpp.motor_raporu()["llm_koken"]

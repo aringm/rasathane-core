@@ -56,9 +56,9 @@
     },
     {
       "path": "README.md",
-      "source_sha256": "6ca5809f240ef6d57ada3d057974e059c5a6b1f8c77ee2a83c4eb4ce20c2f87b",
-      "sha256": "6ca5809f240ef6d57ada3d057974e059c5a6b1f8c77ee2a83c4eb4ce20c2f87b",
-      "bytes": 3256
+      "source_sha256": "5c279f59ee976156a16db9e64e3846f90a69f26aa98c80ee21704c7eea6808d9",
+      "sha256": "5c279f59ee976156a16db9e64e3846f90a69f26aa98c80ee21704c7eea6808d9",
+      "bytes": 3958
     },
     {
       "path": "apps/desktop/.env.example",
@@ -206,15 +206,21 @@
     },
     {
       "path": "apps/desktop/core/ytcore/content/node.py",
-      "source_sha256": "9125b0f3d9c81d9987425345e4d85273d79ad82a5aed5eafccb312bbe97938a2",
-      "sha256": "9125b0f3d9c81d9987425345e4d85273d79ad82a5aed5eafccb312bbe97938a2",
-      "bytes": 8060
+      "source_sha256": "ce30521ee8ea394bb190270972ddfff142c2aa1a23a9ea1a121a226d0b61c027",
+      "sha256": "ce30521ee8ea394bb190270972ddfff142c2aa1a23a9ea1a121a226d0b61c027",
+      "bytes": 8448
     },
     {
       "path": "apps/desktop/core/ytcore/content/ozet.py",
       "source_sha256": "9cb547293a3d508be52432b64de064d9e6002bce11aaead9b74d6e00f648e426",
       "sha256": "9cb547293a3d508be52432b64de064d9e6002bce11aaead9b74d6e00f648e426",
       "bytes": 2698
+    },
+    {
+      "path": "apps/desktop/core/ytcore/content/resmi.py",
+      "source_sha256": "78c8569b23b059aaba12740853c6c0d5ace013388e841389c9b7a7ea765d64b1",
+      "sha256": "78c8569b23b059aaba12740853c6c0d5ace013388e841389c9b7a7ea765d64b1",
+      "bytes": 10501
     },
     {
       "path": "apps/desktop/core/ytcore/content/segment.py",
@@ -284,9 +290,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/intel/factcheck.py",
-      "source_sha256": "163c8c52db88756b46362127009c0ef771a571807fee1694a8f23f96927fcfd6",
-      "sha256": "163c8c52db88756b46362127009c0ef771a571807fee1694a8f23f96927fcfd6",
-      "bytes": 8853
+      "source_sha256": "b75801d92a51a87fec758a46a11d79ceabcdd467dcf82376c880d1a15e4ed912",
+      "sha256": "b75801d92a51a87fec758a46a11d79ceabcdd467dcf82376c880d1a15e4ed912",
+      "bytes": 9085
     },
     {
       "path": "apps/desktop/core/ytcore/intel/kisisel.py",
@@ -302,9 +308,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/intel/node.py",
-      "source_sha256": "587593830a05fdbe04246f3c01ca10ddee402b2879287a5da23175f6509d44c1",
-      "sha256": "587593830a05fdbe04246f3c01ca10ddee402b2879287a5da23175f6509d44c1",
-      "bytes": 6343
+      "source_sha256": "55a223e4fc65964eaf867f9121b1513ee5d78907bf7f64e98bde1765b5b68578",
+      "sha256": "55a223e4fc65964eaf867f9121b1513ee5d78907bf7f64e98bde1765b5b68578",
+      "bytes": 6943
     },
     {
       "path": "apps/desktop/core/ytcore/intel/websearch.py",
@@ -344,9 +350,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/models.py",
-      "source_sha256": "f6f9c8f4f38d5a61150997f18dcca576ce4ffd4765a11643790e7156bd4648d0",
-      "sha256": "f6f9c8f4f38d5a61150997f18dcca576ce4ffd4765a11643790e7156bd4648d0",
-      "bytes": 6696
+      "source_sha256": "45b902c47c155194b07c5728830f173b791fb6cb4ce63c22379d2bc831f6c90c",
+      "sha256": "45b902c47c155194b07c5728830f173b791fb6cb4ce63c22379d2bc831f6c90c",
+      "bytes": 6769
     },
     {
       "path": "apps/desktop/core/ytcore/obs/__init__.py",
@@ -386,9 +392,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/output/factcheck_yaz.py",
-      "source_sha256": "1e2d09e4e1723839bdfd83c8f0a828aaab4e5e8ec089b07d98993cb46ea8a0bc",
-      "sha256": "1e2d09e4e1723839bdfd83c8f0a828aaab4e5e8ec089b07d98993cb46ea8a0bc",
-      "bytes": 1229
+      "source_sha256": "5c6e6cf8e84b18dfde40855d76db285781e3f8327cfdd4aa793d7bba5c7e7966",
+      "sha256": "5c6e6cf8e84b18dfde40855d76db285781e3f8327cfdd4aa793d7bba5c7e7966",
+      "bytes": 1474
     },
     {
       "path": "apps/desktop/core/ytcore/output/git_commit.py",
@@ -416,15 +422,15 @@
     },
     {
       "path": "apps/desktop/core/ytcore/output/ozet_yaz.py",
-      "source_sha256": "a493f68807d2855e0bb9d5489ae0f8ed250cc72ffd6d9ede6cdf4a85d7482861",
-      "sha256": "a493f68807d2855e0bb9d5489ae0f8ed250cc72ffd6d9ede6cdf4a85d7482861",
-      "bytes": 1650
+      "source_sha256": "60301945aa2623b66a527a7287dbe5c0f502dcac481224e2bf9de5c775e6784e",
+      "sha256": "60301945aa2623b66a527a7287dbe5c0f502dcac481224e2bf9de5c775e6784e",
+      "bytes": 2107
     },
     {
       "path": "apps/desktop/core/ytcore/output/sunum_yaz.py",
-      "source_sha256": "6ae8dd7fd8e968627a72ff0256d999f06157ebc3414bd84e43bfbbbb88ed6924",
-      "sha256": "6ae8dd7fd8e968627a72ff0256d999f06157ebc3414bd84e43bfbbbb88ed6924",
-      "bytes": 5391
+      "source_sha256": "61b1e63147abb4fefa9cdf9332e8313c2dbc4abe078f41dfc1287f7c871ddd5a",
+      "sha256": "61b1e63147abb4fefa9cdf9332e8313c2dbc4abe078f41dfc1287f7c871ddd5a",
+      "bytes": 5857
     },
     {
       "path": "apps/desktop/core/ytcore/output/transcript_yaz.py",
@@ -446,9 +452,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/pipeline/api.py",
-      "source_sha256": "e4fd9ed462a503221fd1f46b27c84d878b6ecc35fc79ca748eb7fb84a2bf9c22",
-      "sha256": "e4fd9ed462a503221fd1f46b27c84d878b6ecc35fc79ca748eb7fb84a2bf9c22",
-      "bytes": 5594
+      "source_sha256": "04d2e6c95b1aa07790cea0755f2b25fca5eb996bdb6b266fcddc5c6ee9305b78",
+      "sha256": "04d2e6c95b1aa07790cea0755f2b25fca5eb996bdb6b266fcddc5c6ee9305b78",
+      "bytes": 5679
     },
     {
       "path": "apps/desktop/core/ytcore/pipeline/checkpoint.py",
@@ -458,15 +464,15 @@
     },
     {
       "path": "apps/desktop/core/ytcore/pipeline/graph.py",
-      "source_sha256": "ede44d9d83e69220adc9ca9724028472f3012b84e7619073a3dbbc7f59cda8f1",
-      "sha256": "ede44d9d83e69220adc9ca9724028472f3012b84e7619073a3dbbc7f59cda8f1",
-      "bytes": 24531
+      "source_sha256": "857428c40dc5146f99ddf8341f72b3983627d6398942724de23b6d0a419cd061",
+      "sha256": "857428c40dc5146f99ddf8341f72b3983627d6398942724de23b6d0a419cd061",
+      "bytes": 26367
     },
     {
       "path": "apps/desktop/core/ytcore/pipeline/state.py",
-      "source_sha256": "7c62b697413e58c7809d2e2a45eb276409928270616d726f7dd10a3e77707f75",
-      "sha256": "7c62b697413e58c7809d2e2a45eb276409928270616d726f7dd10a3e77707f75",
-      "bytes": 2110
+      "source_sha256": "2d79ea0dbd83f2ec3f4ee951fcfccb2a3994229333df2b5a7e1bdef76d5b4c87",
+      "sha256": "2d79ea0dbd83f2ec3f4ee951fcfccb2a3994229333df2b5a7e1bdef76d5b4c87",
+      "bytes": 2163
     },
     {
       "path": "apps/desktop/core/ytcore/py.typed",
@@ -608,9 +614,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/uretim/node.py",
-      "source_sha256": "b5178e8c507cc49cca26f227990ffe7691de69363156b24875d6cd6588ebc171",
-      "sha256": "b5178e8c507cc49cca26f227990ffe7691de69363156b24875d6cd6588ebc171",
-      "bytes": 4272
+      "source_sha256": "db6c690104b11311fd58ca132d3af5bb714f8b90d379973e07996dbe81a5e845",
+      "sha256": "db6c690104b11311fd58ca132d3af5bb714f8b90d379973e07996dbe81a5e845",
+      "bytes": 4421
     },
     {
       "path": "apps/desktop/core/ytcore/uretim/tts.py",
@@ -740,9 +746,9 @@
     },
     {
       "path": "apps/desktop/gui/electron/main.cjs",
-      "source_sha256": "5906af4ff887296b7da01cc0184c633a9e5619adbb78146d009fef2497704f95",
-      "sha256": "5906af4ff887296b7da01cc0184c633a9e5619adbb78146d009fef2497704f95",
-      "bytes": 23832
+      "source_sha256": "87f86679d9a99b6866ae0e30eff0169123d16fbfd609170d43517d6364d789e9",
+      "sha256": "87f86679d9a99b6866ae0e30eff0169123d16fbfd609170d43517d6364d789e9",
+      "bytes": 24936
     },
     {
       "path": "apps/desktop/gui/electron/model-catalog.json",
@@ -793,6 +799,12 @@
       "bytes": 89964
     },
     {
+      "path": "apps/desktop/gui/pnpm-workspace.yaml",
+      "source_sha256": "3dd22307dac49096d523474d8e299d33faf8e808311fa45c7fd893d7e59076b6",
+      "sha256": "3dd22307dac49096d523474d8e299d33faf8e808311fa45c7fd893d7e59076b6",
+      "bytes": 58
+    },
+    {
       "path": "apps/desktop/gui/scripts/pdfjs-6.3.289-source.json",
       "source_sha256": "3e5f71a991c2f33aaf3031a4fe27b8cafef171aa5a60415e03c12e5edb553761",
       "sha256": "3e5f71a991c2f33aaf3031a4fe27b8cafef171aa5a60415e03c12e5edb553761",
@@ -803,6 +815,30 @@
       "source_sha256": "db6a688a82e357df5f6ad0fac6034820449aa9fd1af1d98db82cfdcd4cf514d1",
       "sha256": "db6a688a82e357df5f6ad0fac6034820449aa9fd1af1d98db82cfdcd4cf514d1",
       "bytes": 4909
+    },
+    {
+      "path": "apps/desktop/gui/src-tauri/Cargo.lock",
+      "source_sha256": "02baf6c09adaf50527dd9bc899b6faba9156897910e17b59eb1f6e0e03f845ed",
+      "sha256": "02baf6c09adaf50527dd9bc899b6faba9156897910e17b59eb1f6e0e03f845ed",
+      "bytes": 121982
+    },
+    {
+      "path": "apps/desktop/gui/src-tauri/Cargo.toml",
+      "source_sha256": "c3605318a586845aafa1d7db8c357fcdd3e664a3d7c154fb164c556baf023b73",
+      "sha256": "c3605318a586845aafa1d7db8c357fcdd3e664a3d7c154fb164c556baf023b73",
+      "bytes": 218
+    },
+    {
+      "path": "apps/desktop/gui/src-tauri/build.rs",
+      "source_sha256": "4ae2333b11623039cc115e29b696e7ff5cdfcd5b7d628280ddf48fa733e6418d",
+      "sha256": "4ae2333b11623039cc115e29b696e7ff5cdfcd5b7d628280ddf48fa733e6418d",
+      "bytes": 42
+    },
+    {
+      "path": "apps/desktop/gui/src-tauri/capabilities/default.json",
+      "source_sha256": "3e81bf3163a8585dbddd1648a88b887b96632bb4657c555673f6cb69a16cba42",
+      "sha256": "3e81bf3163a8585dbddd1648a88b887b96632bb4657c555673f6cb69a16cba42",
+      "bytes": 271
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/128x128.png",
@@ -919,6 +955,18 @@
       "bytes": 918
     },
     {
+      "path": "apps/desktop/gui/src-tauri/src/main.rs",
+      "source_sha256": "de7406a121eecf44cdd734298c9936284f5035903df4e077f77255cf2b4cd3f4",
+      "sha256": "de7406a121eecf44cdd734298c9936284f5035903df4e077f77255cf2b4cd3f4",
+      "bytes": 3432
+    },
+    {
+      "path": "apps/desktop/gui/src-tauri/tauri.conf.json",
+      "source_sha256": "6de02e35be8ad358ddd8b84f8962a6345b141423a1fbab07ba43927ba2c5af8f",
+      "sha256": "6de02e35be8ad358ddd8b84f8962a6345b141423a1fbab07ba43927ba2c5af8f",
+      "bytes": 1893
+    },
+    {
       "path": "apps/desktop/gui/ui/brand/rasathane-mark.svg",
       "source_sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
       "sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
@@ -1004,9 +1052,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/index.html",
-      "source_sha256": "85f2568faa3ef4b7cb6f08207e2ab7f6bc5ddb16d9c4e6851a3e3f550fbb5ce9",
-      "sha256": "85f2568faa3ef4b7cb6f08207e2ab7f6bc5ddb16d9c4e6851a3e3f550fbb5ce9",
-      "bytes": 39975
+      "source_sha256": "3dd53b539e02db3de1f14c20bb3461b821b3e94a24b2b8c3bc5a31d27f1b91f3",
+      "sha256": "3dd53b539e02db3de1f14c20bb3461b821b3e94a24b2b8c3bc5a31d27f1b91f3",
+      "bytes": 40025
     },
     {
       "path": "apps/desktop/gui/ui/lib/pdfjs/LICENSE",
@@ -2246,9 +2294,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/main.js",
-      "source_sha256": "09db155b91667fa5aead307fcfe9737bfa2ebf7d40047fdc1e3a23a531f51cf2",
-      "sha256": "09db155b91667fa5aead307fcfe9737bfa2ebf7d40047fdc1e3a23a531f51cf2",
-      "bytes": 56242
+      "source_sha256": "f3d5839fdd5fa5cb1d9aa8d4293263d99076e3d802294f84f939ae6e56b5e6d3",
+      "sha256": "f3d5839fdd5fa5cb1d9aa8d4293263d99076e3d802294f84f939ae6e56b5e6d3",
+      "bytes": 57266
     },
     {
       "path": "apps/desktop/gui/ui/src/product.js",
@@ -2648,9 +2696,9 @@
     },
     {
       "path": "apps/desktop/tests/test_llamacpp.py",
-      "source_sha256": "05daee50b48b560f29154f49514ba57d3a27b5667e9a4a15940b98aea71f22e9",
-      "sha256": "05daee50b48b560f29154f49514ba57d3a27b5667e9a4a15940b98aea71f22e9",
-      "bytes": 22280
+      "source_sha256": "0e7a2c8a6e21647833c3228fc54def259be5cfd78478fc20362000184b3608a1",
+      "sha256": "0e7a2c8a6e21647833c3228fc54def259be5cfd78478fc20362000184b3608a1",
+      "bytes": 22511
     },
     {
       "path": "apps/desktop/tests/test_llm.py",
@@ -2708,15 +2756,21 @@
     },
     {
       "path": "apps/desktop/tests/test_ner.py",
-      "source_sha256": "42d058fc06c532888b49311fe5f48f1cfe480100d3cef33a4a87a4e73c48bd35",
-      "sha256": "42d058fc06c532888b49311fe5f48f1cfe480100d3cef33a4a87a4e73c48bd35",
-      "bytes": 7200
+      "source_sha256": "ea3be4c22f571bb2bf8412ab8b1bf8749219bf20d4e2893109ef4521bda817dd",
+      "sha256": "ea3be4c22f571bb2bf8412ab8b1bf8749219bf20d4e2893109ef4521bda817dd",
+      "bytes": 7218
     },
     {
       "path": "apps/desktop/tests/test_ner_gercek.py",
       "source_sha256": "492ce0c30a3ff17f036c2caf4c43a507384e72cbe2d9731dd141fd126ae30371",
       "sha256": "492ce0c30a3ff17f036c2caf4c43a507384e72cbe2d9731dd141fd126ae30371",
       "bytes": 710
+    },
+    {
+      "path": "apps/desktop/tests/test_official_normative.py",
+      "source_sha256": "85428d806857baf98a172fcc124cf8a1ea276e92aec4d793b3bed66d44117c46",
+      "sha256": "85428d806857baf98a172fcc124cf8a1ea276e92aec4d793b3bed66d44117c46",
+      "bytes": 10992
     },
     {
       "path": "apps/desktop/tests/test_ollama_faz2.py",
@@ -2882,9 +2936,9 @@
     },
     {
       "path": "apps/desktop/tests/test_source_encoding.py",
-      "source_sha256": "0b8502a5cc269730fb468325c426b4e92287199688a07ea7c97c7f4827adc07e",
-      "sha256": "0b8502a5cc269730fb468325c426b4e92287199688a07ea7c97c7f4827adc07e",
-      "bytes": 8228
+      "source_sha256": "e403e5132a6f4b0384d8219408babf287a487007cc21ce3e6c7428e62c6e795c",
+      "sha256": "e403e5132a6f4b0384d8219408babf287a487007cc21ce3e6c7428e62c6e795c",
+      "bytes": 8368
     },
     {
       "path": "apps/desktop/tests/test_sources.py",
@@ -4147,6 +4201,12 @@
       "bytes": 137342
     },
     {
+      "path": "apps/web/pnpm-workspace.yaml",
+      "source_sha256": "fa19925fe1901a6a6343eb625edfae51bebe4744c4c999f594587b5a723f05ea",
+      "sha256": "fa19925fe1901a6a6343eb625edfae51bebe4744c4c999f594587b5a723f05ea",
+      "bytes": 49
+    },
+    {
       "path": "apps/web/postcss.config.mjs",
       "source_sha256": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde",
       "sha256": "dfac7ac2d86d326a0e5adb024e7943c181393ed17a5fcb8f0315b24c7da6ddde",
@@ -4400,15 +4460,15 @@
     },
     {
       "path": "docs/urun/CALISMA-PLANI.md",
-      "source_sha256": "e4354cb785084da872c4c078526c66142b0f5d63bda9338610fc438db535f3b7",
-      "sha256": "e4354cb785084da872c4c078526c66142b0f5d63bda9338610fc438db535f3b7",
-      "bytes": 5122
+      "source_sha256": "d0d5e9c74a13b18d9a8d5f2fb702b4e5cb8acfdf595bc89f39f37e674ac57f54",
+      "sha256": "d0d5e9c74a13b18d9a8d5f2fb702b4e5cb8acfdf595bc89f39f37e674ac57f54",
+      "bytes": 5737
     },
     {
       "path": "docs/urun/INCELEME-VE-KABUL.md",
-      "source_sha256": "340f31869c6e92e703260e088ba07b635eee96668e55718bdac0b6dcd06d1cdd",
-      "sha256": "340f31869c6e92e703260e088ba07b635eee96668e55718bdac0b6dcd06d1cdd",
-      "bytes": 18605
+      "source_sha256": "48344b510c23ae868cbf18752fcc4997d7ac0bde8cb365995531bb5ae09d3ab2",
+      "sha256": "48344b510c23ae868cbf18752fcc4997d7ac0bde8cb365995531bb5ae09d3ab2",
+      "bytes": 22120
     },
     {
       "path": "docs/urun/MIMARI.md",
@@ -4442,33 +4502,45 @@
     },
     {
       "path": "scripts/export-source.py",
-      "source_sha256": "141f4ca9711db12eae68b995108da9e2160cd005f14165608236733f865cbcbe",
-      "sha256": "141f4ca9711db12eae68b995108da9e2160cd005f14165608236733f865cbcbe",
-      "bytes": 5111
+      "source_sha256": "81a359b7c74b865e34e059e53e73582ddae1d73b947f0023c29757aaeb9bf43f",
+      "sha256": "81a359b7c74b865e34e059e53e73582ddae1d73b947f0023c29757aaeb9bf43f",
+      "bytes": 5468
     },
     {
       "path": "scripts/windows/Baslat-Gozlemevi.ps1",
-      "source_sha256": "fc1032fd8e508cfdf2b3ac2ffbe44a16bf0412a52e5596d4c351e029098351bc",
-      "sha256": "fc1032fd8e508cfdf2b3ac2ffbe44a16bf0412a52e5596d4c351e029098351bc",
-      "bytes": 709
+      "source_sha256": "d303a56b1fe6b2a9ea00706c982f61bff058ef2d65e6b8212112e824fb2baa79",
+      "sha256": "d303a56b1fe6b2a9ea00706c982f61bff058ef2d65e6b8212112e824fb2baa79",
+      "bytes": 84
     },
     {
       "path": "scripts/windows/Baslat-Radar.ps1",
-      "source_sha256": "c853ee70989865805ab2627a7260591818040b6e16a9b4e76c29f6d07d357c81",
-      "sha256": "c853ee70989865805ab2627a7260591818040b6e16a9b4e76c29f6d07d357c81",
-      "bytes": 3791
+      "source_sha256": "d303a56b1fe6b2a9ea00706c982f61bff058ef2d65e6b8212112e824fb2baa79",
+      "sha256": "d303a56b1fe6b2a9ea00706c982f61bff058ef2d65e6b8212112e824fb2baa79",
+      "bytes": 84
+    },
+    {
+      "path": "scripts/windows/Baslat-Rasathane.ps1",
+      "source_sha256": "9886edf408bf2429e9cc5d5a70f8462bf937b04e0d2b4780350baf938b684de6",
+      "sha256": "9886edf408bf2429e9cc5d5a70f8462bf937b04e0d2b4780350baf938b684de6",
+      "bytes": 375
     },
     {
       "path": "scripts/windows/Kur-Gozlemevi.ps1",
-      "source_sha256": "732a6bd7f335a09ba0efa359b37c03631bdd547449008092ebd0b3c3980d94dc",
-      "sha256": "732a6bd7f335a09ba0efa359b37c03631bdd547449008092ebd0b3c3980d94dc",
-      "bytes": 1448
+      "source_sha256": "93a209fa74207dc1504d61419f9a223d7e1e8ab020e4eb68a323084416960c53",
+      "sha256": "93a209fa74207dc1504d61419f9a223d7e1e8ab020e4eb68a323084416960c53",
+      "bytes": 223
     },
     {
       "path": "scripts/windows/Kur-Kisayollar.ps1",
-      "source_sha256": "d424abbed4de64731eac00e0509ac0686bb6d45c9e794656be6fe1c7dae0f521",
-      "sha256": "d424abbed4de64731eac00e0509ac0686bb6d45c9e794656be6fe1c7dae0f521",
-      "bytes": 1259
+      "source_sha256": "8d3fac5827cf1874cd86c5526b911c86c81d193d6c5df83fb437e357d93a1d68",
+      "sha256": "8d3fac5827cf1874cd86c5526b911c86c81d193d6c5df83fb437e357d93a1d68",
+      "bytes": 674
+    },
+    {
+      "path": "scripts/windows/Kur-Rasathane.ps1",
+      "source_sha256": "1fc001b404f9dc31576cc018f8216d9117ce35efeee4a0fa5a4e9f42b60b6b77",
+      "sha256": "1fc001b404f9dc31576cc018f8216d9117ce35efeee4a0fa5a4e9f42b60b6b77",
+      "bytes": 1895
     }
   ]
 }

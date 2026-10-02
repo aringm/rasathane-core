@@ -9,6 +9,7 @@ from ytcore.content.faithfulness import faithfulness
 from ytcore.content.glossary import glossary_few_shot, varsayilan_glossary
 from ytcore.content.llm import llm_al
 from ytcore.content.ozet import ozetle
+from ytcore.content.resmi import MODE, resmi_belge
 from ytcore.content.segment import cumlelere_bol
 from ytcore.errors import KOD_HATALARI as _KOD_HATALARI
 from ytcore.infra.embedding import embedding_al
@@ -92,6 +93,13 @@ def dokum_node(state: GState) -> GState:
     with span_baslat("dokum", {}):
         if not metin.strip():
             return {"dokum_bolumler": [], "dokum_segment_sayisi": 0, "keywords": []}
+        if resmi := resmi_belge(state):
+            resmi_bolumler = resmi.dokum()
+            return {
+                "dokum_bolumler": resmi_bolumler,
+                "dokum_segment_sayisi": len(resmi_bolumler),
+                "keywords": [],
+            }
         cfg = get_config()
         segment_sn = _segment_sn_haritasi(metin, timed)
         embed = embedding_al()
@@ -134,6 +142,13 @@ def ozet_node(state: GState) -> GState:
                 "ozet": bos,
                 "ozet_faithfulness": None,
                 "ozet_faithfulness_durum": "ozet_yok",
+            }
+        if resmi := resmi_belge(state):
+            return {
+                "analysis_mode": MODE,
+                "ozet": resmi.ozet(),
+                "ozet_faithfulness": None,
+                "ozet_faithfulness_durum": "kaynak_alintisi",
             }
         llm = llm_al(cfg.ollama_reduce_model)
         embed = embedding_al()

@@ -15,10 +15,24 @@ _DURUM_NOT = {
 
 
 def ozet_yaz(
-    klasor: Path, kayit: IndexKaydi, ozet: dict[str, str], faithfulness: float, durum: str
+    klasor: Path, kayit: IndexKaydi, ozet: dict[str, str], faithfulness: float | None, durum: str
 ) -> Path:
     """04_ozet.md — TL;DR/paragraf/detay + faithfulness raporu. İmza: Av. Mehmet Arın Gülüm."""
     durum_not = _DURUM_NOT.get(durum, durum or "?")
+    if durum == "kaynak_alintisi":
+        rapor = (
+            "## Doğrudan kaynak alıntıları\n\n"
+            "Model destek puanı hesaplanmadı. Edinilen resmî ana metinden alıntılar "
+            "korundu; bağımsız doğrulama veya konsolide mevzuat üretimi yapılmadı.\n\n"
+        )
+    else:
+        skor = "—" if faithfulness is None else f"{faithfulness:.2f}"
+        rapor = (
+            f"## Model destek tahmini (faithfulness)\n\nSkor: {skor} — {durum_not}\n\n"
+            "Yerel model yalnız detaylı özeti analizde kullanılan metinle karşılaştırır. "
+            "Skor, resmî kaynak doğruluğu veya hukuki doğruluk onayı değildir. "
+            "Kaynak başka dilden çevrilmişse karşılaştırılan metin çeviridir.\n\n"
+        )
     icerik = (
         f"# {kayit.baslik} — Özet\n\n"
         f"> Kaynak: {kayit.kaynak_url or kayit.video_url} · Dil: {kayit.anadil or '?'} · "
@@ -26,10 +40,7 @@ def ozet_yaz(
         f"## TL;DR\n\n{ozet.get('kisa', '').strip() or '_üretilemedi_'}\n\n"
         f"## Özet\n\n{ozet.get('orta', '').strip() or '_üretilemedi_'}\n\n"
         f"## Detaylı Özet\n\n{ozet.get('detay', '').strip() or '_üretilemedi_'}\n\n"
-        f"## Model destek tahmini (faithfulness)\n\nSkor: {faithfulness:.2f} — {durum_not}\n\n"
-        "Yerel model yalnız detaylı özeti analizde kullanılan metinle karşılaştırır. "
-        "Skor, resmî kaynak doğruluğu veya hukuki doğruluk onayı değildir. "
-        "Kaynak başka dilden çevrilmişse karşılaştırılan metin çeviridir.\n\n"
+        f"{rapor}"
         f"---\n_{IMZA}_\n"
     )
     p = klasor / "04_ozet.md"

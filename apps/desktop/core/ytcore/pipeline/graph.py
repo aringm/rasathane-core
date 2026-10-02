@@ -9,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 from rasathane.sources import KaynakSinyali
 
 from ytcore.config import get_config
+from ytcore.content.resmi import MODE, SKIP_STATUS, resmi_belge
 from ytcore.local.ollama_ping import ollama_erisilebilir, ollama_ping
 from ytcore.models import AnalizSonucu, FactIddia, IndexKaydi
 from ytcore.obs.tracer import span_baslat
@@ -98,7 +99,7 @@ def _kaynak_belgesi_node(url: str, konu: str) -> GState:
         kaynak_metrikleri=belge.metrikler,
         kaynak_ozel=belge.ozel,
     )
-    return {
+    source_state: GState = {
         "kaynak_turu": belge.tur.value,
         "kaynak_durumu": belge.edinim_durumu,
         "kaynak_sinyalleri": [s.model_dump() for s in belge.sinyaller],
@@ -111,7 +112,26 @@ def _kaynak_belgesi_node(url: str, konu: str) -> GState:
         "transkript_segmentler": [],
         "asr_tier": None,
         "metadata": kayit.model_dump(),
+        "analysis_mode": "model_analysis",
     }
+    if resmi := resmi_belge(source_state):
+        kayit = kayit.model_copy(
+            update={
+                "baslik": resmi.baslik,
+                "kanal": resmi.sahip,
+                "kaynak_sahibi": resmi.sahip,
+                "yayin_tarihi": resmi.yayin_tarihi,
+                "kaynak_tarihi": resmi.yayin_tarihi,
+                "kaynak_ozel": {
+                    **kayit.kaynak_ozel,
+                    "analysis_mode": MODE,
+                    "official_issue_number": resmi.sayi,
+                },
+            }
+        )
+        source_state["metadata"] = kayit.model_dump()
+        source_state["analysis_mode"] = MODE
+    return source_state
 
 
 def _transcript_node(state: GState) -> GState:
@@ -196,6 +216,7 @@ def _transcript_node(state: GState) -> GState:
     )
     return {
         "kaynak_turu": "youtube",
+        "analysis_mode": "model_analysis",
         "kaynak_durumu": t.durum,
         "kaynak_sinyalleri": [
             {
@@ -299,6 +320,7 @@ def _output_node(state: GState) -> GState:
 
     cfg = get_config()
     kayit = IndexKaydi.model_validate(state["metadata"])
+    resmi = resmi_belge(state)
     keywords = state.get("keywords") or []
     if keywords:
         kayit = kayit.model_copy(update={"keywords": keywords})
@@ -346,7 +368,7 @@ def _output_node(state: GState) -> GState:
                 klasor,
                 kayit,
                 ozet,
-                state.get("ozet_faithfulness") or 0.0,
+                state.get("ozet_faithfulness"),
                 state.get("ozet_faithfulness_durum") or "",
             )
         # Faz 3 çıktıları (boş≠başarı: yalnız üretildiyse yaz).
@@ -358,8 +380,14 @@ def _output_node(state: GState) -> GState:
             kisisel_yaz(klasor, kayit, kisisel_metni)
         factcheck_iddialar = state.get("factcheck_iddialar") or []
         factcheck_durum = state.get("factcheck_durum", "atlandi")
-        if factcheck_iddialar:
-            factcheck_yaz(klasor, kayit, factcheck_iddialar, factcheck_durum)
+        if factcheck_iddialar or factcheck_durum == SKIP_STATUS:
+            factcheck_yaz(
+                klasor,
+                kayit,
+                factcheck_iddialar,
+                factcheck_durum,
+                reason=state.get("factcheck_reason", ""),
+            )
         # Faz 6 (#3+#5): profesyonel sunum PDF'i (özet + kişisel analiz + değerleme tek dosyada).
         # Özet üretildiyse yaz (best-effort; Typst yoksa None). md/diğer dosyalar birincil.
         # Faz 7 (review MED): sunum_yaz dönüşünü yakala → sunum_durum. Typst yoksa PDF YAZILMAZ
@@ -430,16 +458,20 @@ def _output_node(state: GState) -> GState:
             dokum_segment_sayisi=int(state.get("dokum_segment_sayisi", 0)),
             ozet_faithfulness=state.get("ozet_faithfulness"),
             ozet_faithfulness_durum=state.get("ozet_faithfulness_durum"),
+            analysis_mode=MODE if resmi else "model_analysis",
             quality_provenance={
+                "summary": resmi.provenance() if resmi else {"method": "local_model_summary"},
                 "faithfulness": {
-                    "method": "local_model_claim_judge",
+                    "method": "not_evaluated_direct_quotes" if resmi else "local_model_claim_judge",
                     "evaluated_output": "ozet_detay",
                     "reference": "icerik_tr",
                     "reference_sha256": hashlib.sha256(
                         (state.get("icerik_tr") or "").encode("utf-8")
                     ).hexdigest(),
                     "independent_verification": False,
-                    "scope": "support_estimate_not_factual_accuracy",
+                    "scope": "source_quotes_not_independent_verification"
+                    if resmi
+                    else "support_estimate_not_factual_accuracy",
                 },
                 "source": {
                     "acquisition_status": state.get("kaynak_durumu", durum),
@@ -448,9 +480,20 @@ def _output_node(state: GState) -> GState:
                     "language_source": kayit.kaynak_ozel.get("language_source"),
                     "translation_status": ceviri_durumu,
                 },
-                "factcheck": {"confidence_scope": "uncalibrated_model_heuristic"},
+                "factcheck": {
+                    "confidence_scope": "not_evaluated_normative_source"
+                    if resmi
+                    else "uncalibrated_model_heuristic",
+                    "reason": state.get("factcheck_reason", ""),
+                    "primary_source_url": resmi.url if resmi else None,
+                    "independent_verification": False,
+                },
                 "valuation": {"scope": "information_value_not_accuracy"},
-                "personal_analysis": {"scope": "model_interpretation_not_source_fact"},
+                "personal_analysis": {
+                    "scope": "not_generated_normative_source"
+                    if resmi
+                    else "model_interpretation_not_source_fact"
+                },
             },
             # Faz 9: içerik METNİ sonuca (GUI inline gösterim) — dosyaya yazılanla aynı kaynak.
             ozet_kisa=ozet.get("kisa", ""),
@@ -461,6 +504,7 @@ def _output_node(state: GState) -> GState:
             kisisel_durum=state.get("kisisel_durum", "atlandi"),
             kisisel_analiz=kisisel_metni,
             factcheck_durum=factcheck_durum,
+            factcheck_reason=state.get("factcheck_reason", ""),
             factcheck_iddia_sayisi=len(factcheck_iddialar),
             # dict → FactIddia (state ham dict tutar; sonuç modeli tipli — GUI kart render).
             factcheck_iddialar=[FactIddia.model_validate(it) for it in factcheck_iddialar],

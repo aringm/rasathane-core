@@ -110,7 +110,7 @@ def test_gercek_core_root_frozen_guvenilmez_cwd_secilmez(monkeypatch, tmp_path):
     meipass.mkdir()
     sahte_worker = tmp_path / "indirilenler" / "core" / "ytcore" / "router" / "ner_worker.py"
     sahte_worker.parent.mkdir(parents=True)
-    sahte_worker.write_text("# saldırgan worker")
+    sahte_worker.write_text("# saldırgan worker", encoding="utf-8")
     exe = tmp_path / "izole" / "sidecar.exe"  # repo DIŞI, core yok
     exe.parent.mkdir(parents=True)
     exe.write_text("")

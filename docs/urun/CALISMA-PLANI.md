@@ -15,7 +15,7 @@ Rasathane Radar'ın takip, kaynak, bülten ve araştırma özellikleri ile Gözl
 | Tasarım | Bağımsız logo, birleşik arayüz, tek ürün sitesi | Logo/ikonlar üretildi; gerçek browser akışları, web build ve Vercel preview kontrolü geçti; hukuki metinler korundu | Uygulandı ve preview doğrulandı |
 | Üyelik | Muhakeme PKCE client, açık deneme başlangıcı, 49 TL toplam fiyat, indirme | 1274 Muhakeme test; istemcide 18 Electron test; private PR #59 | Kaynak hazır; production kabulü bekliyor |
 | Paket | Bağımsız worker runtime, kurulum sihirbazı, RAM bütçesi, veri konumu | Repo/Python/uv/Docker gerektirmeyen paket; gerçek inference ve kapanış | Uygulanıyor |
-| Geliştirme standardı | Root CI, frozen lock, secret scan, SBOM/lisans, release hash | Windows/Linux CI kaynağı; 196 SBOM bileşeni, 303 lisans referansı; strict mypy 93 dosya; 67 runtime hash'i | Uygulandı; uzak çekirdek CI/paket kabulü sürüyor |
+| Geliştirme standardı | Root CI, frozen lock, secret scan, SBOM/lisans, release hash | Windows/Linux CI kaynağı; 196 SBOM bileşeni, 303 lisans referansı; strict mypy 94 dosya; 67 runtime hash'i | Uygulandı; uzak çekirdek CI/paket kabulü sürüyor |
 | Yayın | Açık çekirdeğin temiz kaynak yayını, site preview ve installer | Public kaynak tekliflerinin tam uzak readback'i geçti; site PR #2 ve private üyelik PR #59 preview/CI hazır; temiz çekirdek export'u denetleniyor | Sürüyor |
 | Emeklilik ve duyuru | Eski kurulumların temizliği; Discord/Atölye/Drive/OpenClaw güncellemesi | Yeni ürün kabulünden sonra tek kurulum; hedef başına makbuz/readback | Bekliyor |
 
@@ -41,3 +41,5 @@ Mevcut kaynaklar: `apps/desktop` Gözlemevi 0.4.1, `apps/radar` Radar, `apps/web
 Resmî Gazete'nin Windows-1254 kaynağı strict charset kontrolüyle açılır; Türkçe mevzuat gereksiz yeniden çeviriye girmez. Modelin destek puanı bağımsız doğruluk onayı olarak sunulmaz. Her ürün analizinin job kimliğine bağlı ayrı çıktı klasörü vardır; yeniden analiz önceki dosya ve hash'leri değiştirmez. Bu davranışların regresyonları geçti. Son frozen paket üzerinde gerçek analiz ve PDF/DOCX/map kabulü ayrıca yürütülmektedir.
 
 Yerel model envanteri ve üretim örnekleri salt okunur referans alındı. 128 GB çalışma bilgisayarındaki büyük modeller, 8 GB ürün profilinin dağıtım gereksinimi olarak alınmadı; veri ve model depoları korunur.
+
+İlk gerçek paketli model analizinin PDF/harita yolu geçti; içerik incelemesi hatalı mevzuat numaralandırması ve web doğrulaması yakaladı. Bunun üzerine resmî normatif metinlerde doğrudan kaynak alıntısı modu eklendi. Bağımsız review alıntı içindeki MADDE ve cümle içi fıkra atıfları için ek regresyonlar istedi; bu vakalar da düzeltildi. Son aday yeniden paketlenip resmî kaynak ve genel model yolu ayrı doğrulanır. Üyelik repo'sunda kabul gate'i, 64 MiB multipart, koşullu nesne oluşturma ve tam R2 readback yordamı dokuz testle geçti; henüz installer yayını açılmadı.

@@ -182,8 +182,10 @@ def test_actual_rg_bytes_flow_through_pipeline_without_translation(
     assert provenance["faithfulness"]["independent_verification"] is False
     assert provenance["valuation"]["scope"] == "information_value_not_accuracy"
     summary = (folder / "04_ozet.md").read_text(encoding="utf-8")
-    assert "Model destek tahmini" in summary
-    assert "hukuki doğruluk onayı değildir" in summary
+    assert result.analysis_mode == "source_extracts"
+    assert result.ozet_faithfulness is None
+    assert "Doğrudan kaynak alıntıları" in summary
+    assert "bağımsız doğrulama veya konsolide mevzuat üretimi yapılmadı" in summary
 
 
 def test_encoding_error_pipeline_produces_error_receipt_without_generated_summary(

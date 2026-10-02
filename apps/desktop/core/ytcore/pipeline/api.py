@@ -94,6 +94,8 @@ def _kaynak_analiz_kilitli(
             "konu": konu,
             "asr_izin": asr_izin,
             "output_run_id": output_run_id,
+            "analysis_mode": "model_analysis",
+            "factcheck_reason": "",
         }
         if cancel_check is None and progress is None:
             son = app.invoke(initial, config=config)

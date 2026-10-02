@@ -39,6 +39,19 @@ def _typ_kaynak(
     puan_txt = f"{degerleme_puani:.1f} / 100" if degerleme_puani is not None else "—"
     fth = "—" if faithfulness_skor is None else f"{faithfulness_skor:.2f}"
     kisisel = kisisel_metni.strip() or "(kişisel analiz üretilmedi)"
+    if kayit.kaynak_ozel.get("analysis_mode") == "source_extracts":
+        destek_notu = "Doğrudan kaynak alıntıları; model destek puanı hesaplanmadı."
+        kapsam_notu = (
+            "Edinilen resmî ana metin korunur; bağımsız doğrulama veya konsolide "
+            "mevzuat üretimi yapılmadı."
+        )
+    else:
+        destek_notu = f"Model destek tahmini (faithfulness): {fth}"
+        kapsam_notu = (
+            "Yalnız detaylı özet ile analiz metni karşılaştırılır. "
+            "Skor, resmî kaynak doğruluğu veya hukuki doğruluk onayı değildir. "
+            "Çeviri varsa karşılaştırma çeviri metniyle yapılır."
+        )
     tablo = (
         _fakt_satir("Novelty (yenilik)", 0.35, fakt.novelty)
         + _fakt_satir("Rarity (nadirlik)", 0.25, fakt.rarity)
@@ -101,10 +114,8 @@ def _typ_kaynak(
 
 = Detaylı Özet
 #para(v_detay)
-#v(0.3em) #text(9.5pt, fill: mut)[Model destek tahmini (faithfulness): {fth}]
-#text(9pt, fill: mut)[Yalnız detaylı özet ile analiz metni karşılaştırılır.
-Skor, resmî kaynak doğruluğu veya hukuki doğruluk onayı değildir.
-Çeviri varsa karşılaştırma çeviri metniyle yapılır.]
+#v(0.3em) #text(9.5pt, fill: mut)[{destek_notu}]
+#text(9pt, fill: mut)[{kapsam_notu}]
 
 = Kişisel Analiz
 #para(v_kisisel)

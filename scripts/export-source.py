@@ -11,13 +11,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED = ("apps/desktop/core/", "apps/desktop/mcp/", "apps/desktop/tests/", "apps/desktop/eval/",
            "apps/desktop/gui/electron/", "apps/desktop/gui/scripts/", "apps/desktop/gui/ui/", "apps/desktop/gui/src-tauri/icons/",
+           "apps/desktop/gui/src-tauri/src/", "apps/desktop/gui/src-tauri/capabilities/",
            "apps/desktop/infra/", "apps/radar/apps/", "apps/radar/packages/", "apps/radar/tests/",
            "apps/radar/alembic/", "apps/web/src/", "apps/web/public/", "apps/web/scripts/", "docs/urun/", "scripts/", ".github/")
 ROOT_FILES = {"LICENSE", "NOTICE.md", "README.md", "CONTRIBUTING.md", ".gitignore", ".gitattributes", "AGENTS.md",
               "apps/desktop/pyproject.toml", "apps/desktop/uv.lock", "apps/desktop/LICENSE", "apps/desktop/.env.example", "apps/desktop/.gitignore",
-              "apps/desktop/gui/package.json", "apps/desktop/gui/pnpm-lock.yaml",
+              "apps/desktop/gui/package.json", "apps/desktop/gui/pnpm-lock.yaml", "apps/desktop/gui/pnpm-workspace.yaml",
+              "apps/desktop/gui/src-tauri/tauri.conf.json", "apps/desktop/gui/src-tauri/Cargo.toml",
+              "apps/desktop/gui/src-tauri/Cargo.lock", "apps/desktop/gui/src-tauri/build.rs",
               "apps/radar/pyproject.toml", "apps/radar/uv.lock", "apps/radar/alembic.ini", "apps/radar/.env.example",
-              "apps/web/package.json", "apps/web/pnpm-lock.yaml", "apps/web/next.config.ts", "apps/web/AGENTS.md",
+              "apps/web/package.json", "apps/web/pnpm-lock.yaml", "apps/web/pnpm-workspace.yaml", "apps/web/next.config.ts", "apps/web/AGENTS.md",
               "apps/web/tsconfig.json", "apps/web/postcss.config.mjs", "apps/web/eslint.config.mjs"}
 FORBIDDEN_PARTS = {".venv", "node_modules", "vendor", "dist", "worker-build", "worker-dist", "build", ".local", "__pycache__"}
 PDF_MODULES = {

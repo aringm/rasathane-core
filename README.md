@@ -38,6 +38,10 @@ Web aramasını açmak arama terimini seçilen sağlayıcıya gönderir. Kaynak 
 
 Resmî karar metadata'sı kapsamlı karar metni değildir. Kaynakta yayımlanma tarihi bulunmadığında karar tarihi bu adla gösterilir. Servis yapılandırılmamışsa veya yanıt alınamıyorsa arayüz bunu açıkça belirtir.
 
+Türkçe Resmî Gazete normatif metinlerinde özet ve harita doğrudan kaynak alıntılarından hazırlanır; madde/fıkra yapısı ve kaynak hash'i korunur. Alıntı sınırları belirsizse ana metin tam tutulur. Bu görünüm hukuki yorum, konsolide mevzuat veya bağımsız doğruluk puanı üretmez. Diğer içerikler yerel model analizinden geçer.
+
+Doğrulanmış Windows release yerelde mevcutsa `scripts/windows/Kur-Rasathane.ps1` paketin boyutunu, SHA-256 değerini ve kabul kaydını kontrol ederek kurulumu yapar. Sonraki açılışlar `scripts/windows/Baslat-Rasathane.ps1` veya Rasathane kısayoluyla yapılır. Eski Radar/Gözlemevi başlatıcıları aynı birleşik kuruluma yönlenir.
+
 Geliştirme ve yayın durumu: [çalışma planı](docs/urun/CALISMA-PLANI.md). Mimari ve veri sınırları: [mimari](docs/urun/MIMARI.md). Dağıtım bileşenleri: [üçüncü taraf bildirimleri](apps/desktop/infra/THIRD-PARTY.md).
 
 Özgün Radar/Gözlemevi/web Git geçmişleri private çalışma deposunda `sources/*` ve `source-*` ref'leriyle korunur. Açık çekirdek yayını, özel geçmişi ve yerel secrets'ı taşımayan hash manifest'li source export üzerinden hazırlanır.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from ytcore.content.llm import LLMClient
@@ -48,8 +49,17 @@ def iddialari_cikar(metin: str, llm: LLMClient, *, model: str | None = None) -> 
     if not metin.strip():
         return []
     yanit = llm.uret(_CLAIM_SISTEM, metin[:_BAGLAM_LIMIT], model=model).strip()
-    iddialar = [s.strip("-* ").strip() for s in yanit.splitlines() if s.strip()]
-    iddialar = [i for i in iddialar if len(i) > 10]
+    iddialar = [
+        re.sub(r"^\s*(?:[-*•]|\d+[.)])\s*", "", s).strip() for s in yanit.splitlines() if s.strip()
+    ]
+    iddialar = [
+        i
+        for i in iddialar
+        if len(i) > 10
+        and not i.endswith(":")
+        and not i.startswith(("```", "#"))
+        and not i.lower().replace("̇", "").startswith("işte metinden")
+    ]
     if not iddialar:  # FakeLLM/boş → cümle fallback (boş≠başarı: yine de değerlendir)
         iddialar = [c for c in cumlelere_bol(metin) if len(c) > 10][:10]
     return iddialar[:15]
