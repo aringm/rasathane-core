@@ -1,0 +1,143 @@
+{
+  "name": "rasathane-desktop",
+  "productName": "Rasathane",
+  "private": true,
+  "version": "0.5.0",
+  "license": "AGPL-3.0-or-later",
+  "packageManager": "pnpm@11.23.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "description": "Yerel öncelikli, çok kaynaklı içerik gözlemevi",
+  "author": {
+    "name": "Av. Mehmet Arın Gülüm"
+  },
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "vendor:pdf": "node scripts/vendor-pdf.cjs",
+    "check:pdf": "node scripts/vendor-pdf.cjs --check && node --test ui/tests/*.test.mjs",
+    "brand": "node electron/build-brand.cjs",
+    "dev": "electron .",
+    "build": "node scripts/vendor-pdf.cjs --check && electron-builder --win nsis --x64",
+    "pack": "node scripts/vendor-pdf.cjs --check && electron-builder --dir --win --x64",
+    "test": "node --test electron/*.test.cjs",
+    "check": "pnpm check:pdf && node --check electron/main.cjs && node --check electron/preload.cjs && node --test electron/*.test.cjs",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "devDependencies": {
+    "@electron/fuses": "2.1.3",
+    "@tauri-apps/cli": "2.11.2",
+    "electron": "43.7.7",
+    "electron-builder": "26.15.3",
+    "pdfjs-dist": "6.3.289",
+    "sharp": "0.35.4"
+  },
+  "build": {
+    "appId": "ai.muhakeme.rasathane",
+    "productName": "Rasathane",
+    "copyright": "© 2026 Av. Mehmet Arın Gülüm",
+    "asar": true,
+    "compression": "maximum",
+    "npmRebuild": false,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "grantFileProtocolExtraPrivileges": false
+    },
+    "artifactName": "Rasathane-Setup-${version}-x64.${ext}",
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "src-tauri/icons"
+    },
+    "files": [
+      "electron/**/*",
+      "!electron/*.test.cjs",
+      "!electron/build-brand.cjs",
+      "ui/**/*",
+      "!ui/tests/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../LICENSE",
+        "to": "licenses/AGPL-3.0.txt"
+      },
+      {
+        "from": "../../../NOTICE.md",
+        "to": "licenses/NOTICE.md"
+      },
+      {
+        "from": "../infra/THIRD-PARTY.md",
+        "to": "licenses/THIRD-PARTY.md"
+      },
+      {
+        "from": "../infra/vendor/licenses",
+        "to": "licenses/runtime"
+      },
+      {
+        "from": "../infra/vendor/tooling",
+        "to": "tooling",
+        "filter": [
+          "**/*",
+          "!typst-licenses/archives/**",
+          "!typst-licenses/font-source/**",
+          "!typst-licenses/pdfjs/*.tar.gz",
+          "!typst-licenses/build-supplement.py"
+        ]
+      },
+      {
+        "from": "../infra/dist/worker",
+        "to": "worker"
+      },
+      {
+        "from": "../infra/dist/ytanaliz-sidecar.exe",
+        "to": "sidecar/ytanaliz-sidecar.exe"
+      },
+      {
+        "from": "../infra/vendor/motor",
+        "to": "motor",
+        "filter": [
+          "bin/**",
+          "modeller/ner/**",
+          "modeller/asr/**",
+          "motor-manifest.json"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src-tauri/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Rasathane",
+      "installerIcon": "src-tauri/icons/icon.ico",
+      "uninstallerIcon": "src-tauri/icons/icon.ico",
+      "installerLanguages": [
+        "tr_TR"
+      ],
+      "displayLanguageSelector": false,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
+    }
+  }
+}

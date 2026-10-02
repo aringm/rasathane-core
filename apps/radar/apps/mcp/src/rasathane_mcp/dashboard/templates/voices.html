@@ -1,0 +1,1377 @@
+{% extends "_base.html" %}
+{% set active = "studio" %}
+{% block title %}Rasathane · Stüdyo{% endblock %}
+
+{% block content %}
+<!-- Phase 35-xi: SVG icon library (CSS sprite via <symbol> + <use>).
+     Bütün ikonlar 24x24 viewBox, stroke="currentColor" — tema renk
+     mirası (var(--gold-text) #D4956A terracotta). fill="none" + stroke
+     stilli minimal line-art; emoji yok, telif yok, özgün geometri. -->
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0" aria-hidden="true">
+    <defs>
+        <!-- studio = mikrofon + dalga formu (h1 başlık icon) -->
+        <symbol id="ic-studio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9.5" y="3" width="5" height="11" rx="2.5"/>
+            <path d="M6.5 11.5a5.5 5.5 0 0 0 11 0"/>
+            <path d="M12 17v3.5"/>
+            <path d="M3.5 9.5v2"/>
+            <path d="M20.5 9.5v2"/>
+        </symbol>
+        <!-- mic = sade mikrofon (Filiz agent + spiker rol) -->
+        <symbol id="ic-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2.5" width="6" height="12" rx="3"/>
+            <path d="M5.5 11a6.5 6.5 0 0 0 13 0"/>
+            <path d="M12 17.5v3.5M8 21h8"/>
+        </symbol>
+        <!-- scales = terazi (Mehmet, hukuk uzmanı) -->
+        <symbol id="ic-scales" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 4v17"/>
+            <path d="M5 21h14"/>
+            <path d="M5 7h14"/>
+            <path d="M4 7l-3 6a3 3 0 0 0 6 0z"/>
+            <path d="M20 7l-3 6a3 3 0 0 0 6 0z"/>
+        </symbol>
+        <!-- circuit = devre/chip (Burak, teknik analist) -->
+        <symbol id="ic-circuit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="6" width="12" height="12" rx="1.5"/>
+            <rect x="9.5" y="9.5" width="5" height="5"/>
+            <path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3"/>
+            <path d="M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/>
+        </symbol>
+        <!-- agents = 3 silhouette overlapping (h2 başlık) -->
+        <symbol id="ic-agents" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="8" r="3"/>
+            <circle cx="16" cy="8" r="3"/>
+            <path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
+            <path d="M14 14c2.5 0 4.5 1.4 5.6 3.5"/>
+        </symbol>
+        <!-- play = doldurma üçgen -->
+        <symbol id="ic-play" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+        </symbol>
+        <!-- pause = 2 dikey çubuk -->
+        <symbol id="ic-pause" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 5h4v14H6zm8 0h4v14h-4z"/>
+        </symbol>
+        <!-- save = disket + ok yukarı (cloud-save metaforu) -->
+        <symbol id="ic-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <path d="M17 21v-7H7v7"/>
+            <path d="M7 3v5h8"/>
+        </symbol>
+        <!-- reset = dairesel ok (geri al) -->
+        <symbol id="ic-reset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/>
+            <path d="M3 21v-5h5"/>
+        </symbol>
+        <!-- search = büyüteç -->
+        <symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m20 20-3.5-3.5"/>
+        </symbol>
+        <!-- check = onay tik -->
+        <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"/>
+        </symbol>
+        <!-- spinner = kesik daire (CSS rotate) -->
+        <symbol id="ic-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 3a9 9 0 0 1 9 9" opacity="1"/>
+            <path d="M12 21a9 9 0 0 1-9-9" opacity=".4"/>
+        </symbol>
+    </defs>
+</svg>
+
+<div x-data="studio()" x-init="load(); loadUsage()">
+    <header class="page-header">
+        <div class="heading">
+            <h1>
+                <svg class="ic ic-title"><use href="#ic-studio"/></svg>
+                Stüdyo
+            </h1>
+        </div>
+        <!-- Phase 35-xi: API info card — provider, tier, token usage -->
+        <div class="api-card" x-show="usage" x-cloak>
+            <div class="api-card-row api-card-head">
+                <span class="api-card-label">API</span>
+                <strong class="api-card-provider" x-text="usage?.provider || '—'"></strong>
+                <span class="api-card-tier" x-text="usage?.tier || '—'"></span>
+            </div>
+            <div class="api-card-row">
+                <span class="api-card-label">Token</span>
+                <span class="api-card-usage">
+                    <strong x-text="(usage?.character_count || 0).toLocaleString('tr-TR')"></strong>
+                    <span class="api-card-sep">/</span>
+                    <span x-text="(usage?.character_limit || 0).toLocaleString('tr-TR')"></span>
+                    <span class="api-card-percent" x-text="`%${usage?.percent_used ?? 0}`"></span>
+                </span>
+            </div>
+            <div class="api-card-bar">
+                <div class="api-card-bar-fill" :style="`width: ${usage?.percent_used ?? 0}%`"></div>
+            </div>
+            <div class="api-card-row api-card-foot">
+                <span class="api-card-label">Reset</span>
+                <span x-text="formatResetDate(usage?.next_reset_unix)"></span>
+            </div>
+            <!-- TODO Phase 36+: local TTS (Coqui/Piper) + alternatif provider'lar -->
+        </div>
+        <template x-if="usageError">
+            <p class="api-card-error" x-text="`API kullanım bilgisi alınamadı: ${usageError}`"></p>
+        </template>
+    </header>
+
+    <!-- Yüklenme durumu -->
+    <template x-if="loading">
+        <p class="page-note">Stüdyo yükleniyor…</p>
+    </template>
+
+    <!-- Hata -->
+    <template x-if="error">
+        <div class="glass" style="padding: 1.5rem; margin: 1rem 0;
+                                  border-left: 3px solid var(--red);">
+            <strong>Hata:</strong> <span x-text="error"></span>
+        </div>
+    </template>
+
+    <!-- Save status banner -->
+    <template x-if="saveStatus">
+        <div class="glass save-status" style="padding: .85rem 1.2rem; margin: 1rem 0;
+                                  border-left: 3px solid var(--gold-text);">
+            <svg class="ic ic-btn"><use href="#ic-check"/></svg>
+            <span x-text="saveStatus"></span>
+        </div>
+    </template>
+
+    <!-- ── Unified Stüdyo grid ──────────────────────────────────────── -->
+    <template x-if="!loading && !error">
+        <div class="studio-grid">
+            <!-- Test cümlesi + mod tabs (üst bar) -->
+            <div class="studio-header">
+                <textarea x-model="testSentence"
+                          class="studio-test-input"
+                          placeholder="Test cümlesi (boş bırakırsan mod'a göre default kullanılır)"></textarea>
+                <div class="studio-test-mode">
+                    <button :class="{active: testMode==='tr'}" @click="testMode='tr'">
+                        <svg class="ic ic-btn"><use href="#ic-play"/></svg>
+                        TR
+                    </button>
+                    <button :class="{active: testMode==='tr_en'}" @click="testMode='tr_en'">
+                        <svg class="ic ic-btn"><use href="#ic-play"/></svg>
+                        TR/EN
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2-kolon ana içerik: sol agents · sağ voice gallery -->
+            <div class="studio-main">
+                <!-- Sol panel: Agent kartları -->
+                <aside class="studio-agents">
+                    <h2>
+                        <svg class="ic ic-h2"><use href="#ic-agents"/></svg>
+                        Agent'lar
+                        <span class="pill">3 sabit</span>
+                    </h2>
+                    <template x-for="agent in Object.values(agents)" :key="agent.name">
+                        <article class="agent-card">
+                            <header class="agent-header">
+                                <span class="agent-icon">
+                                    <svg class="ic ic-agent"><use :href="`#ic-${agent.iconName}`"/></svg>
+                                </span>
+                                <div class="agent-meta">
+                                    <strong x-text="agent.name"></strong>
+                                    <span x-text="agent.role"></span>
+                                </div>
+                            </header>
+                            <div class="agent-voice">
+                                <span class="agent-voice-label">VOICE</span>
+                                <span class="agent-voice-name" x-text="voiceName(agent.voice_id)"></span>
+                            </div>
+                            <button class="agent-test"
+                                    @click="toggleVoicePlay(agent.voice_id)"
+                                    :class="{playing: players[agent.voice_id]?.playing,
+                                             loading: players[agent.voice_id]?.loading}"
+                                    :disabled="!agent.voice_id">
+                                <svg x-show="!players[agent.voice_id]?.playing && !players[agent.voice_id]?.loading"
+                                     class="ic ic-btn"><use href="#ic-play"/></svg>
+                                <svg x-show="players[agent.voice_id]?.playing"
+                                     class="ic ic-btn"><use href="#ic-pause"/></svg>
+                                <svg x-show="players[agent.voice_id]?.loading"
+                                     class="ic ic-btn ic-spin"><use href="#ic-spinner"/></svg>
+                                <span>Bu agent'ı dinle</span>
+                            </button>
+                        </article>
+                    </template>
+
+                    <div style="display: flex; gap: .55rem; margin-top: 1rem; justify-content: flex-end;">
+                        <button class="btn-pill"
+                                @click="resetAgents()"
+                                :disabled="!dirty">
+                            <svg class="ic ic-btn"><use href="#ic-reset"/></svg>
+                            Sıfırla
+                        </button>
+                        <button class="btn-pill btn-pill-primary"
+                                @click="saveAgents()"
+                                :disabled="!dirty || saving">
+                            <svg x-show="!saving" class="ic ic-btn"><use href="#ic-save"/></svg>
+                            <svg x-show="saving" class="ic ic-btn ic-spin"><use href="#ic-spinner"/></svg>
+                            <span x-text="saving ? 'Kaydediliyor…' : 'Kaydet'"></span>
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- Sağ panel: Voice Gallery -->
+                <section class="studio-gallery">
+                    <h2>Voice Gallery
+                        <span class="pill" x-text="`${filteredVoices().length} / ${voices.length} voice`"></span>
+                    </h2>
+                    <div class="voice-search-wrap">
+                        <svg class="ic ic-search-input" aria-hidden="true"><use href="#ic-search"/></svg>
+                        <input class="voice-search"
+                               type="search"
+                               x-model="voiceFilter.search"
+                               placeholder="Ara: ad, accent, açıklama…">
+                    </div>
+                    <div class="voice-filter-row">
+                        <label><input type="checkbox" x-model="voiceFilter.female"> Kadın</label>
+                        <label><input type="checkbox" x-model="voiceFilter.male"> Erkek</label>
+                        <label><input type="checkbox" x-model="voiceFilter.trNative"> TR-native öncelik</label>
+                    </div>
+                    <div class="voice-list">
+                        <template x-for="v in filteredVoices()" :key="v.voice_id">
+                            <div class="voice-row">
+                                <button class="voice-play"
+                                        @click="toggleVoicePlay(v.voice_id)"
+                                        :class="{loading: players[v.voice_id]?.loading,
+                                                 playing: players[v.voice_id]?.playing}">
+                                    <svg x-show="!players[v.voice_id]?.playing && !players[v.voice_id]?.loading"
+                                         class="ic ic-gallery"><use href="#ic-play"/></svg>
+                                    <svg x-show="players[v.voice_id]?.playing"
+                                         class="ic ic-gallery"><use href="#ic-pause"/></svg>
+                                    <svg x-show="players[v.voice_id]?.loading"
+                                         class="ic ic-gallery ic-spin"><use href="#ic-spinner"/></svg>
+                                </button>
+                                <div class="voice-info">
+                                    <strong x-text="v.name"></strong>
+                                    <span class="voice-tags" x-text="voiceTags(v)"></span>
+                                </div>
+                                <div class="voice-assign">
+                                    <template x-for="agentName in agentNames()" :key="'a-'+agentName+'-'+v.voice_id">
+                                        <button class="voice-assign-btn"
+                                                :class="{assigned: agents[agentName].voice_id === v.voice_id}"
+                                                @click="assignVoiceToAgent(agentName, v.voice_id)"
+                                                x-text="agentName"
+                                                :title="`${agentName} agent'ına bu sesi ata`">
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="filteredVoices().length === 0">
+                            <p class="page-note" style="padding: 1rem; text-align: center;">
+                                Filtreyle eşleşen voice bulunamadı.
+                            </p>
+                        </template>
+                    </div>
+                </section>
+            </div>
+
+        </div>
+    </template>
+
+    <!-- Phase 36-iv: Preset CRUD section -->
+    <details class="presets-section" x-init="loadPresets()">
+        <summary>
+            <h2>🎛️ Ses Presetleri</h2>
+        </summary>
+        <p class="page-note">
+            Analiz sayfasında "Yeniden üret" butonuna bastığında seçilebilen preset listesi.
+            4 default preset her zaman vardır; kendi preset'ini ekleyebilirsin.
+        </p>
+
+        <div class="presets-grid">
+            <template x-for="p in [...presets.defaults, ...presets.custom]" :key="p.id">
+                <article class="preset-card"
+                         :class="p.is_default ? 'default' : 'custom'">
+                    <header>
+                        <h3 x-text="p.name"></h3>
+                        <span class="badge"
+                              :class="p.is_default ? 'badge-default' : 'badge-custom'"
+                              x-text="p.is_default ? 'DEFAULT' : 'SENİN'"></span>
+                    </header>
+                    <p class="preset-desc" x-text="p.description"></p>
+                    <dl class="preset-dl">
+                        <dt>Format</dt><dd x-text="formatLabel(p.format)"></dd>
+                        <dt>Süre</dt>
+                        <dd x-text="`${p.target_minutes[0]}-${p.target_minutes[1]} dk`"></dd>
+                        <dt>Prompt</dt><dd x-text="p.prompt_variant"></dd>
+                    </dl>
+                    <footer>
+                        <template x-if="p.is_default">
+                            <button class="btn-pill"
+                                    @click="cloneAsCustom(p)">
+                                Kopyala ve özelleştir
+                            </button>
+                        </template>
+                        <template x-if="!p.is_default">
+                            <div class="preset-actions">
+                                <button class="btn-pill" @click="editPreset(p)">Düzenle</button>
+                                <button class="btn-pill danger" @click="deletePreset(p.id)">Sil</button>
+                            </div>
+                        </template>
+                    </footer>
+                </article>
+            </template>
+            <article class="preset-card add-new" @click="addNewPreset()">
+                <span>+ Yeni preset</span>
+            </article>
+        </div>
+
+        <!-- Preset edit modal -->
+        <template x-if="editingPreset">
+            <div class="preset-modal-overlay" @click.self="cancelEditPreset()">
+                <div class="preset-modal-box">
+                    <h3 x-text="editingPresetIsExisting ? 'Preset Düzenle' : 'Yeni Preset'"></h3>
+                    <label>ID (snake_case, ASCII):
+                        <input type="text" x-model="editingPreset.id"
+                               :disabled="editingPresetIsExisting" maxlength="40" />
+                    </label>
+                    <label>Ad:
+                        <input type="text" x-model="editingPreset.name" maxlength="40" />
+                    </label>
+                    <label>Açıklama:
+                        <textarea x-model="editingPreset.description" maxlength="200" rows="2"></textarea>
+                    </label>
+                    <label>Format:
+                        <select x-model="editingPreset.format">
+                            <option value="panel_3">3-sesli panel</option>
+                            <option value="duo_expert_critic">2-sesli (uzman + spiker)</option>
+                            <option value="solo_narrator">Tek-sesli</option>
+                            <option value="debate">Münazara</option>
+                        </select>
+                    </label>
+                    <label>Prompt variant:
+                        <select x-model="editingPreset.prompt_variant">
+                            <option value="youtube_podcast_script">klasik (panel_3 için)</option>
+                            <option value="youtube_podcast_script_fast">hızlı (solo için)</option>
+                            <option value="youtube_podcast_script_deep">derin (duo için)</option>
+                            <option value="youtube_podcast_script_debate">münazara (debate için)</option>
+                        </select>
+                    </label>
+                    <label>Min süre (dk):
+                        <input type="number" min="1" max="12" step="0.5"
+                               x-model.number="editingPreset.target_minutes[0]" />
+                    </label>
+                    <label>Maks süre (dk):
+                        <input type="number" min="1" max="12" step="0.5"
+                               x-model.number="editingPreset.target_minutes[1]" />
+                    </label>
+                    <div class="modal-actions">
+                        <button class="btn-pill btn-pill-primary" @click="savePreset()"
+                                :disabled="!editingPreset.id || !editingPreset.name">
+                            Kaydet
+                        </button>
+                        <button class="btn-pill" @click="cancelEditPreset()">İptal</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </details>
+</div>
+
+<style>
+    /* ════════════════════════════════════════════════════════════
+       PHASE 35-xi — SVG icon sprite stilleri (emoji yerine)
+       ════════════════════════════════════════════════════════════ */
+    .ic {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+        vertical-align: -.15em;
+        fill: currentColor;
+        flex-shrink: 0;
+    }
+    .ic-title {
+        width: 1.25em;
+        height: 1.25em;
+        vertical-align: -.22em;
+        margin-right: .35em;
+        color: var(--gold-text);
+    }
+    .ic-h2 {
+        width: 1em;
+        height: 1em;
+        margin-right: .15em;
+        color: var(--gold-text);
+    }
+    .ic-agent {
+        width: 1.6em;
+        height: 1.6em;
+        color: var(--gold-text);
+    }
+    .ic-btn {
+        width: 1em;
+        height: 1em;
+        vertical-align: -.15em;
+    }
+    .ic-gallery {
+        width: 1.15em;
+        height: 1.15em;
+    }
+    .ic-search-input {
+        position: absolute;
+        left: .9rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1em;
+        height: 1em;
+        color: var(--text3);
+        pointer-events: none;
+        z-index: 1;
+    }
+    @keyframes studio-spin {
+        from { transform: rotate(0); }
+        to { transform: rotate(360deg); }
+    }
+    .ic-spin {
+        animation: studio-spin 1s linear infinite;
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       PHASE 35-xi — API info card (provider + tier + token usage)
+       ════════════════════════════════════════════════════════════ */
+    .api-card {
+        margin: 1rem 0 0;
+        padding: .95rem 1.15rem;
+        background: var(--bg2);
+        border: 1px solid var(--gold-border);
+        border-radius: 10px;
+        font-family: var(--font-mono);
+        font-size: .82rem;
+        display: grid;
+        gap: .45rem;
+        max-width: 500px;
+    }
+    .api-card-row {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        flex-wrap: wrap;
+    }
+    .api-card-label {
+        color: var(--text3);
+        font-size: .65rem;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        min-width: 3.5rem;
+    }
+    .api-card-provider {
+        color: var(--gold-text);
+        font-family: var(--font-display);
+        font-size: 1rem;
+        letter-spacing: .02em;
+    }
+    .api-card-tier {
+        background: var(--gold-dim);
+        border: 1px solid var(--gold-border);
+        color: var(--gold-text);
+        padding: .15rem .6rem;
+        border-radius: 999px;
+        font-size: .65rem;
+        text-transform: lowercase;
+        letter-spacing: .04em;
+    }
+    .api-card-usage {
+        display: flex;
+        align-items: baseline;
+        gap: .25rem;
+    }
+    .api-card-usage strong {
+        color: var(--text);
+        font-size: .95rem;
+        font-weight: 500;
+    }
+    .api-card-sep { color: var(--text3); }
+    .api-card-percent {
+        color: var(--gold-text);
+        margin-left: .55rem;
+        font-weight: 600;
+    }
+    .api-card-bar {
+        height: 4px;
+        background: var(--bg);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+    .api-card-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--gold) 0%, var(--gold2) 100%);
+        transition: width .6s ease;
+    }
+    .api-card-foot {
+        color: var(--text2);
+        font-size: .72rem;
+    }
+    .api-card-error {
+        margin: .65rem 0 0;
+        padding: .55rem .9rem;
+        background: rgba(196,80,80,.08);
+        border: 1px solid rgba(196,80,80,.25);
+        border-radius: 8px;
+        color: var(--text2);
+        font-size: .78rem;
+        max-width: 500px;
+    }
+
+    /* Search input wrapper (Phase 35-xi: inline SVG icon left) */
+    .voice-search-wrap {
+        position: relative;
+        margin: 0 0 .5rem;
+    }
+    .voice-search-wrap .voice-search {
+        padding-left: 2.4rem;
+    }
+
+    /* Save status banner (Phase 35-xi: SVG check icon flex layout) */
+    .save-status {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+    }
+    .save-status .ic {
+        color: var(--gold-text);
+    }
+
+    /* Page-header layout: heading + api-card side-by-side at wide,
+       stacked at narrow viewports. */
+    .page-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+    .page-header .heading {
+        flex: 1 1 320px;
+        min-width: 0;
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       STUDIO GRID — Phase 35-ii unified layout
+       ════════════════════════════════════════════════════════════ */
+    .studio-grid {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 1.5rem;
+    }
+    .studio-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        align-items: end;
+    }
+    .studio-test-input {
+        width: 100%;
+        min-height: 3.5rem;
+        padding: .75rem 1rem;
+        background: var(--bg2);
+        border: 1px solid var(--border2);
+        color: var(--text);
+        border-radius: 8px;
+        font-family: var(--font-body);
+        font-size: .95rem;
+        resize: vertical;
+    }
+    .studio-test-input:focus {
+        outline: none;
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px var(--gold-dim);
+    }
+    .studio-test-mode {
+        display: flex;
+        gap: .35rem;
+    }
+    .studio-test-mode button {
+        padding: .5rem 1rem;
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text2);
+        border-radius: 999px;
+        font-family: var(--font-mono);
+        font-size: .76rem;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .studio-test-mode button:hover {
+        color: var(--text);
+        border-color: var(--gold-border);
+    }
+    .studio-test-mode button.active {
+        background: var(--gold-dim);
+        border-color: var(--gold-border);
+        color: var(--gold-text);
+        font-weight: 600;
+    }
+
+    .studio-main {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 1.25rem;
+        min-height: 60vh;
+    }
+    .studio-agents h2,
+    .studio-gallery h2 {
+        font-size: 1.1rem;
+        margin: 0 0 .75rem;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+    .studio-agents h2 .pill,
+    .studio-gallery h2 .pill {
+        font-family: var(--font-mono);
+        font-size: .65rem;
+        color: var(--text3);
+        background: var(--bg2);
+        padding: .2rem .55rem;
+        border-radius: 999px;
+        font-weight: 400;
+    }
+
+    /* Agent kartları (sol panel) */
+    .agent-card {
+        padding: 1rem 1.2rem;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        margin-bottom: .75rem;
+        transition: border-color var(--t-fast);
+    }
+    .agent-card:hover {
+        border-color: var(--gold-border);
+    }
+    .agent-header {
+        display: flex;
+        gap: .65rem;
+        align-items: center;
+        margin-bottom: .65rem;
+    }
+    .agent-icon {
+        font-size: 1.5rem;
+    }
+    .agent-meta strong {
+        display: block;
+        color: var(--gold-text);
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+    }
+    .agent-meta span {
+        display: block;
+        color: var(--text3);
+        font-size: .8rem;
+    }
+    .agent-voice {
+        display: flex;
+        gap: .5rem;
+        align-items: baseline;
+        font-size: .85rem;
+        margin-bottom: .65rem;
+        padding: .35rem .55rem;
+        background: var(--bg2);
+        border-radius: 6px;
+    }
+    .agent-voice-label {
+        color: var(--text3);
+        font-family: var(--font-mono);
+        font-size: .65rem;
+        letter-spacing: .12em;
+    }
+    .agent-voice-name {
+        color: var(--text);
+        font-weight: 500;
+    }
+    .agent-test {
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        padding: .5rem .9rem;
+        background: linear-gradient(135deg, var(--teal) 0%, var(--teal-text) 100%);
+        color: var(--bg);
+        border: none;
+        border-radius: 999px;
+        font-family: var(--font-ui);
+        font-weight: 600;
+        font-size: .82rem;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .agent-test:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(46, 107, 94, 0.32);
+    }
+    .agent-test.playing {
+        background: linear-gradient(135deg, var(--red) 0%, var(--terra) 100%);
+    }
+    .agent-test.loading {
+        background: var(--bg3);
+        cursor: wait;
+    }
+    .agent-test:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Voice gallery (sağ panel) */
+    .voice-search {
+        width: 100%;
+        padding: .55rem 1rem;
+        background: var(--bg2);
+        border: 1px solid var(--border2);
+        color: var(--text);
+        border-radius: 8px;
+        margin-bottom: .65rem;
+        font-family: var(--font-body);
+        font-size: .92rem;
+    }
+    .voice-search:focus {
+        outline: none;
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px var(--gold-dim);
+    }
+    .voice-filter-row {
+        display: flex;
+        gap: 1rem;
+        font-size: .82rem;
+        color: var(--text2);
+        margin-bottom: .65rem;
+    }
+    .voice-filter-row label {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        cursor: pointer;
+    }
+    .voice-list {
+        max-height: 65vh;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--card-bg);
+    }
+    .voice-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 1rem;
+        align-items: center;
+        padding: .65rem .95rem;
+        border-bottom: 1px solid var(--border);
+        transition: background var(--t-fast);
+    }
+    .voice-row:last-child {
+        border-bottom: none;
+    }
+    .voice-row:hover {
+        background: rgba(177, 132, 76, 0.04);
+    }
+    .voice-play {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+        color: var(--bg);
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--t-fast);
+        flex-shrink: 0;
+    }
+    .voice-play:hover {
+        transform: scale(1.05);
+        box-shadow: 0 3px 10px rgba(196, 112, 74, 0.32);
+    }
+    .voice-play.playing {
+        background: linear-gradient(135deg, var(--red) 0%, var(--terra) 100%);
+    }
+    .voice-play.loading {
+        background: var(--bg3);
+        cursor: wait;
+    }
+    .voice-info {
+        min-width: 0;
+        overflow: hidden;
+    }
+    .voice-info strong {
+        display: block;
+        color: var(--text);
+        font-family: var(--font-display);
+        font-size: 1rem;
+    }
+    .voice-tags {
+        display: block;
+        color: var(--text3);
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .voice-assign {
+        display: flex;
+        gap: .35rem;
+        flex-shrink: 0;
+    }
+    .voice-assign-btn {
+        padding: .25rem .6rem;
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text3);
+        border-radius: 999px;
+        font-family: var(--font-mono);
+        font-size: .68rem;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .voice-assign-btn:hover {
+        color: var(--gold-text);
+        border-color: var(--gold-border);
+        background: var(--gold-dim);
+    }
+    .voice-assign-btn.assigned {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+        border-color: transparent;
+        color: var(--bg);
+        font-weight: 600;
+    }
+
+    /* Mobile */
+    @media (max-width: 720px) {
+        .studio-main {
+            grid-template-columns: 1fr;
+        }
+        .studio-header {
+            grid-template-columns: 1fr;
+        }
+        .studio-test-mode {
+            justify-self: end;
+        }
+        .voice-row {
+            grid-template-columns: auto 1fr;
+            grid-template-rows: auto auto;
+            gap: .65rem;
+        }
+        .voice-assign {
+            grid-column: 1 / -1;
+            justify-content: flex-end;
+        }
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       PHASE 36-iv — Presets section (CRUD accordion)
+       ════════════════════════════════════════════════════════════ */
+    .presets-section {
+        margin: 2rem 0;
+        padding: 1.5rem;
+        border: 1px solid var(--border2);
+        border-radius: 12px;
+    }
+    .presets-section summary {
+        cursor: pointer;
+        padding: .35rem 0;
+        list-style: none;
+    }
+    .presets-section summary h2 {
+        display: inline-block;
+        margin: 0;
+    }
+    .presets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1rem;
+        margin-top: 1.25rem;
+    }
+    .preset-card {
+        padding: 1rem;
+        border: 1px solid var(--border2);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: .35rem;
+    }
+    .preset-card.default { background: rgba(20, 31, 26, 0.5); }
+    .preset-card.custom {
+        background: rgba(196, 112, 74, 0.08);
+        border-color: var(--gold-border);
+    }
+    .preset-card.add-new {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text3);
+        font-style: italic;
+        cursor: pointer;
+        border-style: dashed;
+    }
+    .preset-card.add-new:hover {
+        color: var(--gold-text);
+        border-color: var(--gold-border);
+    }
+    .preset-card header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: .5rem;
+    }
+    .preset-card h3 {
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+        margin: 0;
+        color: var(--text);
+    }
+    .badge {
+        font-family: var(--font-mono);
+        font-size: .65rem;
+        padding: .15rem .55rem;
+        border-radius: 999px;
+    }
+    .badge-default {
+        background: var(--gold-dim);
+        color: var(--gold-text);
+    }
+    .badge-custom {
+        background: rgba(124, 169, 130, 0.18);
+        color: #7ca982;
+    }
+    .preset-desc {
+        color: var(--text2);
+        font-size: .82rem;
+        margin: .35rem 0;
+    }
+    .preset-dl {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: .2rem .65rem;
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        color: var(--text3);
+        margin: .55rem 0;
+    }
+    .preset-dl dt { color: var(--text3); }
+    .preset-dl dd { color: var(--text2); margin: 0; }
+    .preset-actions { display: flex; gap: .35rem; }
+    .preset-modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .preset-modal-box {
+        background: var(--bg);
+        border: 1px solid var(--gold-border);
+        border-radius: 14px;
+        padding: 1.5rem;
+        width: 90%;
+        max-width: 540px;
+        display: flex;
+        flex-direction: column;
+        gap: .85rem;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    .preset-modal-box label {
+        display: flex;
+        flex-direction: column;
+        gap: .3rem;
+        font-family: var(--font-mono);
+        font-size: .76rem;
+        color: var(--text3);
+    }
+    .preset-modal-box input,
+    .preset-modal-box select,
+    .preset-modal-box textarea {
+        background: rgba(20, 31, 26, 0.55);
+        border: 1px solid var(--border2);
+        color: var(--text);
+        padding: .45rem .65rem;
+        border-radius: 6px;
+        font-family: var(--font-ui);
+    }
+    .modal-actions {
+        display: flex;
+        gap: .65rem;
+        justify-content: flex-end;
+    }
+</style>
+
+<script>
+function studio() {
+    return {
+        // ── UI state ────────────────────────────────────────────────
+        loading: true,
+        saving: false,
+        dirty: false,
+        error: "",
+        saveStatus: "",
+
+        // ── Voice library ───────────────────────────────────────────
+        voices: [],
+        voiceFilter: { female: true, male: true, trNative: true, search: "" },
+
+        // ── Test sentence + mod ─────────────────────────────────────
+        testSentence: "Yargıtay 9. Hukuk Dairesi, davalı tarafın tedarik özen yükümlülüğünü genişletti.",
+        testMode: "tr",
+
+        // ── Agents (sabit 3) ────────────────────────────────────────
+        // Phase 35-xi: emoji string yerine `iconName` slug — SVG sprite
+        // `<use href="#ic-${iconName}"/>` ile resolve edilir.
+        agents: {
+            Filiz:  { name: "Filiz",  role: "Spiker · moderatör", iconName: "mic",     voice_id: "", agent_id: "filiz" },
+            Mehmet: { name: "Mehmet", role: "Hukuk uzmanı",       iconName: "scales",  voice_id: "", agent_id: "mehmet" },
+            Burak:  { name: "Burak",  role: "Teknik analist",     iconName: "circuit", voice_id: "", agent_id: "burak" },
+        },
+
+        // ── API usage info (Phase 35-xi: /api/tts/usage proxy) ──────
+        usage: null,
+        usageError: "",
+
+        // ── Inline players: voice_id → { audio, blob_url, playing, loading } ─
+        players: {},
+
+        // ── Defaults stash (reset için) ─────────────────────────────
+        _defaultAgentVoiceIds: { Filiz: "", Mehmet: "", Burak: "" },
+
+        // ── Phase 36-iv: preset CRUD state ──────────────────────────
+        presets: { defaults: [], custom: [] },
+        editingPreset: null,
+        editingPresetIsExisting: false,
+
+        // ── Test cümleleri ──────────────────────────────────────────
+        TR_DEFAULT: "Yargıtay 9. Hukuk Dairesi, davalı tarafın tedarik özen yükümlülüğünü genişletti.",
+        TR_EN_DEFAULT: "Anthropic ve OpenAI, DeepSeek'in MoE mimarisini değerlendirdi; GPT, Claude ve Gemini benchmark'ında yarıştı.",
+
+        // ── Lifecycle ───────────────────────────────────────────────
+        async load() {
+            this.loading = true;
+            this.error = "";
+            try {
+                const [voicesRes, agentRes] = await Promise.all([
+                    fetch("/api/tts/voices"),
+                    fetch("/api/tts/agent-profiles"),
+                ]);
+                if (!voicesRes.ok) {
+                    let body = {};
+                    try { body = await voicesRes.json(); } catch (_) {}
+                    throw new Error(body.detail || `voices: HTTP ${voicesRes.status}`);
+                }
+                const voicesBody = await voicesRes.json();
+                this.voices = voicesBody.voices || [];
+
+                if (agentRes.ok) {
+                    const agentBody = await agentRes.json();
+                    // Hem defaults hem current'tan voice_id'yi çek (current öncelikli).
+                    const current = agentBody.current || agentBody.defaults || {};
+                    const defaults = agentBody.defaults || {};
+                    const poolCurrent = current.agents || {};
+                    const poolDefaults = defaults.agents || {};
+                    // Sabit 3 agent: Filiz/Mehmet/Burak. agent_id slug'larından çek.
+                    for (const aName of this.agentNames()) {
+                        const aid = this.agents[aName].agent_id;
+                        const cur = poolCurrent[aid] || {};
+                        const def = poolDefaults[aid] || {};
+                        this.agents[aName].voice_id = cur.voice_id || def.voice_id || "";
+                        this._defaultAgentVoiceIds[aName] = def.voice_id || "";
+                    }
+                }
+            } catch (e) {
+                this.error = e.message || String(e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // ── API usage loader (Phase 35-xi) ──────────────────────────
+        async loadUsage() {
+            try {
+                const r = await fetch("/api/tts/usage");
+                if (!r.ok) {
+                    let detail = `HTTP ${r.status}`;
+                    try { detail = (await r.json()).detail || detail; } catch (_) {}
+                    throw new Error(detail);
+                }
+                this.usage = await r.json();
+                this.usageError = "";
+            } catch (e) {
+                this.usageError = e.message || String(e);
+                this.usage = null;
+            }
+        },
+        formatResetDate(unix) {
+            if (!unix) return "—";
+            const d = new Date(unix * 1000);
+            return d.toLocaleDateString("tr-TR", {
+                day: "numeric", month: "long", year: "numeric"
+            });
+        },
+
+        // ── Voice helpers ───────────────────────────────────────────
+        agentNames() {
+            return ["Filiz", "Mehmet", "Burak"];
+        },
+        voiceName(voiceId) {
+            if (!voiceId) return "(ses seçili değil)";
+            const v = this.voices.find(x => x.voice_id === voiceId);
+            return v ? v.name : voiceId.slice(0, 10) + "…";
+        },
+        voiceTags(v) {
+            const lbls = v.labels || {};
+            return [lbls.gender, lbls.age, lbls.accent, lbls.description]
+                .filter(Boolean)
+                .join(" · ");
+        },
+        filteredVoices() {
+            const q = (this.voiceFilter.search || "").trim().toLowerCase();
+            const wantF = this.voiceFilter.female;
+            const wantM = this.voiceFilter.male;
+            const wantTRPriority = this.voiceFilter.trNative;
+            return this.voices.filter(v => {
+                const lbls = v.labels || {};
+                const gender = (lbls.gender || "").toLowerCase();
+                // Cinsiyet filtre: kategori yoksa göster (neutral/unknown sızar)
+                if (gender === "female" && !wantF) return false;
+                if (gender === "male" && !wantM) return false;
+                // Search
+                if (q) {
+                    const hay = [v.name, lbls.accent, lbls.age, lbls.description, lbls.gender]
+                        .filter(Boolean)
+                        .join(" ")
+                        .toLowerCase();
+                    if (!hay.includes(q)) return false;
+                }
+                return true;
+            }).sort((a, b) => {
+                if (!wantTRPriority) return 0;
+                const aTR = ((a.labels?.accent || "") + " " + a.name).toLowerCase().includes("tr");
+                const bTR = ((b.labels?.accent || "") + " " + b.name).toLowerCase().includes("tr");
+                if (aTR && !bTR) return -1;
+                if (!aTR && bTR) return 1;
+                return 0;
+            });
+        },
+
+        // ── Inline player (single-active policy) ────────────────────
+        currentTestText() {
+            const TR = this.TR_DEFAULT;
+            const TR_EN = this.TR_EN_DEFAULT;
+            // Kullanıcı default'lardan farklı bir metin yazmışsa onu kullan
+            const s = (this.testSentence || "").trim();
+            if (s && s !== TR && s !== TR_EN) return s;
+            return this.testMode === "tr_en" ? TR_EN : TR;
+        },
+        async toggleVoicePlay(voiceId) {
+            if (!voiceId) return;
+            // 1. Önceki aktif player'ı durdur (single-active policy)
+            for (const [vid, p] of Object.entries(this.players)) {
+                if (vid !== voiceId && p && p.playing) {
+                    try { p.audio?.pause(); } catch (_) {}
+                    p.playing = false;
+                }
+            }
+            // 2. Bu voice için player mevcutsa: pause/resume
+            const existing = this.players[voiceId];
+            if (existing && existing.audio && existing.blob_url) {
+                if (existing.playing) {
+                    existing.audio.pause();
+                    existing.playing = false;
+                } else {
+                    try { existing.audio.currentTime = 0; } catch (_) {}
+                    existing.audio.play();
+                    existing.playing = true;
+                }
+                return;
+            }
+            // 3. İlk çağrı: fetch + create
+            this.players[voiceId] = { audio: null, blob_url: null, playing: false, loading: true };
+            this.error = "";
+            try {
+                const r = await fetch("/api/tts/preview", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ voice_id: voiceId, text: this.currentTestText() }),
+                });
+                if (!r.ok) {
+                    let detail = `HTTP ${r.status}`;
+                    try {
+                        const body = await r.json();
+                        detail = body.detail || detail;
+                    } catch (_) {}
+                    throw new Error(detail);
+                }
+                const blob = await r.blob();
+                const blob_url = URL.createObjectURL(blob);
+                const audio = new Audio(blob_url);
+                audio.addEventListener("ended", () => {
+                    if (this.players[voiceId]) this.players[voiceId].playing = false;
+                });
+                audio.addEventListener("pause", () => {
+                    if (this.players[voiceId]) this.players[voiceId].playing = false;
+                });
+                this.players[voiceId] = { audio, blob_url, playing: true, loading: false };
+                audio.play();
+            } catch (e) {
+                this.error = "Preview hatası: " + (e.message || e);
+                delete this.players[voiceId];
+            }
+        },
+
+        // ── Agent atama ─────────────────────────────────────────────
+        assignVoiceToAgent(agentName, voiceId) {
+            if (!this.agents[agentName]) return;
+            this.agents[agentName].voice_id = voiceId;
+            this.dirty = true;
+            this.saveStatus = "";
+        },
+        resetAgents() {
+            for (const name of this.agentNames()) {
+                this.agents[name].voice_id = this._defaultAgentVoiceIds[name] || "";
+            }
+            this.dirty = true;
+        },
+        async saveAgents() {
+            this.saving = true;
+            this.error = "";
+            try {
+                // /api/tts/agent-profiles full schema bekliyor (agents + modes).
+                // Mevcut current'ı oku, sadece 3 sabit agent'ın voice_id'sini güncelle.
+                const r0 = await fetch("/api/tts/agent-profiles");
+                if (!r0.ok) throw new Error(`agent-profiles GET: HTTP ${r0.status}`);
+                const body0 = await r0.json();
+                const cur = body0.current || body0.defaults || { agents: {}, modes: { brief: [], youtube: [] } };
+                const agentsPayload = JSON.parse(JSON.stringify(cur.agents || {}));
+                // 3 sabit agent voice_id güncelle (yoksa oluştur)
+                for (const aName of this.agentNames()) {
+                    const aid = this.agents[aName].agent_id;
+                    if (!agentsPayload[aid]) {
+                        agentsPayload[aid] = { name: aName, voice_id: "" };
+                    }
+                    agentsPayload[aid].voice_id = this.agents[aName].voice_id || "";
+                    // Name'i de senkronize tut (defaults'taki TR isimlerle)
+                    if (!agentsPayload[aid].name) agentsPayload[aid].name = aName;
+                }
+                const modesPayload = {
+                    brief: (cur.modes?.brief || []).map(s => ({ agent_id: s.agent_id, role: s.role })),
+                    youtube: (cur.modes?.youtube || []).map(s => ({ agent_id: s.agent_id, role: s.role })),
+                };
+                const r = await fetch("/api/tts/agent-profiles", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ agents: agentsPayload, modes: modesPayload }),
+                });
+                if (!r.ok) {
+                    let detail = `HTTP ${r.status}`;
+                    try {
+                        const body = await r.json();
+                        detail = body.detail || detail;
+                    } catch (_) {}
+                    throw new Error(detail);
+                }
+                this.dirty = false;
+                this.saveStatus = "Agent ses atamaları kaydedildi — bir sonraki üretimde aktif.";
+                setTimeout(() => { this.saveStatus = ""; }, 8000);
+            } catch (e) {
+                this.error = "Agent kaydı: " + (e.message || e);
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        // ── Phase 36-iv: Preset CRUD methods ────────────────────────
+        async loadPresets() {
+            try {
+                const r = await fetch("/api/tts/presets");
+                if (r.ok) {
+                    const body = await r.json();
+                    this.presets = { defaults: body.defaults || [], custom: body.custom || [] };
+                }
+            } catch (_) {}
+        },
+        formatLabel(f) {
+            return ({
+                panel_3: "3-sesli panel",
+                duo_expert_critic: "2-sesli uzman",
+                solo_narrator: "Tek-sesli",
+                debate: "Münazara",
+            })[f] || f;
+        },
+        addNewPreset() {
+            this.editingPreset = {
+                id: "",
+                name: "",
+                description: "",
+                format: "panel_3",
+                prompt_variant: "youtube_podcast_script",
+                target_minutes: [4.0, 7.0],
+                voices: {},
+                voice_settings: {},
+            };
+            this.editingPresetIsExisting = false;
+        },
+        cloneAsCustom(p) {
+            this.editingPreset = {
+                id: p.id + "_kopya",
+                name: p.name + " (Özel)",
+                description: p.description,
+                format: p.format,
+                prompt_variant: p.prompt_variant,
+                target_minutes: [...p.target_minutes],
+                voices: { ...(p.voices || {}) },
+                voice_settings: JSON.parse(JSON.stringify(p.voice_settings || {})),
+            };
+            this.editingPresetIsExisting = false;
+        },
+        editPreset(p) {
+            this.editingPreset = {
+                id: p.id,
+                name: p.name,
+                description: p.description,
+                format: p.format,
+                prompt_variant: p.prompt_variant,
+                target_minutes: [...p.target_minutes],
+                voices: { ...(p.voices || {}) },
+                voice_settings: JSON.parse(JSON.stringify(p.voice_settings || {})),
+            };
+            this.editingPresetIsExisting = true;
+        },
+        cancelEditPreset() { this.editingPreset = null; },
+        async savePreset() {
+            if (!this.editingPreset) return;
+            const r = await fetch("/api/tts/presets", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(this.editingPreset),
+            });
+            if (r.ok) {
+                this.editingPreset = null;
+                await this.loadPresets();
+            } else {
+                const err = await r.json();
+                alert("Kayıt başarısız: " + (err.detail || r.status));
+            }
+        },
+        async deletePreset(id) {
+            if (!confirm(`'${id}' presetini sil?`)) return;
+            const r = await fetch(`/api/tts/presets/${id}`, { method: "DELETE" });
+            if (r.ok) await this.loadPresets();
+        },
+
+    };
+}
+</script>
+{% endblock %}

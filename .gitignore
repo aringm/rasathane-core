@@ -1,0 +1,56 @@
+# Yerel çalışma ve araçlar
+/.local/
+/.claude/
+/.tools/
+/youtube-analiz-sistemi/
+node_modules/
+.next/
+out/
+dist/
+build/
+# Sabit PDF.js modülleri dağıtım kaynağıdır; genel build cache'i değildir.
+!/apps/desktop/gui/ui/lib/pdfjs/build/
+/apps/desktop/gui/ui/lib/pdfjs/build/*
+!/apps/desktop/gui/ui/lib/pdfjs/build/pdf.mjs
+!/apps/desktop/gui/ui/lib/pdfjs/build/pdf.worker.mjs
+dist-electron/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.py[cod]
+*.egg-info/
+*.tsbuildinfo
+worker-build/
+worker-dist/
+*.spec
+*.log
+/apps/desktop/infra/vendor/
+/apps/desktop/infra/dist/
+/apps/desktop/releases/
+next-env.d.ts
+
+# Anahtarlar, sağlayıcı bağlantıları ve kişisel çalışma verileri
+.env
+.env.*
+!.env.example
+.vercel/
+.openai/
+*.key
+*.pem
+*.pfx
+*.db
+*.sqlite
+*.sqlite3
+/apps/radar/data/agent_profiles.json
+/archives/runtime/
+/archives/releases/*.exe
+/archives/releases/*.zip
+/archives/database/
+
+# Windows/Explorer dosyaları
+desktop.ini
+Thumbs.db
+.DS_Store

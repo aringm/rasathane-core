@@ -1,0 +1,331 @@
+{% extends "_base.html" %}
+{% set active = "plans" %}
+{% block title %}Rasathane · Yapılacaklar{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div class="heading">
+        <p class="eyebrow">Yapılacaklar</p>
+        <h1>Yapılacaklar Listesi</h1>
+        <p class="subtitle">
+            Kütüphaneye eklediğin içeriklerden kişiye özel bir yapılacaklar
+            listesi üretir; checkbox'larla ilerlemeni takip edersin.
+        </p>
+    </div>
+</header>
+
+<div x-data="plansPage()" x-init="init()">
+    <section class="block">
+        <div class="plans-bar">
+            <button class="btn-generate-plan"
+                    :disabled="generating"
+                    @click="generatePlan()">
+                <span x-text="generating ? 'Hazırlanıyor… ' + (elapsed || 0) + ' sn' : '✨ Yeni yapılacak listesi üret'"></span>
+            </button>
+            <p class="hint">
+                Kütüphanedeki son 30 öğeden bir liste oluşturulur (~60-90 sn).
+                Aynı içerikten ikinci kez istek gelirse cache döner.
+            </p>
+        </div>
+
+        <template x-if="error">
+            <div class="empty-state" style="color: #b54b3a;">
+                <p x-text="error"></p>
+            </div>
+        </template>
+
+        <template x-if="plans.length === 0 && !loading && !error">
+            <div class="empty-state">
+                <p style="color: var(--text2); margin: 0;">
+                    <strong style="color: var(--text);">Henüz yapılacak listesi üretilmedi.</strong>
+                </p>
+                <p style="color: var(--text3); font-size: .82rem; margin: .35rem 0 0;">
+                    Önce kütüphaneye birkaç içerik kaydet, sonra "Yeni yapılacak listesi üret"e bas.
+                </p>
+            </div>
+        </template>
+
+        <template x-for="plan in plans" :key="plan.plan_id">
+            <article class="plan-card glass">
+                <div class="plan-meta">
+                    <span x-text="formatDate(plan.generated_at)"></span>
+                    <span x-text="(plan.items_used || 0) + ' kayıt'"></span>
+                    <span class="plan-id" x-text="plan.plan_id"></span>
+                </div>
+                <h2 class="plan-title">
+                    <button class="plan-title-btn"
+                            @click="togglePlan(plan.plan_id)"
+                            x-text="plan.title || 'Plan'"></button>
+                </h2>
+                <template x-if="expandedId === plan.plan_id">
+                    <div class="plan-body" x-html="renderPlan(planContent[plan.plan_id] || '', plan.plan_id)"></div>
+                </template>
+            </article>
+        </template>
+    </section>
+</div>
+
+<style>
+    .plans-bar {
+        display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    .btn-generate-plan {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--gold-text) 100%);
+        color: var(--bg);
+        border: none;
+        padding: .65rem 1.4rem;
+        font-weight: 500;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: .92rem;
+        transition: all var(--t-fast);
+    }
+    .btn-generate-plan:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(177, 132, 76, 0.35);
+    }
+    .btn-generate-plan:disabled {
+        opacity: .65; cursor: not-allowed;
+    }
+    .plans-bar .hint {
+        margin: 0; color: var(--text3); font-size: .76rem;
+        font-family: var(--font-mono);
+    }
+    .plan-card {
+        padding: 1.4rem 1.7rem;
+        margin-bottom: 1.1rem;
+        animation: rise .3s var(--ease-ghibli) both;
+    }
+    .plan-card .plan-meta {
+        display: flex; gap: 1rem; align-items: baseline;
+        font-family: var(--font-mono); font-size: .7rem;
+        color: var(--text3);
+        margin-bottom: .55rem;
+    }
+    .plan-card .plan-id {
+        margin-left: auto; opacity: .5;
+    }
+    .plan-card .plan-title {
+        margin: 0 0 .85rem; font-family: var(--font-display);
+        font-size: 1.3rem; color: var(--text);
+    }
+    .plan-card .plan-title-btn {
+        background: none; border: none; padding: 0;
+        font: inherit; color: inherit; cursor: pointer;
+        text-align: left;
+    }
+    .plan-card .plan-title-btn:hover { color: var(--gold-text); }
+    .plan-body {
+        font-family: var(--font-serif, Georgia, serif);
+        line-height: 1.7;
+        color: var(--text2);
+        animation: rise .25s var(--ease-ghibli) both;
+    }
+    .plan-body h1 { font-size: 1.4rem; margin: 1rem 0 .85rem; color: var(--text); border-bottom: 1px solid var(--gold-border); padding-bottom: .35rem; }
+    .plan-body h2 { font-size: 1.1rem; margin: 1.4rem 0 .55rem; color: var(--text); }
+    .plan-body h3 { font-size: 1rem; margin: 1.1rem 0 .45rem; color: var(--text2); }
+    .plan-body p { margin: .55rem 0; }
+    .plan-body ul { margin: .35rem 0 .85rem; padding-left: 1.4rem; }
+    .plan-body li { margin: .35rem 0; }
+    .plan-body strong { color: var(--text); }
+    .plan-body a { color: var(--gold-text); }
+    .plan-body a:hover { text-decoration: underline; }
+    .todo-line {
+        display: flex; align-items: flex-start; gap: .65rem;
+        padding: .35rem 0;
+        cursor: pointer;
+        transition: opacity var(--t-fast);
+    }
+    .todo-line input[type="checkbox"] {
+        margin-top: .3rem;
+        accent-color: var(--gold);
+        cursor: pointer;
+    }
+    .todo-line.done { opacity: .55; }
+    .todo-line.done .todo-text { text-decoration: line-through; }
+    .todo-text { flex: 1; }
+</style>
+
+<script>
+function plansPage() {
+    return {
+        plans: [],
+        planContent: {}, // {plan_id: plan_md}
+        expandedId: null,
+        generating: false,
+        elapsed: 0,
+        elapsedTimer: null,
+        loading: false,
+        error: null,
+
+        async init() {
+            await this.refresh();
+        },
+        async refresh() {
+            this.loading = true;
+            try {
+                const r = await fetch("/api/plans");
+                const body = await r.json();
+                this.plans = body.plans || [];
+                // İlk plan otomatik aç
+                if (this.plans.length > 0 && !this.expandedId) {
+                    await this.togglePlan(this.plans[0].plan_id);
+                }
+            } catch (e) {
+                this.error = "Yapılacaklar yüklenemedi: " + e;
+            } finally {
+                this.loading = false;
+            }
+        },
+        async generatePlan() {
+            this.generating = true;
+            this.error = null;
+            this.elapsed = 0;
+            const start = Date.now();
+            this.elapsedTimer = setInterval(() => {
+                this.elapsed = Math.floor((Date.now() - start) / 1000);
+            }, 1000);
+            try {
+                const r = await fetch("/api/plans", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan_title: "Geliştirme Planı" }),
+                });
+                if (!r.ok) {
+                    this.error = "Plan üretimi başlatılamadı: HTTP " + r.status;
+                    return;
+                }
+                // Background task çalışıyor; 3 sn aralıklı poll
+                await this.pollUntilNew();
+            } catch (e) {
+                this.error = "İstek başarısız: " + e;
+            } finally {
+                clearInterval(this.elapsedTimer);
+                this.generating = false;
+                this.elapsed = 0;
+            }
+        },
+        async pollUntilNew() {
+            const before = new Set(this.plans.map(p => p.plan_id));
+            const deadline = Date.now() + 5 * 60 * 1000;  // 5 dk üst sınır
+            while (Date.now() < deadline) {
+                await new Promise(r => setTimeout(r, 3000));
+                try {
+                    const resp = await fetch("/api/plans");
+                    const body = await resp.json();
+                    const fresh = (body.plans || []).filter(p => !before.has(p.plan_id));
+                    if (fresh.length > 0) {
+                        this.plans = body.plans;
+                        await this.togglePlan(fresh[0].plan_id);
+                        return;
+                    }
+                } catch (_) {}
+            }
+            this.error = "Üretim 5 dakikayı aştı; planlar listesini yenileyin.";
+        },
+        async togglePlan(planId) {
+            if (this.expandedId === planId) {
+                this.expandedId = null;
+                return;
+            }
+            this.expandedId = planId;
+            if (!this.planContent[planId]) {
+                try {
+                    const r = await fetch(`/api/plans/${planId}`);
+                    const body = await r.json();
+                    if (body.status === "done") {
+                        this.planContent[planId] = body.plan_md;
+                    }
+                } catch (_) {}
+            }
+        },
+        async toggleTodo(planId, lineIndex) {
+            try {
+                const r = await fetch(`/api/plans/${planId}/todo`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ line_index: lineIndex }),
+                });
+                if (r.ok) {
+                    const body = await r.json();
+                    // Local state güncelle: tüm dosyayı yeniden çek
+                    const fresh = await fetch(`/api/plans/${planId}`);
+                    const fb = await fresh.json();
+                    if (fb.status === "done") {
+                        this.planContent[planId] = fb.plan_md;
+                    }
+                }
+            } catch (_) {}
+        },
+        renderPlan(text, planId) {
+            // Markdown render with todo checkboxes interactive
+            if (!text) return "<p style='color:var(--text3)'>Yükleniyor…</p>";
+            const escape = (s) => s.replace(/[&<>"']/g, (m) => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;",
+                '"': "&quot;", "'": "&#39;"
+            }[m]));
+            const inline = (s) => {
+                let out = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+                out = out.replace(
+                    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+                    (_m, label, url) =>
+                        `<a href="${url}" target="_blank" rel="noopener">${label}</a>`,
+                );
+                return out;
+            };
+            const lines = text.split("\n");
+            let html = ""; let inList = false; let inTodoBlock = false;
+            for (let i = 0; i < lines.length; i++) {
+                const raw = lines[i];
+                const line = raw.trimEnd();
+                const todoMatch = line.match(/^\s*-\s\[(\s|x|X)\]\s(.*)$/);
+                if (todoMatch) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    const checked = todoMatch[1].toLowerCase() === "x";
+                    const txt = inline(escape(todoMatch[2]));
+                    if (!inTodoBlock) { html += "<div class='todo-block'>"; inTodoBlock = true; }
+                    html += `<label class="todo-line ${checked ? 'done' : ''}">`;
+                    html += `<input type="checkbox" ${checked ? 'checked' : ''} `;
+                    html += `onclick="event.stopPropagation(); window.__togglePlanTodo('${planId}', ${i})">`;
+                    html += `<span class="todo-text">${txt}</span></label>`;
+                    continue;
+                }
+                if (inTodoBlock) { html += "</div>"; inTodoBlock = false; }
+                if (line.startsWith("# ")) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h1>${escape(line.slice(2))}</h1>`;
+                } else if (line.startsWith("## ")) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h2>${escape(line.slice(3))}</h2>`;
+                } else if (line.startsWith("### ")) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h3>${escape(line.slice(4))}</h3>`;
+                } else if (line.startsWith("- ")) {
+                    if (!inList) { html += "<ul>"; inList = true; }
+                    html += `<li>${inline(escape(line.slice(2)))}</li>`;
+                } else if (line === "") {
+                    if (inList) { html += "</ul>"; inList = false; }
+                } else {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<p>${inline(escape(line))}</p>`;
+                }
+            }
+            if (inList) html += "</ul>";
+            if (inTodoBlock) html += "</div>";
+            // Bind global toggle (Alpine reactive yerine — checkbox onclick)
+            window.__togglePlanTodo = (pid, idx) => this.toggleTodo(pid, idx);
+            return html;
+        },
+        formatDate(iso) {
+            if (!iso) return "—";
+            const d = new Date(iso);
+            return d.toLocaleString("tr-TR", {
+                day: "2-digit", month: "2-digit", year: "numeric",
+                hour: "2-digit", minute: "2-digit",
+            });
+        },
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+[project]
+name = "ytanaliz"
+version = "0.5.0"
+license = "AGPL-3.0-or-later"
+authors = [{ name = "Av. Mehmet Arın Gülüm" }]
+description = "Rasathane — yerel-öncelikli çok kaynaklı içerik gözlemevi"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pydantic>=2.7",
+  "langgraph>=1.0,<2",
+  "langgraph-checkpoint-sqlite>=2.0",
+  "fastmcp>=2.0",
+  "ollama>=0.3",
+  "arize-phoenix-otel>=0.6",
+  "openinference-instrumentation-langchain>=0.1",
+  "opentelemetry-sdk>=1.27",
+  "httpx>=0.27",
+  "yt-dlp>=2026.3.17",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "pyinstaller>=6.10",
+]
+# ASR fallback (altyazı yoksa) — AYRI PROSES; torch/whisperx ana engine'e ve
+# sidecar exe'sine GİRMEZ (değişmez #2: ≤16GB hot-swap). asr_worker bu grubu kullanır.
+asr = [
+  "faster-whisper>=1.0",
+  "whisperx>=3.8",
+]
+# Faz 2 içerik hattı (çeviri/döküm/özet) — torch ÇEKMEZ (yake saf-python, docxtpl
+# Jinja2+python-docx). Embedding/LLM/faithfulness Ollama-HTTP üzerinden (torch ana
+# engine'e ve exe'ye GİRMEZ — #2 değişmez). Typst = sistem binary (subprocess, pip değil).
+content = [
+  "yake>=0.4",
+  "docxtpl>=0.18",
+]
+# Faz 3 zeka katmanı (indeks/değerleme/fact-check/bellek). lancedb = Rust+pyarrow
+# (torch ÇEKMEZ — `uv tree` doğrulandı: yalnız pyarrow/lance binding). SQLite FTS5 =
+# stdlib (sqlite3). RRF/IDF/niş = saf-python. Serper = httpx REST (mevcut dep).
+intel = [
+    "lancedb>=0.13",
+]
+# Faz 4 üretim/sunum. piper-tts = onnxruntime (torch ÇEKMEZ — `uv tree` doğrulandı; ASR gibi
+# exe-DIŞI tutulur, onnxruntime+voice exe'yi şişirir). Cloud TTS = httpx REST (mevcut). markmap =
+# vendored JS (dep değil; repo assets + --add-data): d3 + markmap-view UMD, pinned dosya gömülür.
+uretim = [
+    "piper-tts>=1.2",
+]
+# Faz 5 TR ad-soyad NER (KVKK egress gate) — AYRI PROSES (ASR deseni); torch/transformers
+# ana engine'e ve exe'ye GİRMEZ. Model: akdeniz27/bert-base-turkish-cased-ner (D: cache,
+# HF_HUB_OFFLINE). CPU'da koşar (VRAM 0 — değişmez #2).
+ner = [
+    "transformers>=4.40",
+    "torch>=2.2",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["core", "mcp", "eval"]
+# Default koşu HERMETIK: ağ + ASR(torch) markerlı testler opt-in (`-m network`/`-m asr`).
+# Düz `pytest` artık deterministik (canlı YouTube'a gitmez, asr-grup gerektirmez).
+addopts = "-m 'not network and not asr and not ollama and not tts and not ner and not cloud'"
+markers = [
+  "network: gerçek YouTube ağ çağrısı gerektirir (default koşuda atla)",
+  "asr: gerçek Whisper/torch GPU gerektirir (yavaş, model indirir)",
+  "ollama: gerçek Ollama modeli gerektirir (bge-m3/qwen2.5 — default koşuda atla)",
+  "tts: gerçek Piper TTS sentezi gerektirir (ses modeli indirir — default koşuda atla)",
+  "ner: gerçek TR-NER modeli gerektirir (torch ayrı-proses — default koşuda atla)",
+  "cloud: gerçek Anthropic API çağrısı (ANTHROPIC_API_KEY gerektirir — default koşuda atla)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "core:mcp:eval"
+explicit_package_bases = true
+
+# yt-dlp + ASR stack stub'sız (ve asr grubu yalnız worker env'inde) — eksik/untyped
+# importları sustur. Worker zaten ayrı proseste çalışır; tipler runtime sözleşmesi değil.
+# PIL: make_icon.py yalnız ikon üretiminde kullanılır; pillow hiçbir dependency-group'ta
+# yok (infra betiği, isteğe bağlı) → import-not-found burada susturulur.
+[[tool.mypy.overrides]]
+module = ["yt_dlp.*", "whisperx.*", "faster_whisper.*", "torch.*", "yake.*", "docxtpl.*", "docx.*", "lancedb.*", "pyarrow.*", "piper.*", "onnxruntime.*", "transformers.*", "PIL.*"]
+ignore_missing_imports = true

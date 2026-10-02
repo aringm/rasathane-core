@@ -1,0 +1,7 @@
+{
+  "aciklama": "KORPUS-DÜZEYİ (tek dosya, eval/real_docs/ kökünde — vaka alt-dizininde DEĞİL). Bir arama sorgusunun hangi video_id'leri döndürmesi gerektiği. retrieval_recall_hesapla(golden=bu, siralamalar=sistem, k) → recall@k/nDCG. video_id = vakanın 00_index.json'undaki video_id.",
+  "sorgular": {
+    "sözleşmenin kuruluşu nasıl gerçekleşir": ["VIDEOID_VAKA1"],
+    "haksız fiilden doğan tazminat": ["VIDEOID_VAKA2"]
+  }
+}

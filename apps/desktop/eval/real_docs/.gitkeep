@@ -1,0 +1,8 @@
+# Sahip gerçek Türkçe video/belge analizlerini buraya koyar (held-out eval moat).
+# Bu klasör .gitignore ile dışlanır (held-out + KVKK: gerçek/müvekkil içeriği repoya girmez).
+#
+# NASIL: format ve golden şablonları için → eval/korpus_sablon/OKUBENI.md
+#   Her vaka: eval/real_docs/<video_slug>/ (kaynak.json + golden_segment.json +
+#   golden_keywords.json + golden_ozet.md). Korpus-düzeyi: golden_retrieval.json.
+#
+# Master'a merge GATE'i: bu klasördeki gerçek belgelerde eval eşikleri geçince.

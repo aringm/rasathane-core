@@ -1,0 +1,629 @@
+{% extends "_base.html" %}
+{% set active = "live" %}
+{% block title %}Rasathane · Canlı Akış{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div class="heading">
+        <h1>📡 Canlı Akış</h1>
+        <p class="subtitle">
+            Haber kaynaklarından ve sosyal medya profillerinden gelen güncel
+            içerikler. <strong>Kaynak Akışı</strong>: RSS/ArXiv/Reddit/YouTube;
+            <strong>Sosyal Medya Akışı</strong>: GitHub releases, HuggingFace
+            modelleri, X (Nitter) post'ları — zaman sıralı.
+        </p>
+    </div>
+    <div class="actions">
+        <!-- Phase 34-ii: Yenile butonu sayfa header'ında -->
+        <button class="btn-pill btn-pill-ghost"
+                x-data="syncAllButton()"
+                :disabled="syncing"
+                @click="trigger()"
+                :title="syncing ? 'Akış yenileniyor (~1-2 dk)' : 'Tüm kaynakları + sosyal feed cache\'ini yenile'">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/>
+                <polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            <span x-text="syncing ? (elapsed || 0) + ' sn' : 'Akışı yenile'"></span>
+        </button>
+    </div>
+</header>
+
+<!-- Index.html'den taşınan liveStream() bileşeni — burada `liveStreamPage()` adıyla -->
+<section class="block live-stream" x-data="liveStreamPage()" x-init="load()">
+    <div class="block-header">
+        <h2>Canlı Akış
+            <span class="pill" x-text="sinceHoursLabel()"></span>
+        </h2>
+        <div class="live-tabs" role="tablist">
+            <button class="live-tab"
+                    :class="{ active: tab === 'kaynaklar' }"
+                    @click="setTab('kaynaklar')"
+                    role="tab">📰 Kaynak Akışı</button>
+            <button class="live-tab"
+                    :class="{ active: tab === 'sosyal_medya' }"
+                    @click="setTab('sosyal_medya')"
+                    role="tab">📣 Sosyal Medya Akışı</button>
+        </div>
+        <!-- Phase 33-ii: shared filter pills, tab değişirken korunur -->
+        <div class="filter-pills">
+            <template x-for="cat in categories" :key="cat.key">
+                <button
+                    :class="{ active: cat.key === activeCategory }"
+                    @click="setCategory(cat.key)"
+                    x-text="cat.label"></button>
+            </template>
+        </div>
+    </div>
+
+    <!-- ── Tab content: Kaynaklar (mevcut article feed UX'i korunur) ──── -->
+    <div class="feed glass" x-show="tab === 'kaynaklar'">
+        <template x-if="loading && articles.length === 0">
+            <div style="padding: 1rem;">
+                <template x-for="i in 6">
+                    <div style="padding: .55rem .95rem; border-top: 1px solid var(--border);">
+                        <div class="skeleton skel-line med"></div>
+                        <div class="skeleton skel-line short" style="margin-top: .25rem;"></div>
+                    </div>
+                </template>
+            </div>
+        </template>
+        <template x-if="!loading && articles.length === 0">
+            <div class="empty-state" style="padding: 3rem 1rem;">
+                <p style="color: var(--text2); margin: 0;">Bu filtrede henüz makale yok.</p>
+                <p style="color: var(--text3); font-size: .82rem; margin: .35rem 0 0;">
+                    Filtreyi <strong style="color: var(--text);">Tümü</strong>'ye al ya da
+                    son fetch zamanını <a href="/sources">Kaynaklar</a>'da kontrol et.
+                </p>
+            </div>
+        </template>
+        <template x-for="a in articles" :key="a.url">
+            <div class="entry"
+                 :class="{ expanded: expandedUrl === a.url }"
+                 @click="toggleExpand(a.url, $event)">
+                <div class="head">
+                    <!-- Phase 32-ii: 2-line layout — üstte metadata, altta başlık -->
+                    <div class="meta-row">
+                        <span class="time" x-text="formatTime(a.published_at || a.fetched_at)"></span>
+                        <span class="cat" x-text="categoryLabel(a.source.category)"></span>
+                        <span class="source" x-text="a.source.name"></span>
+                    </div>
+                    <div class="title">
+                        <a :href="a.url" target="_blank" rel="noopener"
+                           x-text="displayTitle(a)"
+                           :title="a.title !== displayTitle(a) ? a.title : ''"
+                           @click.stop></a>
+                        <!-- TR çeviri varsa orijinal İngilizce başlık ipucu -->
+                        <template x-if="a.metadata && a.metadata.title_tr && a.title !== a.metadata.title_tr">
+                            <span class="title-en-hint"
+                                  :title="'Orijinal: ' + a.title">
+                                (orijinal: <span x-text="a.title.length > 60 ? a.title.slice(0, 60) + '…' : a.title"></span>)
+                            </span>
+                        </template>
+                    </div>
+                </div>
+                <template x-if="a.summary_tr_short">
+                    <div class="summary" x-text="a.summary_tr_short"></div>
+                </template>
+                <template x-if="!a.summary_tr_short && expandedUrl === a.url && a.short_loading">
+                    <div class="summary-empty">
+                        Türkçe özet hazırlanıyor…
+                        <span x-text="(a.short_elapsed || 0) + ' sn'"></span>
+                    </div>
+                </template>
+                <template x-if="!a.summary_tr_short && expandedUrl === a.url && !a.short_loading && a.short_error">
+                    <div class="summary-empty" style="color: #b54b3a;">
+                        Özet üretilemedi — <span style="font-family: var(--font-mono); font-size: .76rem;"
+                                                 x-text="a.short_error"></span>
+                    </div>
+                </template>
+
+                <!-- Phase 12-iii: expand panel + bookmark
+                     Phase 32-ii: padding-left grid eski layout'a referansiyetti;
+                     yeni card-layout'ta tek kolon → padding sıfır. -->
+                <template x-if="expandedUrl === a.url">
+                    <div style="margin-top: .55rem;">
+                        <template x-if="a.summary_tr_long">
+                            <div class="long-analysis" x-text="a.summary_tr_long"></div>
+                        </template>
+                        <template x-if="!a.summary_tr_long && !a.long_loading">
+                            <button class="btn-expand" @click.stop="loadLong(a)">
+                                📖 Uzun TR analizi göster
+                            </button>
+                        </template>
+                        <template x-if="a.long_loading">
+                            <div class="spinner-inline">
+                                Analiz hazırlanıyor… <span x-text="a.long_elapsed || 0"></span> sn
+                            </div>
+                        </template>
+                        <!-- Phase 32-ii: Akıştan tek tık ile derinlemesine analize git
+                             (YouTube/GitHub/arXiv URL'leri için tam pipeline tetiklenir).
+                             Phase 35-xiii: emoji 🔬 → inline SVG zoom-in lens; CSS
+                             global _base.html'de (önceden index.html'de dead local). -->
+                        <div class="analyze-cta">
+                            <button class="btn-deep-analyze"
+                                    @click.stop="deepAnalyze(a)"
+                                    :title="'/' + 'analyze sayfasında ' + a.url + ' tipini tespit edip derin analiz başlatır'">
+                                <svg width="14" height="14" viewBox="0 0 24 24"
+                                     fill="none" stroke="currentColor" stroke-width="2"
+                                     stroke-linecap="round" stroke-linejoin="round"
+                                     aria-hidden="true">
+                                    <circle cx="11" cy="11" r="6"/>
+                                    <path d="m21 21-4.5-4.5"/>
+                                    <path d="M8 11h6M11 8v6"/>
+                                </svg>
+                                Detaylı analiz et
+                            </button>
+                            <button class="bookmark"
+                                    :class="{ saved: a.in_library }"
+                                    @click.stop="toggleBookmark(a)"
+                                    :title="a.in_library ? 'Kütüphaneden çıkar' : 'Kütüphaneye kaydet'">
+                                <svg width="20" height="20" viewBox="0 0 24 24"
+                                     :fill="a.in_library ? 'currentColor' : 'none'"
+                                     stroke="currentColor" stroke-width="1.6"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                            </button>
+                            <span style="color: var(--text3); font-family: var(--font-mono);
+                                         font-size: .72rem; align-self: center;"
+                                  x-text="a.in_library ? 'Kütüphanede' : ''"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+        <button class="more" x-show="hasMore" @click="loadMore()" :disabled="loading">
+            <span x-text="loading ? 'Yükleniyor…' : 'Daha fazla göster ↓'"></span>
+        </button>
+    </div>
+
+    <!-- ── Tab content: Sosyal Medya (yeni feed — Phase 33-ii) ────────── -->
+    <div class="feed glass" x-show="tab === 'sosyal_medya'">
+        <template x-if="postsLoading && posts.length === 0">
+            <div style="padding: 1rem;">
+                <template x-for="i in 4">
+                    <div style="padding: .55rem .95rem; border-top: 1px solid var(--border);">
+                        <div class="skeleton skel-line med"></div>
+                        <div class="skeleton skel-line short" style="margin-top: .25rem;"></div>
+                    </div>
+                </template>
+            </div>
+        </template>
+        <template x-if="!postsLoading && posts.length === 0">
+            <div class="empty-state" style="padding: 3rem 1rem;">
+                <p style="color: var(--text2); margin: 0;">Bu filtrede sosyal post yok.</p>
+                <p style="color: var(--text3); font-size: .82rem; margin: .35rem 0 0;">
+                    Cache henüz dolmadıysa yukarıdaki <strong style="color: var(--text);">Akışı yenile</strong>
+                    butonuna tıklayın (~1-2 dk).
+                </p>
+            </div>
+        </template>
+        <template x-for="p in posts" :key="p.url">
+            <div class="entry social-entry">
+                <div class="head">
+                    <div class="meta-row">
+                        <span class="time" x-text="formatTime(p.posted_at)"></span>
+                        <span class="platform-icon"
+                              x-text="platformIcon(p.platform)"
+                              :title="p.platform"></span>
+                        <span class="source">@<span x-text="p.handle"></span></span>
+                        <template x-for="t in (p.tags || []).slice(0, 2)" :key="t">
+                            <span class="cat" x-text="tagLabel(t)"></span>
+                        </template>
+                    </div>
+                    <div class="title">
+                        <a :href="p.url" target="_blank" rel="noopener"
+                           x-text="p.title || (p.text || '').slice(0, 120)"></a>
+                    </div>
+                </div>
+                <template x-if="p.text && p.text !== p.title">
+                    <div class="summary" x-text="(p.text || '').slice(0, 240)"></div>
+                </template>
+                <template x-if="p.safe === false">
+                    <div class="injection-warning">
+                        ⚠ İçerik filter'a takıldı — talimat olarak yorumlanmaz
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- ── Phase 35-xv: Sessiz Kaynaklar (time window dışı handle'lar) ── -->
+        <template x-if="staleHandles.length > 0">
+            <div class="stale-section">
+                <div class="stale-header">
+                    <span class="stale-label">Sessiz Kaynaklar</span>
+                    <span class="stale-hint" x-text="`${staleHandles.length} kaynak ${sinceHoursLabel().replace('son ', '').replace('tüm geçmiş', 'pencere')}'den uzun süredir sessiz`"></span>
+                </div>
+                <template x-for="s in staleHandles" :key="`${s.platform}:${s.handle}`">
+                    <div class="entry stale-entry">
+                        <div class="head">
+                            <div class="meta-row">
+                                <span class="time stale-ago" x-text="staleAgoLabel(s.days_ago)"></span>
+                                <span class="platform-icon"
+                                      x-text="platformIcon(s.platform)"
+                                      :title="s.platform"></span>
+                                <span class="source">@<span x-text="s.handle"></span></span>
+                            </div>
+                            <div class="title">
+                                <a :href="s.last_post.url" target="_blank" rel="noopener"
+                                   x-text="s.last_post.title || (s.last_post.text || '').slice(0, 120)"></a>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+</section>
+
+<script>
+// Phase 34-ii: canli-akis.html standalone — index.html'in CATEGORY_LABELS / syncAllButton
+// global'ları burada da gereklidir.
+const CATEGORY_LABELS = {
+    "turk_hukuku":    "Türk Hukuku",
+    "dunya_ai":       "Dünya AI",
+    "turkiye_ai":     "Türkiye AI",
+    "legaltech":      "Legaltech",
+    "muhakeme_stack": "Muhakeme Stack",
+};
+
+function syncAllButton() {
+    return {
+        syncing: false,
+        elapsed: 0,
+        timer: null,
+        lastResult: "",
+        async trigger() {
+            if (this.syncing) return;
+            if (!confirm("Tüm aktif haber kaynaklarını şimdi yenilemek istiyor musun? (~1-2 dk)")) return;
+            this.syncing = true;
+            this.lastResult = "";
+            const start = Date.now();
+            this.timer = setInterval(() => {
+                this.elapsed = Math.floor((Date.now() - start) / 1000);
+            }, 1000);
+            try {
+                const r = await fetch("/api/sources/sync-all", { method: "POST" });
+                if (!r.ok) {
+                    this.lastResult = "Yenileme tetiklenemedi: HTTP " + r.status;
+                    return;
+                }
+                setTimeout(() => {
+                    this.lastResult = "Yenileme tamamlandı, sayfa güncellendi.";
+                    window.location.reload();
+                }, 90 * 1000);
+            } catch (e) {
+                this.lastResult = "İstek başarısız: " + e;
+            } finally {
+                setTimeout(() => {
+                    clearInterval(this.timer);
+                }, 90 * 1000);
+            }
+        },
+    };
+}
+
+function liveStreamPage() {
+    // Phase 34-ii: index.html'deki `liveStream()` bileşeninin standalone /canli-akis
+    // sayfa varyantı. İç method'lar (loadArticles, loadPosts, setTab, setCategory,
+    // tagLabel, platformIcon, formatTime, displayTitle, toggleExpand, ...) AYNEN
+    // korunmuştur — sadece dış fonksiyon adı değişti.
+    return {
+        // Tab state
+        tab: "kaynaklar",
+        // Shared filter (Phase 35-xv: 24 → 168 / 1 hafta)
+        sinceHours: 168,
+        activeCategory: "all",
+        categories: [
+            { key: "all",            label: "Tümü" },
+            { key: "turk_hukuku",    label: "Türk Hukuku" },
+            { key: "dunya_ai",       label: "Dünya AI" },
+            { key: "turkiye_ai",     label: "Türkiye AI" },
+            { key: "acik_kaynak_ai", label: "Açık Kaynak AI" },
+            { key: "legaltech",      label: "Legaltech" },
+            { key: "muhakeme_stack", label: "Stack" },
+        ],
+        // Kaynaklar (article feed) state
+        loading: false,
+        articles: [],
+        offset: 0,
+        limit: 50,
+        hasMore: false,
+        expandedUrl: null,
+        // Sosyal Medya state
+        posts: [],
+        // Phase 35-xv: time window dışı kalan ama cache'te en yeni post'u
+        // olan handle'lar — UI'da "Sessiz Kaynaklar" section'ı.
+        staleHandles: [],
+        postsLoading: false,
+        async load() {
+            // URL hash'ten initial tab'i al — deep-link desteği
+            const h = (window.location.hash || "").toLowerCase();
+            if (h === "#sosyal" || h === "#sosyal_medya") this.tab = "sosyal_medya";
+            else this.tab = "kaynaklar";
+            // İlk yükleme — aktif tab'ı doldur
+            await this.refreshCurrentTab();
+        },
+        async refreshCurrentTab() {
+            if (this.tab === "kaynaklar") await this.loadArticles();
+            else await this.loadPosts();
+        },
+        async loadArticles() {
+            this.loading = true;
+            this.articles = [];
+            this.offset = 0;
+            this.expandedUrl = null;
+            await this.fetchPage();
+        },
+        async loadMore() {
+            this.offset += this.limit;
+            await this.fetchPage();
+        },
+        async fetchPage() {
+            this.loading = true;
+            const params = new URLSearchParams({
+                since_hours: this.sinceHours,
+                limit: this.limit,
+                offset: this.offset,
+                with_library: "true",
+            });
+            if (this.activeCategory !== "all") {
+                params.set("category", this.activeCategory);
+            }
+            try {
+                const r = await fetch("/api/articles?" + params.toString());
+                const body = await r.json();
+                this.articles = [...this.articles, ...body.articles];
+                this.hasMore = body.has_more;
+            } finally {
+                this.loading = false;
+            }
+        },
+        // Phase 34-ii: Article category key → canonical social tag key map.
+        // /api/articles uses 'turk_hukuku' style keys; /api/social-watch/feed
+        // canonical tag namespace ('tr_hukuk', 'tr_ai'). Bu mismatch Phase 33-ii
+        // commit'inde gözden kaçtı — filtre 'Türk Hukuku' seçilince post listesi
+        // boş dönüyordu.
+        toSocialTag(catKey) {
+            const map = {
+                "turk_hukuku":    "tr_hukuk",
+                "turkiye_ai":     "tr_ai",
+                "dunya_ai":       "dunya_ai",
+                "acik_kaynak_ai": "acik_kaynak_ai",
+                "legaltech":      "legaltech",
+                "resmi_mevzuat":  "resmi_mevzuat",
+            };
+            return map[catKey] || null;
+        },
+        async loadPosts() {
+            this.postsLoading = true;
+            try {
+                // Phase 35-xii: since_hours article feed ile tutarlı; backend artık
+                // time window filter uyguluyor (önceden cache'teki 11 ay önceki
+                // release'ler de feed'e karışıyordu, kullanıcı "doğru çalışmıyor"
+                // raporu verdi).
+                const params = new URLSearchParams({
+                    limit: 50,
+                    since_hours: this.sinceHours,
+                });
+                // Phase 33-ii + Phase 34-ii: kategori → canonical tag mapping.
+                // "all" / "muhakeme_stack" / unmappable kategoriler tag filter'ı tetiklemez.
+                if (this.activeCategory && this.activeCategory !== "all"
+                    && this.activeCategory !== "muhakeme_stack") {
+                    const socialTag = this.toSocialTag(this.activeCategory);
+                    if (socialTag) {
+                        params.set("tag", socialTag);
+                    }
+                }
+                const r = await fetch("/api/social-watch/feed?" + params.toString());
+                if (r.ok) {
+                    const body = await r.json();
+                    this.posts = body.posts || [];
+                    // Phase 35-xv: stale_handles
+                    this.staleHandles = body.stale_handles || [];
+                } else {
+                    this.posts = [];
+                    this.staleHandles = [];
+                }
+            } catch (_) {
+                this.posts = [];
+                this.staleHandles = [];
+            } finally {
+                this.postsLoading = false;
+            }
+        },
+        // Phase 35-xv: "son N sa" → "son N gün" (>=48 saat) | "son N sa" (<48)
+        sinceHoursLabel() {
+            const h = this.sinceHours || 0;
+            if (h <= 0) return "tüm geçmiş";
+            if (h >= 48) {
+                const d = Math.round(h / 24);
+                return `son ${d} gün`;
+            }
+            return `son ${h} sa`;
+        },
+        // Phase 35-xv: stale handle'lar için "X gün önce" formatı
+        staleAgoLabel(days) {
+            if (days < 1) return "bugün";
+            if (days === 1) return "1 gün önce";
+            if (days < 30) return `${days} gün önce`;
+            const months = Math.round(days / 30);
+            if (months === 1) return "1 ay önce";
+            return `${months} ay önce`;
+        },
+        async setTab(name) {
+            this.tab = name;
+            window.location.hash = name === "sosyal_medya" ? "sosyal" : "kaynaklar";
+            await this.refreshCurrentTab();
+        },
+        async setCategory(key) {
+            this.activeCategory = key;
+            await this.refreshCurrentTab();
+        },
+        tagLabel(key) {
+            const t = this.categories.find(c => c.key === key);
+            return t ? t.label : key;
+        },
+        platformIcon(platform) {
+            const map = {
+                x: "𝕏",
+                github: "⌬",
+                huggingface: "🤗",
+                linkedin: "in",
+                youtube: "▶",
+                rss: "📰",
+                weibo: "🇨🇳",
+                wechat: "💬",
+            };
+            return map[platform] || "•";
+        },
+        toggleExpand(url, ev) {
+            // Title link gets to navigate; clicking elsewhere on the row toggles.
+            // "Detaylı analiz" butonu da kendi handler'ına sahip — stopPropagation
+            // ile expand'ı tetiklemez (button'da @click.stop var).
+            if (ev.target.closest('a')) return;
+            if (ev.target.closest('button')) return;
+            const wasExpanded = this.expandedUrl === url;
+            this.expandedUrl = wasExpanded ? null : url;
+            // Phase 19-i: auto-trigger short summary on first expand
+            if (!wasExpanded) {
+                const article = this.articles.find(x => x.url === url);
+                if (article && !article.summary_tr_short && !article.short_loading) {
+                    this.loadShort(article);
+                }
+            }
+        },
+        // Phase 32-ii: TR çeviri zincirli başlık
+        displayTitle(a) {
+            if (a.metadata && a.metadata.title_tr) return a.metadata.title_tr;
+            return a.title_display || a.title || "";
+        },
+        deepAnalyze(article) {
+            const url = article.url;
+            window.location.href = `/analyze?url=${encodeURIComponent(url)}`;
+        },
+        async loadShort(article) {
+            // Phase 19-i: per-article on-demand TR özet üret
+            if (article.summary_tr_short || article.short_loading || !article.id) return;
+            article.short_loading = true;
+            article.short_error = null;
+            article.short_elapsed = 0;
+            const start = Date.now();
+            const tick = setInterval(() => {
+                article.short_elapsed = Math.floor((Date.now() - start) / 1000);
+            }, 1000);
+            try {
+                const r = await fetch(`/api/articles/${article.id}/summary/short`, {
+                    method: "POST",
+                });
+                if (r.ok) {
+                    const body = await r.json();
+                    article.summary_tr_short = body.summary_tr_short;
+                } else {
+                    const body = await r.json().catch(() => ({}));
+                    article.short_error = body.detail?.error || `HTTP ${r.status}`;
+                }
+            } catch (e) {
+                article.short_error = "İstek başarısız";
+            } finally {
+                clearInterval(tick);
+                article.short_loading = false;
+            }
+        },
+        async loadLong(article) {
+            // Phase 12-iii: tıklanınca uzun analiz üret (cache miss → gemini)
+            if (article.summary_tr_long || article.long_loading) return;
+            article.long_loading = true;
+            article.long_elapsed = 0;
+            const start = Date.now();
+            const tick = setInterval(() => {
+                article.long_elapsed = Math.floor((Date.now() - start) / 1000);
+            }, 1000);
+            try {
+                const r = await fetch(`/api/articles/${article.id}/summary/long`, {
+                    method: "POST",
+                });
+                if (r.ok) {
+                    const body = await r.json();
+                    article.summary_tr_long = body.summary_tr_long;
+                } else {
+                    const body = await r.json().catch(() => ({}));
+                    alert("Analiz üretilemedi: " + (body.detail?.error || r.status));
+                }
+            } catch (e) {
+                alert("Analiz isteği başarısız: " + e);
+            } finally {
+                clearInterval(tick);
+                article.long_loading = false;
+            }
+        },
+        async toggleBookmark(article) {
+            // Phase 12-iii: kütüphaneye ekle/çıkar
+            if (!article.id) {
+                alert("Article ID yok");
+                return;
+            }
+            if (article.in_library) {
+                if (!article.library_item_id) {
+                    alert("Kütüphane kayıt ID'si bilinmiyor");
+                    return;
+                }
+                if (!confirm("Kütüphaneden çıkarılsın mı?")) return;
+                try {
+                    const r = await fetch(`/api/library/${article.library_item_id}`, {
+                        method: "DELETE",
+                    });
+                    if (r.ok) {
+                        article.in_library = false;
+                        article.library_item_id = null;
+                    }
+                } catch (e) {
+                    alert("Silme başarısız: " + e);
+                }
+            } else {
+                try {
+                    const r = await fetch("/api/library", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            item_type: "article",
+                            article_id: article.id,
+                            note: null,
+                        }),
+                    });
+                    if (r.status === 201) {
+                        const body = await r.json();
+                        article.in_library = true;
+                        article.library_item_id = body.id;
+                    } else if (r.status === 409) {
+                        const body = await r.json();
+                        article.in_library = true;
+                        article.library_item_id = body.detail?.id;
+                    } else {
+                        alert("Kaydetme başarısız: " + r.status);
+                    }
+                } catch (e) {
+                    alert("İstek başarısız: " + e);
+                }
+            }
+        },
+        categoryLabel(key) {
+            return CATEGORY_LABELS[key] || key;
+        },
+        formatTime(iso) {
+            if (!iso) return "—";
+            const d = new Date(iso);
+            const today = new Date();
+            const sameDay = d.toDateString() === today.toDateString();
+            return sameDay
+                ? d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
+                : d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
+        },
+    };
+}
+</script>
+{% endblock %}

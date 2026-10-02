@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "product": "Rasathane",
+  "version": "0.5.0",
+  "url": "https://github.com/aringm/rasathane-core/releases/download/native-sources-0.5.0/Rasathane-native-corresponding-source-0.5.0.tar.gz",
+  "remote_full_stream_verified": true,
+  "verified_at_utc": "2026-10-02T22:26:55.460871+00:00",
+  "sha256": "6f2d08d6634d43879a7d98e6af40cf4c126c5f9d6f8f908ce882f5d6aa272dbf",
+  "bytes": 244061209,
+  "source_manifest_sha256": "1c5ea3b9ba3b1446f7a48375cda5e3bce97674b10d7db1dc2f83605772acf495",
+  "bundle_manifest_sha256": "e08c5126954c8e9192a4023e21cb82f36bb885bc59ec9abd8dc8b4727c2c333b",
+  "source_receipt_sha256": "2f628cc2eed4a7989a6d463f411536db6c336e145668822a367f0d924354e48a"
+}
