@@ -35,6 +35,8 @@ def faithfulness(
     + bosa retry üretiyordu. embed verilirse kaynak chunk'lanır ve her iddia için EN İLGİLİ
     chunk'lar (embedding benzerliği) judge'a verilir → tüm kaynak kapsanır, num_ctx korunur.
     embed yoksa kısa kaynakta [:6000] yeterli (geriye-dönük).
+    Tüm kanıt bağlamları judge'dan önce hazırlanır; RAM8'de iddia başına karşı modeli
+    yeniden yüklemek yerine embedding'den LLM'e yalnız bir kez geçilir.
     """
     iddialar = iddialari_cikar(ozet)
     if not iddialar:
@@ -45,7 +47,7 @@ def faithfulness(
         chunklar = semantic_chunk(cumlelere_bol(kaynak), embed, hedef_kar=2000)
         if chunklar:
             chunk_vekt = embed.embed(chunklar)
-    destekli = 0
+    sorular: list[str] = []
     for iddia in iddialar:
         if chunklar and chunk_vekt:
             iv = embed.embed([iddia])[0]  # type: ignore[union-attr]
@@ -54,7 +56,9 @@ def faithfulness(
             baglam = "\n".join(chunklar[i] for i in secili)
         else:
             baglam = kaynak
-        soru = f"İDDİA: {iddia}\n\nKAYNAK: {baglam[:_BAGLAM_LIMIT]}"
+        sorular.append(f"İDDİA: {iddia}\n\nKAYNAK: {baglam[:_BAGLAM_LIMIT]}")
+    destekli = 0
+    for soru in sorular:
         yanit = llm.uret(_JUDGE, soru, model=model).strip().upper()
         if yanit.startswith("EVET"):
             destekli += 1

@@ -224,9 +224,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/content/faithfulness.py",
-      "source_sha256": "4589b9aab44985e7c8e9805660c2b7bf05ddff56ecbdc8f6721c8c0d80a6d279",
-      "sha256": "4589b9aab44985e7c8e9805660c2b7bf05ddff56ecbdc8f6721c8c0d80a6d279",
-      "bytes": 2618
+      "source_sha256": "8ed3e5598ce4ea785ce5e0a17f488dbc1060251090a07afed3a8b3974f56ce30",
+      "sha256": "8ed3e5598ce4ea785ce5e0a17f488dbc1060251090a07afed3a8b3974f56ce30",
+      "bytes": 2790
     },
     {
       "path": "apps/desktop/core/ytcore/content/glossary.py",
@@ -2888,9 +2888,9 @@
     },
     {
       "path": "apps/desktop/tests/test_faithfulness.py",
-      "source_sha256": "772b8120bde20653a28a3d8419f0ee32735c8f766946ddd1cd780b3c2607e7c3",
-      "sha256": "772b8120bde20653a28a3d8419f0ee32735c8f766946ddd1cd780b3c2607e7c3",
-      "bytes": 2000
+      "source_sha256": "343b9151ae1cabac6810cb4636283e59dc7f7138920e371f34a33ff6c0c87644",
+      "sha256": "343b9151ae1cabac6810cb4636283e59dc7f7138920e371f34a33ff6c0c87644",
+      "bytes": 4191
     },
     {
       "path": "apps/desktop/tests/test_faz7.py",
@@ -4826,9 +4826,9 @@
     },
     {
       "path": "docs/urun/AKIS-PDF-0.8.1.md",
-      "source_sha256": "7d8fe7ac1f92142f9dab8da6eaceea0892df249ade582bde2f61158b67d8995c",
-      "sha256": "7d8fe7ac1f92142f9dab8da6eaceea0892df249ade582bde2f61158b67d8995c",
-      "bytes": 3683
+      "source_sha256": "9c7797e1cd8ebedeed395bef57fcd6e5a2dc8fa8d17e37de8b2c3a1cf7a7048d",
+      "sha256": "9c7797e1cd8ebedeed395bef57fcd6e5a2dc8fa8d17e37de8b2c3a1cf7a7048d",
+      "bytes": 3939
     },
     {
       "path": "docs/urun/BULTEN-ARASTIRMA.md",

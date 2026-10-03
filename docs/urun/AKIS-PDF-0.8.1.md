@@ -42,6 +42,9 @@ görsel ya da tablo düzeninin anlaşıldığı varsayılmaz. DNS/redirect korum
 RAM tasarruf profilinde dökümün embedding işleri başlık üretiminden önce
 tamamlanır. Böylece her bölümde iki modelin yeniden yüklenmesi önlenir;
 bölüm sırası, metin, keyword, timestamp ve başlık fallback sözleşmesi korunur.
+Özetin kaynak kontrolünde de tüm iddiaların ilgili kaynak parçaları önce seçilir,
+ardından denetim soruları çalışır. İddia başına embedding isteği, seçilen metin,
+soru, skor ve eşik değişmez; iki model her iddiada yeniden yüklenmez.
 
 Native File/Edit/View/Window menüsü kaldırılmıştır; uygulama kontrolleri header
 ve profil içinde kalır. Yeni çıktı kökü **Belgeler/Rasathane** olur. Mevcut
