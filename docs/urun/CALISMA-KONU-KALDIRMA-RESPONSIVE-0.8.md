@@ -54,7 +54,26 @@ Toplam **56 ekran yerleşimi ve 14 Ayarlar dialog senaryosu** doğrulandı.
 kabulündeki **154 kontrol**; giriş kilidi, sesli bülten, kaynak yönetimi,
 sohbet geçmişi, ayar kaydı ve kaldırılmış özelliklerin yokluğunu da kapsıyor.
 Kaynak makbuzu: `.local/urun/ui-integration-1791058484135/receipt.json`.
-Paketlenmiş sürümde aynı kabul henüz beklemededir.
+Aynı **154 kontrol** gerçek `app.asar` arayüzü ve frozen sidecar üzerinde de
+geçti. Paket makbuzu: `.local/urun/ui-integration-1791059519870/receipt.json`.
+Profil kaydı testi, düğmenin yeniden etkinleşmesiyle API readback ve ekran
+yenilemesinin tamamlanmasını bekler; kayıt bildirimi tek başına yeterli sayılmaz.
+İzole hesap, sentetik OTP transport’u kullanır; gerçek kullanıcı hesabının kabulü
+kurulum sonrası ayrı makbuzla kaydedilir.
+
+İmzalı paketin kaynak commit’i `1c091f5609acc636b99642d104797d5ae5b78b3f`;
+bu son kayıt değişikliği yalnız test beklemesini ve belgeyi günceller.
+Installer SHA256:
+`0e56062c7e8f3b350d6a152a4b7973c7c11b1d4e45610d961cbe2345cfd38af9`.
+Sidecar SHA256:
+`bd9e91021f3df6d9ff6004f10a032e08802501001fcb6ed9c273482efea78589`.
+IOT INN imzası ve zaman damgası doğrulandı.
+
+Tam yerel Python suite’i **890 passed, 1 skipped, 16 deselected**;
+GUI kontrolü **42 UI + 53 Electron** testidir. Ruff ve mypy 100 kaynak dosyada
+temizdir. Kaynak commit’i üzerinde iki repoda Windows/Ubuntu, web ve secret scan
+CI kontrolleri geçmiştir. Paket/kurulum makbuzları kullanıcı verisini içerdiği
+için kaynak repo yerine yerel kayıt alanında tutulur.
 
 ## Backend ve uyumluluk doğrulaması
 

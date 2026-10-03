@@ -1064,9 +1064,9 @@
     },
     {
       "path": "apps/desktop/gui/tests/product-flow.cjs",
-      "source_sha256": "a3cc7ff704fb3c9904ce1fbddd0f4f8a349398bb2647ff5f58d12c5c2a0d4bc8",
-      "sha256": "a3cc7ff704fb3c9904ce1fbddd0f4f8a349398bb2647ff5f58d12c5c2a0d4bc8",
-      "bytes": 42207
+      "source_sha256": "67d1d149d31589fd0d5ec1c06665be8c08f54452ce1a65da873425426d9dfa75",
+      "sha256": "67d1d149d31589fd0d5ec1c06665be8c08f54452ce1a65da873425426d9dfa75",
+      "bytes": 42268
     },
     {
       "path": "apps/desktop/gui/tests/qa-product-server.py",
@@ -4766,9 +4766,9 @@
     },
     {
       "path": "docs/urun/CALISMA-KONU-KALDIRMA-RESPONSIVE-0.8.md",
-      "source_sha256": "e2b61cd6f9165619531eda8858a95264d3b794bf49bedd903276c315cb74ee2c",
-      "sha256": "e2b61cd6f9165619531eda8858a95264d3b794bf49bedd903276c315cb74ee2c",
-      "bytes": 3819
+      "source_sha256": "4cb82c71aa25358278361eec8fd1a1e54952e3042fc5a68ec60223774a18e26a",
+      "sha256": "4cb82c71aa25358278361eec8fd1a1e54952e3042fc5a68ec60223774a18e26a",
+      "bytes": 4980
     },
     {
       "path": "docs/urun/CALISMA-PLANI.md",

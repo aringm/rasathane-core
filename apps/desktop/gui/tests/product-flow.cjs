@@ -216,7 +216,7 @@ app.whenReady().then(async()=>{
   await click('#sekme-akis');
   await js(`document.querySelector('#gundem-profil').open=true;window.__qaOriginalInterests=document.querySelector('#gundem-ilgiler').value;window.__qaOriginalProjects=document.querySelector('#gundem-projeler').value;document.querySelector('#gundem-ilgiler').value='ş'.repeat(3000);document.querySelector('#gundem-projeler').value='ğ'.repeat(4000);document.querySelector('#gundem-ilgiler').dispatchEvent(new Event('input',{bubbles:true}))`);
   await click('#gundem-profil-kaydet');
-  await wait(()=>js(`document.querySelector('#gundem-profil-durum').textContent.includes('Profil kaydedildi')`));
+  await wait(()=>js(`document.querySelector('#gundem-profil-durum').textContent.includes('Profil kaydedildi') && !document.querySelector('#gundem-profil-kaydet').disabled`));
   check('valid long Turkish agenda profile saves through UI IPC and database',await js(`document.querySelector('#gundem-ilgiler').value.length===3000 && document.querySelector('#gundem-projeler').value.length===4000`));
   check('changed profile hides outdated personal agenda',await js(`document.querySelector('#gundem-son-ac').hidden`));
   await js(`document.querySelector('#gundem-ilgiler').value=window.__qaOriginalInterests;document.querySelector('#gundem-projeler').value=window.__qaOriginalProjects;document.querySelector('#gundem-ilgiler').dispatchEvent(new Event('input',{bubbles:true}))`);
