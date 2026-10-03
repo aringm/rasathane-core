@@ -1040,9 +1040,9 @@
     },
     {
       "path": "apps/desktop/gui/tests/product-flow.cjs",
-      "source_sha256": "9f3d503c60fe3c240168846ca672a6c241388411b56eda7db2524e080f6647e8",
-      "sha256": "9f3d503c60fe3c240168846ca672a6c241388411b56eda7db2524e080f6647e8",
-      "bytes": 20623
+      "source_sha256": "65449cd79c2ed717abc7146c73f5fa5105c24526e03d930050739fd2999fb279",
+      "sha256": "65449cd79c2ed717abc7146c73f5fa5105c24526e03d930050739fd2999fb279",
+      "bytes": 21335
     },
     {
       "path": "apps/desktop/gui/tests/qa-product-server.py",

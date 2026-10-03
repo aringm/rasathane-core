@@ -12,7 +12,7 @@ if(frozen)protocol.registerSchemesAsPrivileged([{scheme:'rasathane',privileges:{
 const run=path.join(root,'.local/urun',`ui-integration-${Date.now()}`); fs.mkdirSync(run,{recursive:true});
 app.setPath('userData',path.join(run,'electron-data')); app.disableHardwareAcceleration();
 const {validateRequest}=require(path.join(root,'apps/desktop/gui/electron/ipc-policy.cjs'));
-let child, win, account, gate; const receipt={test_auth:'real native account/PKCE/DPAPI with synthetic remote OTP transport; no live email',database:path.join(run,'data'),checks:[],errors:[]};
+let child, win, account, gate, signOutCompleted=false; const receipt={test_auth:'real native account/PKCE/DPAPI with synthetic remote OTP transport; no live email',database:path.join(run,'data'),checks:[],errors:[]};
 const sessionToken=crypto.randomBytes(32).toString('hex');
 const localHeaders={'Content-Type':'application/json',Origin:'rasathane://app','X-Rasathane-Session':sessionToken};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -66,12 +66,12 @@ app.whenReady().then(async()=>{
   ipcMain.handle('rasathane:send-login-code',(_,email)=>account.sendLoginCode(email));
   ipcMain.handle('rasathane:verify-login-code',(_,code)=>account.verifyLoginCode(code));
   ipcMain.handle('rasathane:cancel-login',()=>account.cancelLogin());
-  ipcMain.handle('rasathane:sign-out',async()=>{const result=await account.signOut();if(frozen)await fetch(origin+'/api/product/service-session',{method:'POST',headers:localHeaders,body:JSON.stringify({access_token:null})});return result;});
+  ipcMain.handle('rasathane:sign-out',async()=>{const result=await account.signOut();if(frozen){const response=await fetch(origin+'/api/product/service-session',{method:'POST',headers:localHeaders,body:JSON.stringify({access_token:null}),signal:AbortSignal.timeout(10000)});await response.body?.cancel();if(!response.ok)throw Error('Frozen session reset failed');}signOutCompleted=true;return result;});
   ipcMain.handle('rasathane:setup-status',()=>({ready:true,state:'ready',models:[]}));
   ipcMain.handle('rasathane:entitlement',()=>({durum:'aktif',products:[]}));
   ipcMain.handle('rasathane:request',async(_,route,options)=>gate.run(async lease=>{
    const r=validateRequest(route,options);receipt.requests??=[];receipt.requests.push(r.route);
-   if(frozen){const accessToken=await account.serviceAccessToken();lease.assertCurrent();const session=await fetch(origin+'/api/product/service-session',{method:'POST',headers:localHeaders,body:JSON.stringify({access_token:accessToken}),signal:lease.signal});if(!session.ok)throw Error('Frozen native session setup failed');}
+   if(frozen){const accessToken=await account.serviceAccessToken();lease.assertCurrent();const session=await fetch(origin+'/api/product/service-session',{method:'POST',headers:localHeaders,body:JSON.stringify({access_token:accessToken}),signal:AbortSignal.any([lease.signal,AbortSignal.timeout(20000)])});await session.body?.cancel();if(!session.ok)throw Error('Frozen native session setup failed');}
    const response=await fetch(origin+r.route,{method:r.method,body:r.body,headers:frozen?localHeaders:{'Content-Type':'application/json'},signal:lease.signal});
    const contentType=response.headers.get('content-type'); const bytes=Buffer.from(await response.arrayBuffer());
    return {ok:response.ok,status:response.status,contentType,...(contentType.includes('application/json')?{data:JSON.parse(bytes)}:{base64:bytes.toString('base64')})};
@@ -160,7 +160,12 @@ app.whenReady().then(async()=>{
   check('older page restores all 55 turns in order',await js(`document.querySelectorAll('.chat-user').length===55 && document.querySelectorAll('.chat-assistant').length===55 && document.querySelector('.chat-user').textContent.includes('tur 01') && !document.querySelector('.chat-older')`));
   check('history requested real cursor API',receipt.requests.some(route=>route.includes('/conversations/') && route.includes('?before=')));
   await js(`document.querySelector('#arastir-sonuc').scrollTop=0`); await snap('04c-history-complete');
-  await js(`window.rasathane.signOut()`); await sleep(400);
+  // Logout reloads the renderer. Await the new document, not the old world's IPC promise.
+  const logoutReload=new Promise(resolve=>win.webContents.once('did-finish-load',resolve));
+  await js(`document.querySelector('#hesap-cikis').click(); true`);
+  await Promise.race([logoutReload,sleep(15000).then(()=>{throw Error('Logout reload timed out');})]);
+  await wait(()=>signOutCompleted);
+  await wait(()=>js(`document.body.classList.contains('session-locked') && document.querySelector('#app-main').inert`));
   check('logout locks and clears news',await js(`document.body.classList.contains('session-locked') && document.querySelector('#app-main').inert && !document.querySelector('#akis-liste').textContent`));
   check('logout clears conversation',await js(`!document.querySelector('.chat-assistant')`)); await snap('05-logout');
   check('logout clears bulletin and examples status',await js(`document.querySelector('#bulten-sonuc').hidden && !document.querySelector('#bulten-sonuc').textContent && !document.querySelector('#bulten-ses')?.getAttribute('src')`));
