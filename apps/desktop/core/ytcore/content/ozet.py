@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from ytcore.content.llm import LLMClient
 from ytcore.content.segment import cumlelere_bol, semantic_chunk
@@ -26,7 +27,10 @@ _REDUCE_KISA = "Bu metni tek cümlelik Türkçe TL;DR özetine indir. Yalnız o 
 def abstract_cumleleri(metin: str) -> dict[str, str]:
     """İlk üç tam cümle; belirsiz kısaltma sınırında bütün abstract/çeviri korunur."""
     boundaries = list(re.finditer(r"(?<=[.!?])\s+(?=[A-ZÇĞİÖŞÜ])", metin))
-    ambiguous = any(char in metin for char in '"“”()[]{}<>') or any(
+    quote_or_bracket = any(
+        char in '"<>' or unicodedata.category(char) in {"Ps", "Pe", "Pi", "Pf"} for char in metin
+    ) or bool(re.search(r"(?:^|\s)'(?=\S)", metin))
+    ambiguous = quote_or_bracket or any(
         re.search(
             r"(?:^|\s)(?:[A-Za-zÇĞİÖŞÜçğıöşü]{1,4}|(?:[A-Za-z]\.)+[A-Za-z])\.$"
             r"|\d\.$|[.!?]{2,}$",

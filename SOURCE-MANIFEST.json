@@ -212,9 +212,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/content/ozet.py",
-      "source_sha256": "d73ade92a3116ac017f4835a88afb011d36c80c40c23b0b691f9530fa32306ea",
-      "sha256": "d73ade92a3116ac017f4835a88afb011d36c80c40c23b0b691f9530fa32306ea",
-      "bytes": 3546
+      "source_sha256": "98ce12116dfca397774e02586a16123395b4b1f8f2d31c6fa3be4a3b4bd6272f",
+      "sha256": "98ce12116dfca397774e02586a16123395b4b1f8f2d31c6fa3be4a3b4bd6272f",
+      "bytes": 3715
     },
     {
       "path": "apps/desktop/core/ytcore/content/resmi.py",
@@ -2810,9 +2810,9 @@
     },
     {
       "path": "apps/desktop/tests/test_ozet.py",
-      "source_sha256": "5997b91745f1aed1340f788493d04fc7125a38de71d1642f32261ba3e1efb556",
-      "sha256": "5997b91745f1aed1340f788493d04fc7125a38de71d1642f32261ba3e1efb556",
-      "bytes": 3623
+      "source_sha256": "d28ddcc667759f955b644854398719cb3e5aad36c2edd7b44a2bdd1f2099f4f1",
+      "sha256": "d28ddcc667759f955b644854398719cb3e5aad36c2edd7b44a2bdd1f2099f4f1",
+      "bytes": 3929
     },
     {
       "path": "apps/desktop/tests/test_ozet_yaz.py",

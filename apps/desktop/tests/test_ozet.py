@@ -81,6 +81,9 @@ def test_abstract_ambiguous_abbreviation_keeps_whole_text(abbreviation):
             'Sonuçlar tekrarlanmalıdır." ifadesini kullanmıştır.'
         ),
         "Yazarlar “Dikkat başarılıdır. Sonuç tekrarlanmalıdır.” ifadesini kullanmıştır.",
+        "Yazarlar ‘Dikkat başarılıdır. Sonuç tekrarlanmalıdır.’ ifadesini kullanmıştır.",
+        "Yazarlar 'Dikkat başarılıdır. Sonuç tekrarlanmalıdır.' ifadesini kullanmıştır.",
+        "Yazarlar «Dikkat başarılıdır. Sonuç tekrarlanmalıdır.» ifadesini kullanmıştır.",
         "Değerlendirme 1. Transformer sonuçları ve 2. Çözümleme üzerinden yapılmıştır.",
         "Dikkat mekanizması (İlk model. Son model.) ile değerlendirilmiştir.",
         "İlk sonuç açıklanmıştır... Yeni açıklama üçüncü değerlendirmeyi tamamlamıştır.",
