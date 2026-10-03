@@ -733,6 +733,12 @@
       "bytes": 2927
     },
     {
+      "path": "apps/desktop/gui/electron/installer.nsh",
+      "source_sha256": "68e34cb872c5c77c63f6ee04d4334a1c4278902fd9a813f6101cb61876d1d573",
+      "sha256": "68e34cb872c5c77c63f6ee04d4334a1c4278902fd9a813f6101cb61876d1d573",
+      "bytes": 769
+    },
+    {
       "path": "apps/desktop/gui/electron/ipc-policy.cjs",
       "source_sha256": "c8f40c6577de8e525e9ee207d1edc84678c85555ac5989be8528d6d9efedead7",
       "sha256": "c8f40c6577de8e525e9ee207d1edc84678c85555ac5989be8528d6d9efedead7",
@@ -800,9 +806,9 @@
     },
     {
       "path": "apps/desktop/gui/package.json",
-      "source_sha256": "c00c9d17f512b381e86c238aac583bfdb71bd626f781404f6a1a912f1c49b121",
-      "sha256": "c00c9d17f512b381e86c238aac583bfdb71bd626f781404f6a1a912f1c49b121",
-      "bytes": 4166
+      "source_sha256": "d81217c1cc4a9c4f4d448cf32d8fea244d24f42fbbce523470baf242bf48250c",
+      "sha256": "d81217c1cc4a9c4f4d448cf32d8fea244d24f42fbbce523470baf242bf48250c",
+      "bytes": 4242
     },
     {
       "path": "apps/desktop/gui/pnpm-lock.yaml",

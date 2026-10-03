@@ -61,6 +61,7 @@
       "!electron/*.test.cjs",
       "!electron/build-brand.cjs",
       "!electron/sign-windows.cjs",
+      "!electron/installer.nsh",
       "ui/**/*",
       "!ui/tests/**/*",
       "package.json"
@@ -128,6 +129,7 @@
       "icon": "src-tauri/icons/icon.ico"
     },
     "nsis": {
+      "include": "electron/installer.nsh",
       "oneClick": false,
       "perMachine": false,
       "allowElevation": true,
