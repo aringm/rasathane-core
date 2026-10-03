@@ -8,7 +8,7 @@ async function verifyProductUI(window) {
   const js = source => web.executeJavaScript(source, true);
   async function wait(source) {
     const until = Date.now() + 30000;
-    while (Date.now() < until) { if (await js(source)) return; await pause(150); }
+    while (Date.now() < until) { if (await js(`Boolean(${source})`)) return; await pause(150); }
     throw new Error("Ürün UI kabul kontrolü zaman aşımı: " + source.slice(0, 120));
   }
   async function pointer(selector) {

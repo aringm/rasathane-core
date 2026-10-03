@@ -872,9 +872,9 @@
     },
     {
       "path": "apps/desktop/gui/electron/smoke-product-ui.cjs",
-      "source_sha256": "055a970bea94f9cdb74bdc2e25000d3823f2530a47c7e495252f238c70a9615b",
-      "sha256": "055a970bea94f9cdb74bdc2e25000d3823f2530a47c7e495252f238c70a9615b",
-      "bytes": 3519
+      "source_sha256": "ebcc61516845c80df5729d9c2b7d31bbca9309806e0e999d395f2614eff8e7a8",
+      "sha256": "ebcc61516845c80df5729d9c2b7d31bbca9309806e0e999d395f2614eff8e7a8",
+      "bytes": 3533
     },
     {
       "path": "apps/desktop/gui/package.json",
