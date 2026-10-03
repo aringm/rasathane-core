@@ -1,4 +1,4 @@
-"""Marka varlıkları sözleşmesi: tüm ikonlar tek kanonik rasterden türer ve eski logo kalmaz.
+"""Marka varlıkları sözleşmesi: tüm ikonlar tek kanonik SVG’den türer ve eski logo kalmaz.
 
 Saf stdlib — Pillow üretim/test bağımlılığı değil (ikonlar commit'li artifact).
 """
@@ -14,8 +14,8 @@ from pathlib import Path
 KOK = Path(__file__).resolve().parents[1]
 IKONLAR = KOK / "gui" / "src-tauri" / "icons"
 
-ZEMIN = "#c86e42"  # Muhakeme aile paletindeki bakır
-ISARET = "#f7f0df"  # krem lens ve yörünge
+ZEMIN = "#153d34"  # Canlı web sitesindeki koyu yeşil
+ISARET = "#f7f0df"  # krem küçük r
 
 # Eski "kubbe/teleskop" logosunun imzası — hiçbir marka varlığında kalmamalı.
 ESKI_LOGO_HEXLERI = ("#B9C0FA", "#A9C8F0", "#A6E6D6", "#EAF0FF", "#FFD9A8", "#F6A98A", "#FFE6C4")
@@ -94,9 +94,10 @@ def test_marka_svgsi_aile_desenini_tasiyor_ve_eski_logo_gitti():
     svg = (IKONLAR / "rasathane-logo.svg").read_text(encoding="utf-8")
     assert ZEMIN in svg.lower() and ISARET in svg.lower(), "aile renkleri SVG'de yok"
     mark = ET.fromstring(svg)
-    assert mark.attrib["viewBox"] == "0 0 96 96"
-    assert mark.find("{http://www.w3.org/2000/svg}circle") is not None
-    assert mark.find(".//{http://www.w3.org/2000/svg}ellipse") is not None
+    assert mark.attrib["viewBox"] == "0 0 64 64"
+    glyph = mark.find(".//{http://www.w3.org/2000/svg}path")
+    assert glyph is not None and glyph.attrib["d"].startswith("M160 0V1038H364V0Z")
+    assert "#c86e42" not in svg.lower(), "turuncu logo geri gelmemeli"
     # Site, UI ve installer ayrı bir eski logo kullanmamalı.
     assert svg == (KOK / "gui/ui/brand/rasathane-mark.svg").read_text(encoding="utf-8")
     assert svg == (KOK.parent / "web/public/brand/rasathane-mark.svg").read_text(encoding="utf-8")
@@ -107,12 +108,10 @@ def test_marka_svgsi_aile_desenini_tasiyor_ve_eski_logo_gitti():
 def test_arayuz_eski_teleskop_ikonunu_kullanmiyor():
     html = (KOK / "gui/ui/index.html").read_text(encoding="utf-8")
     assert ESKI_TELESKOP_PATH not in html, "eski teleskop çizimi hâlâ arayüzde"
-    assert 'id="marka-r"' in html, "marka <symbol> tanımı yok"
-    assert 'href="#marka-r"' in html, "onboarding marka işaretini kullanmalı"
-    assert html.count('src="/brand/rasathane-mark.svg"') >= 2, (
-        "wordmark ve ilk kurulum ortak SVG'yi kullanmalı"
+    assert 'id="marka-r"' not in html, "ayrı inline marka kopyası kalmamalı"
+    assert html.count('src="/brand/rasathane-mark.svg"') == 4, (
+        "giriş, wordmark, onboarding ve hesap ortak SVG kullanmalı"
     )
-    assert ZEMIN in html.lower() and ISARET in html.lower(), "arayüz marka renklerini taşımalı"
 
 
 def test_acilis_arka_plani_koyu_tema_ile_ayni():

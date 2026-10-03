@@ -854,9 +854,9 @@
     },
     {
       "path": "apps/desktop/gui/package.json",
-      "source_sha256": "4b75536d85d3b08fab666b6f26fb4fb445aa3676604a44ae996ba2b53232bfff",
-      "sha256": "4b75536d85d3b08fab666b6f26fb4fb445aa3676604a44ae996ba2b53232bfff",
-      "bytes": 4242
+      "source_sha256": "53dbbe801c70102ed232c0f060b29d0b98eaa70590c523ef9056f610fcb63343",
+      "sha256": "53dbbe801c70102ed232c0f060b29d0b98eaa70590c523ef9056f610fcb63343",
+      "bytes": 4270
     },
     {
       "path": "apps/desktop/gui/pnpm-lock.yaml",
@@ -2720,9 +2720,9 @@
     },
     {
       "path": "apps/desktop/tests/test_electron_package.py",
-      "source_sha256": "2d9e03c25c0b345194b417e0cadf20d9f0bd334cfcdf00f50c70dfaa003c613d",
-      "sha256": "2d9e03c25c0b345194b417e0cadf20d9f0bd334cfcdf00f50c70dfaa003c613d",
-      "bytes": 4590
+      "source_sha256": "9c31eb3f7fe47983aa2488fa839c8eb255c27a5abfa1ebe8456bcd92686aeaf4",
+      "sha256": "9c31eb3f7fe47983aa2488fa839c8eb255c27a5abfa1ebe8456bcd92686aeaf4",
+      "bytes": 4783
     },
     {
       "path": "apps/desktop/tests/test_embedding_faz2.py",
@@ -2870,9 +2870,9 @@
     },
     {
       "path": "apps/desktop/tests/test_marka_ikon.py",
-      "source_sha256": "6a8a51d15f5c09efcbcdff0aff92b9dad98157a2a51f1c596048915e3d191fa6",
-      "sha256": "6a8a51d15f5c09efcbcdff0aff92b9dad98157a2a51f1c596048915e3d191fa6",
-      "bytes": 5758
+      "source_sha256": "a616d50bb30588b489de5ac97d64e896ed00a96172971dde9af68cf685c63a0f",
+      "sha256": "a616d50bb30588b489de5ac97d64e896ed00a96172971dde9af68cf685c63a0f",
+      "bytes": 5669
     },
     {
       "path": "apps/desktop/tests/test_markmap.py",

@@ -10,7 +10,9 @@ KOK = Path(__file__).resolve().parents[1]
 def test_electron_surumu_ve_nsis_paket_sozlesmesi():
     paket = json.loads((KOK / "gui/package.json").read_text(encoding="utf-8"))
     engine = tomllib.loads((KOK / "pyproject.toml").read_text(encoding="utf-8"))
-    assert paket["version"] == engine["project"]["version"]
+    # UI ve motor bağımsız patch sürümleri taşıyabilir; kullanılan motor açıkça sabitlenir.
+    assert paket["engineVersion"] == engine["project"]["version"]
+    assert paket["version"].split(".")[:2] == paket["engineVersion"].split(".")[:2]
     assert paket["main"] == "electron/main.cjs"
     assert paket["devDependencies"]["electron"] == "43.7.7"
     assert paket["devDependencies"]["electron-builder"] == "26.15.3"
