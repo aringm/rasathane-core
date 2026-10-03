@@ -67,6 +67,8 @@ def dokum_derle(
 
     segment_sn = cümle-başına başlangıç saniyesi (timed transkript); None → timestamp yok.
     Boş metin → [] (boş döküm 'başarı' verme — node guard'lar).
+    Tüm keyword embedding'leri başlıklardan önce tamamlanır: RAM8'de her bölüm için
+    embedding/LLM motorunu tekrar tekrar yüklemek yerine yalnız bir kez geçiş yapılır.
     """
     cumleler = cumlelere_bol(metin)
     if not cumleler:
@@ -79,14 +81,16 @@ def dokum_derle(
         # MMR (embed) ile merkezi terimleri öne al — dolgu bigram'lar yerine hukuk terimleri
         # (A03-doğrulama: konuşmalı TR'de YAKE dolgu seçebilir → bge-m3 merkezilikle düzelt).
         kws = keyword_cikar(seg_metin, ust_n=5, embed=embed)
-        if llm is not None:
-            baslik = baslik_uret_llm(seg_metin, llm, kws, seg_cumleler, model=model)
-        else:
-            baslik = baslik_uret(kws, seg_cumleler)
+        baslik = baslik_uret(kws, seg_cumleler)
         sn: int | None = None
         if segment_sn and grup:
             ilk_idx = grup[0]
             if 0 <= ilk_idx < len(segment_sn):
                 sn = segment_sn[ilk_idx]
         bolumler.append(DokumBolum(baslangic_sn=sn, baslik=baslik, metin=seg_metin, keywords=kws))
+    if llm is not None:
+        for bolum, grup in zip(bolumler, segmentler, strict=True):
+            bolum.baslik = baslik_uret_llm(
+                bolum.metin, llm, bolum.keywords, [cumleler[i] for i in grup], model=model
+            )
     return bolumler

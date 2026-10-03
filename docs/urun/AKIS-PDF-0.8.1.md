@@ -39,6 +39,10 @@ OCR yapılmadığı ve kısmi okuma nedenleri UI ve dosyalarda bulunur. PDF indi
 bütçeleri vardır. Taranmış, şifreli veya bozuk dosyalar açıklayıcı hata verir;
 görsel ya da tablo düzeninin anlaşıldığı varsayılmaz. DNS/redirect koruması sürer.
 
+RAM tasarruf profilinde dökümün embedding işleri başlık üretiminden önce
+tamamlanır. Böylece her bölümde iki modelin yeniden yüklenmesi önlenir;
+bölüm sırası, metin, keyword, timestamp ve başlık fallback sözleşmesi korunur.
+
 Native File/Edit/View/Window menüsü kaldırılmıştır; uygulama kontrolleri header
 ve profil içinde kalır. Yeni çıktı kökü **Belgeler/Rasathane** olur. Mevcut
 kullanıcı seçimi ve legacy çıktılar açık migration'a kadar korunur.

@@ -218,9 +218,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/content/dokum.py",
-      "source_sha256": "e8ee4dfd34e0e00985ec7bf6ba56a4c3508f389e8cb2dc84892ffe43b70c6ee3",
-      "sha256": "e8ee4dfd34e0e00985ec7bf6ba56a4c3508f389e8cb2dc84892ffe43b70c6ee3",
-      "bytes": 3637
+      "source_sha256": "c2981a7f3a9294dd2b8076b9e002810545942fa4c689c91553498ce545693700",
+      "sha256": "c2981a7f3a9294dd2b8076b9e002810545942fa4c689c91553498ce545693700",
+      "bytes": 3839
     },
     {
       "path": "apps/desktop/core/ytcore/content/faithfulness.py",
@@ -2834,9 +2834,9 @@
     },
     {
       "path": "apps/desktop/tests/test_dokum.py",
-      "source_sha256": "2a0ec46ee0bd238c033687f9c73a7f9cff11994145679f1fafc93a6393f056c7",
-      "sha256": "2a0ec46ee0bd238c033687f9c73a7f9cff11994145679f1fafc93a6393f056c7",
-      "bytes": 2974
+      "source_sha256": "df1e218d1af3ded2f557cd9005378ab11daf145a22e41b98ee94c24d5cad1955",
+      "sha256": "df1e218d1af3ded2f557cd9005378ab11daf145a22e41b98ee94c24d5cad1955",
+      "bytes": 4558
     },
     {
       "path": "apps/desktop/tests/test_dokum_yaz.py",
@@ -4826,9 +4826,9 @@
     },
     {
       "path": "docs/urun/AKIS-PDF-0.8.1.md",
-      "source_sha256": "0930e4a4080f8e898ccb0c74bc6c8b06b803f9f1ae633964392dd681b8caf8b5",
-      "sha256": "0930e4a4080f8e898ccb0c74bc6c8b06b803f9f1ae633964392dd681b8caf8b5",
-      "bytes": 3436
+      "source_sha256": "7d8fe7ac1f92142f9dab8da6eaceea0892df249ade582bde2f61158b67d8995c",
+      "sha256": "7d8fe7ac1f92142f9dab8da6eaceea0892df249ade582bde2f61158b67d8995c",
+      "bytes": 3683
     },
     {
       "path": "docs/urun/BULTEN-ARASTIRMA.md",
