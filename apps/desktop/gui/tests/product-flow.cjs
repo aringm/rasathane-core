@@ -163,7 +163,8 @@ app.whenReady().then(async()=>{
   await wait(()=>js(`document.querySelector(${JSON.stringify(originalSourceSelector)}+' .source-switch').getAttribute('aria-checked')==='false'`));
   check('source toggle round trip preserves two archived articles',await js(`document.querySelector(${JSON.stringify(originalSourceSelector)}).textContent.includes('2 kayıtlı içerik')`));
   await snap('02g-sources');
-  check('source categories group and filter the real archive',await js(`document.querySelectorAll('.source-group').length===2 && document.querySelectorAll('#kaynak-kategori-filter button').length===3`));
+  const sourceCountBeforeAssistant=await js(`document.querySelectorAll('[data-source-id]').length`);
+  check('source categories group and filter the real archive',await js(`document.querySelectorAll('.source-group').length>=2 && document.querySelectorAll('#kaynak-kategori-filter button').length>=3 && document.querySelector('#kaynak-liste').textContent.includes('Legaltech') && document.querySelector('#kaynak-liste').textContent.includes('Türk hukuku')`));
   await js(`Array.from(document.querySelectorAll('#kaynak-kategori-filter button')).find(n=>n.textContent.startsWith('Legaltech')).click()`);
   check('category chip limits table to its sources',await js(`document.querySelectorAll('[data-source-id]').length===1 && document.querySelector('[data-source-id]').dataset.sourceId===${JSON.stringify(addedSourceId)}`));
   await js(`document.querySelector('#kaynak-kategori-filter button').click();document.querySelector('#kaynak-sohbet-mesaj').value='Düzenlenen QA kaynağı kaynağını "QA projeleri" kategorisine taşı';document.querySelector('#kaynak-sohbet-form').requestSubmit()`);
@@ -173,7 +174,7 @@ app.whenReady().then(async()=>{
   await wait(()=>js(`document.querySelector(${JSON.stringify(addedSourceSelector)}).textContent.includes('Legaltech') && !document.querySelector('#kaynak-sohbet-gonder').disabled`));
   await js(`document.querySelector('#kaynak-sohbet-mesaj').value='AI kaynakları öner';document.querySelector('#kaynak-sohbet-form').requestSubmit()`);
   await wait(()=>js(`document.querySelectorAll('.source-chat-suggestions button').length>0 && !document.querySelector('#kaynak-sohbet-gonder').disabled`));
-  check('source assistant offers actionable safe source suggestions',await js(`document.querySelectorAll('.source-chat-suggestions button').length>0 && document.querySelectorAll('[data-source-id]').length===2`));
+  check('source assistant offers actionable safe source suggestions',await js(`document.querySelectorAll('.source-chat-suggestions button').length>0 && document.querySelectorAll('[data-source-id]').length===${sourceCountBeforeAssistant}`));
   await snap('02j-source-chat');
   win.setSize(720,600); await sleep(250);
   await snap('02h-sources-narrow');

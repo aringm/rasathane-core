@@ -1064,15 +1064,15 @@
     },
     {
       "path": "apps/desktop/gui/tests/product-flow.cjs",
-      "source_sha256": "1f3368a638a221c0f51d1d7857f5d3352ae6f312e6c4b10b99ef4e23230df8b6",
-      "sha256": "1f3368a638a221c0f51d1d7857f5d3352ae6f312e6c4b10b99ef4e23230df8b6",
-      "bytes": 39872
+      "source_sha256": "c799cdf935cb8ec686d73c1738b721396a95cad71b8c4300377b527b31502849",
+      "sha256": "c799cdf935cb8ec686d73c1738b721396a95cad71b8c4300377b527b31502849",
+      "bytes": 40156
     },
     {
       "path": "apps/desktop/gui/tests/qa-product-server.py",
-      "source_sha256": "502ff6a3322fb7ba6dd6d1c48598e1a28ba7cfe999f06c590f756948fc613267",
-      "sha256": "502ff6a3322fb7ba6dd6d1c48598e1a28ba7cfe999f06c590f756948fc613267",
-      "bytes": 4260
+      "source_sha256": "6ae9e757eacac71266d05fa7d0c1e817eefc8bdbce06733b3bb55ce931e33406",
+      "sha256": "6ae9e757eacac71266d05fa7d0c1e817eefc8bdbce06733b3bb55ce931e33406",
+      "bytes": 4296
     },
     {
       "path": "apps/desktop/gui/ui/brand/rasathane-mark.svg",
