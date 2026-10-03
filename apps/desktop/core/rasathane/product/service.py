@@ -80,7 +80,7 @@ class ProductService:
                 )
 
     def submit(self, kind: str, request: dict[str, Any]) -> dict[str, Any]:
-        if kind not in {"analysis", "research", "refresh", "feed_refresh"}:
+        if kind not in {"analysis", "research", "refresh", "feed_refresh", "agenda"}:
             raise ValueError("Desteklenmeyen iş türü.")
         frozen = {**request, "settings": self.store.settings()}
         if kind == "refresh" and not frozen["settings"]["web_enabled"]:
@@ -94,7 +94,15 @@ class ProductService:
                 raise ValueError("Çalışma alanı bulunamadı.")
         if kind == "research" and not str(request.get("query", "")).strip():
             raise ValueError("Arama sorgusu boş olamaz.")
-        job = self.store.enqueue(kind, frozen)
+        if kind == "agenda":
+            feed_ids = (
+                [f["id"] for f in self.store.list_feeds() if f["enabled"] and f["supported"]]
+                if request.get("refresh_sources")
+                else None
+            )
+            job = self.store.enqueue_agenda(frozen, feed_ids=feed_ids)
+        else:
+            job = self.store.enqueue(kind, frozen)
         self._wake.set()
         return job
 
@@ -113,8 +121,10 @@ class ProductService:
 
     def _loop(self) -> None:
         while not self._stop.is_set():
+            # Claim öncesinde vadesi gelen kaynakları kuyruğa al: eski bir gündem
+            # işi uygulama yeniden açıldığında kaynak yenilemelerinin önüne geçmesin.
+            self._schedule()
             if not self.run_once():
-                self._schedule()
                 self._wake.wait(2)
                 self._wake.clear()
 
@@ -160,6 +170,8 @@ class ProductService:
                 >= interval * 60
             ):
                 self.submit("feed_refresh", {"source_id": feed["id"], "automatic": True})
+        # Gündem, bu turda vadesi gelen kaynakların tamamı sonuçlandıktan sonra çalışır.
+        self._schedule_agenda()
         # Web search and topic timing are independent of subscribed publisher feeds.
         if not minutes or not settings["web_enabled"]:
             return
@@ -191,6 +203,101 @@ class ProductService:
                 >= minutes * 60
             ):
                 self.submit("refresh", {"topic_id": topic["id"]})
+
+    def _schedule_agenda(self) -> None:
+        if not self._session_ready():
+            return
+        from rasathane.product.agenda import candidates, context
+
+        profile = self.store.agenda_profile()
+        if not profile["enabled"]:
+            return
+        ctx = context(self.store)
+        if not (
+            profile["interests"].strip()
+            or profile["project_context"].strip()
+            or ctx["workspaces"]
+            or ctx["topics"]
+        ):
+            return
+        previous_jobs = self.store.rows(
+            "SELECT status,created_at FROM jobs WHERE kind='agenda' "
+            "ORDER BY created_at DESC LIMIT 1"
+        )
+        if previous_jobs:
+            previous = previous_jobs[0]
+            if previous["status"] in {"queued", "running", "cancel_requested"}:
+                return
+            elapsed = (
+                datetime.now(UTC) - datetime.fromisoformat(previous["created_at"])
+            ).total_seconds()
+            if elapsed < profile["refresh_minutes"] * 60:
+                return
+        article_rows = candidates(self.store, profile)
+        state = self.store.agenda_state()
+        if not article_rows and not state:
+            return
+        # Aynı içerikte build cache'i kullanılır; kontrol zamanı yine güncellenir.
+        self.submit("agenda", {"automatic": True})
+
+    def agenda_status(self) -> dict[str, Any]:
+        from rasathane.product.agenda import context
+        from rasathane.product.store import digest, json_text
+
+        profile, state = self.store.agenda_profile(), self.store.agenda_state()
+        jobs = self.store.rows(
+            "SELECT id,status,stage,error,created_at,updated_at,request FROM jobs "
+            "WHERE kind='agenda' ORDER BY created_at DESC LIMIT 1"
+        )
+        job = jobs[0] if jobs else None
+        feeds = self.store.list_feeds()
+        latest = self.store.get_bulletin(state["bulletin_id"]) if state.get("bulletin_id") else None
+        latest_is_stale = bool(
+            latest and latest.get("context_hash") != digest(json_text(context(self.store)))
+        )
+        if latest_is_stale:
+            latest = None
+        dependency_ids = (job or {}).get("request", {}).get("depends_on", [])
+        batch = self.store.rows(
+            "SELECT id,status FROM jobs WHERE kind='feed_refresh' AND ("
+            "id IN (SELECT value FROM json_each(?)) OR "
+            "status IN ('queued','running','cancel_requested'))",
+            (json_text(dependency_ids),),
+        )
+        next_check = None
+        if profile["enabled"] and job:
+            from datetime import timedelta
+
+            next_check = (
+                datetime.fromisoformat(job["created_at"])
+                + timedelta(minutes=profile["refresh_minutes"])
+            ).isoformat()
+        status = {
+            **state,
+            "job": job,
+            "next_check_at": next_check,
+            "scheduler": "while_application_open",
+            "account_ready": self._session_ready(),
+            "latest_is_stale": latest_is_stale,
+            "source_batch": {
+                "total": len(batch),
+                "completed": sum(j["status"] == "completed" for j in batch),
+                "failed": sum(j["status"] in {"failed", "interrupted", "cancelled"} for j in batch),
+                "active": sum(
+                    j["status"] in {"queued", "running", "cancel_requested"} for j in batch
+                ),
+            },
+            "source_count": sum(bool(f["enabled"]) for f in feeds),
+            "source_error_count": sum(bool(f["last_error"]) for f in feeds if f["enabled"]),
+            "last_source_success_at": max(
+                (f["last_refreshed_at"] for f in feeds if f["last_refreshed_at"]), default=None
+            ),
+        }
+        if latest_is_stale:
+            status["notice"] = (
+                "Profil/çalışma bağlamı değişti; yeni gündem oluşturulmasını bekleyin."
+            )
+        return {"profile": profile, "status": status, "latest": latest}
 
     def run_once(self) -> bool:
         if not self._session_ready():
@@ -266,6 +373,14 @@ class ProductService:
                 result["new_count"] = self.store.record_topic_hits(
                     topic["id"], result["web_results"]
                 )
+            elif job["kind"] == "agenda":
+                from rasathane.product.agenda import build_agenda
+
+                progress("agenda_evaluate")
+                result = build_agenda(self.store, check, retry_model=True, progress=progress)
+                check()
+                self.store.finish_agenda(job["id"], result)
+                return True
             else:
                 result = self._feed_refresh(request, check, progress)
             check()
@@ -523,6 +638,7 @@ class ProductService:
             "jobs": self.store.list_jobs(brief=True),
             "library": self.store.library(brief=True),
             "settings": self.store.settings(),
+            "agenda": self.agenda_status(),
             "integrations": {
                 "scheduler": "while_application_open",
                 "official_sources": [

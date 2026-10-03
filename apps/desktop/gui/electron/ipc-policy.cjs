@@ -10,6 +10,8 @@ const JSON_ROUTES = new Map([
   ["/api/rasathane/jobs", ["GET"]], ["/api/rasathane/workspaces", ["GET", "POST"]],
   ["/api/rasathane/conversations", ["GET"]],
   ["/api/rasathane/bulletins", ["GET", "POST"]],
+  ["/api/rasathane/agenda-profile", ["GET", "POST"]], ["/api/rasathane/agenda", ["GET", "POST"]],
+  ["/api/rasathane/source-assistant", ["POST"]], ["/api/rasathane/source-assistant/history", ["GET"]],
   ["/api/rasathane/notes", ["GET", "POST"]], ["/api/rasathane/research", ["POST"]],
   ["/api/rasathane/topics", ["GET", "POST"]], ["/api/rasathane/library", ["GET"]],
   ["/api/rasathane/settings", ["GET", "POST"]], ["/api/rasathane/export", ["GET"]],

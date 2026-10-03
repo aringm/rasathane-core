@@ -1,9 +1,11 @@
 import { createSourceManager } from "./source-manager.js";
+import { createSourceChat } from "./source-chat.js";
 import { createRadarFeed } from "./radar-feed.js";
 import { createSettingsDraft } from "./settings-controller.js";
 import { createResearchChat } from "./research-chat.js";
 import { createNewsSummary } from "./news-summary.js";
 import { createNewsBulletin } from "./news-bulletin.js";
+import { createPersonalAgenda } from "./personal-agenda.js";
 import { createWorkspaceExamples } from "./workspace-examples.js";
 // Birleşik ürünün gerçek kayıtları. Dış metinler yalnız güvenli DOM helper'ıyla yazılır.
 import { recordDate } from "./record-provenance.js";
@@ -179,7 +181,7 @@ export function createProductUI({
     const epoch = authEpoch;
     if (
       body !== undefined &&
-      new TextEncoder().encode(JSON.stringify(body)).byteLength > 8192
+      new TextEncoder().encode(JSON.stringify(body)).byteLength > (path === "/agenda-profile" ? 32768 : 8192)
     ) {
       throw new Error(
         "Metin bu işlem için çok uzun. Kaydetmeden önce kısaltın.",
@@ -681,6 +683,9 @@ export function createProductUI({
         renderTopics();
         renderWorkspaces();
         renderSettings();
+        sourceChat.unlock();
+        agenda.unlock();
+        agenda.update(state.agenda, state.workspaces);
         renderJobs();
         // İlk açılışta motor hazır olmadan geçmiş isteği gönderme.
         research.refreshHistory();
@@ -792,8 +797,11 @@ export function createProductUI({
   const research = createResearchChat({ $, el, api, waitJob, sourceLink });
   const news = createNewsSummary({ el, api, request });
   const bulletin = createNewsBulletin({ el, api, request, sourceLink, beforePlay: () => news.pauseAll() });
+  const agenda = createPersonalAgenda({ el, api, bulletin, onChanged: () => load() });
   const sourcesUI = createSourceManager({ $, el, api, sourceLink, date, onChange: async () => { if (!await load()) throw new Error("Kaynak kaydedildi ancak liste yenilenemedi. Listeyi yenile düğmesini kullanın."); }, onRefresh: refreshFeeds,
     onFilter: id => { setView("akis"); dashboard.filterSource(id); } });
+  const sourceChat = createSourceChat({ el, api, sourceLink, onChanged: async () => { if (!await load()) throw new Error("Yapılandırma uygulandı; liste henüz yenilenemedi. Listeyi yenile düğmesine basın."); } });
+  $("kaynak-yonetimi").before(sourceChat.node);
   const dashboard = createRadarFeed({ $, el, api, news, bulletin, onSources: () => setView("kaynaklar"),
     renderRecord: item => record(item, { action: el("div", { class: "news-actions" }, news.control(item),
       safeURL(item.url) && item.analysis_supported !== false && item.provenance?.analysis_supported !== false && !["official_metadata", "managed_summary"].includes(item.provenance?.text_scope)
@@ -811,6 +819,7 @@ export function createProductUI({
       for (const audio of document.querySelectorAll("audio")) if (audio !== event.target) audio.pause();
   }, true);
   $("gorunum-akis").querySelector(".feed-layout").before(bulletin.node);
+  bulletin.node.before(agenda.node);
   const bulletinStyle = el("link", { rel: "stylesheet", href: "./bulletin.css" });
   document.head.append(bulletinStyle);
   const topicResultBody = el("div", { class: "record-list", id: "konu-sonuc-liste" });
@@ -1362,8 +1371,10 @@ export function createProductUI({
       research.reset();
       news.stopAll();
       bulletin.reset();
+      agenda.reset();
       dashboard.reset();
       sourcesUI.reset();
+      sourceChat.reset();
       topicResultBody.replaceChildren();
       topicResultDialog.close();
       for (const id of [

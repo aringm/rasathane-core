@@ -103,7 +103,7 @@ export function createNewsBulletin({ el, api, request, sourceLink, beforePlay })
     stopAudio(); current = data; empty.hidden = true; read.hidden = false;
     heading.textContent = data.title || "Gündem bülteni";
     dateHeading.textContent = formatDate(data.created_at);
-    introduction.textContent = `${data.article_count} haber · Kaynaklardan derleme`;
+    introduction.textContent = `${data.article_count} haber · ${data.agenda ? "İlgi alanlarıma ve projelerime göre gündem" : "Kaynaklardan derleme"}`;
     const first = (data.items || []).find((item) => item.summary);
     summary.textContent = first?.summary || data.notice || "Kaynakların başlıklarını ve açıklamalarını bir arada inceleyin.";
     summary.hidden = false;
@@ -114,6 +114,12 @@ export function createNewsBulletin({ el, api, request, sourceLink, beforePlay })
         el("li", {}, el("p", { class: "bulletin-item-source" }, item.source_name || "Kaynak"), el("h4", {}, item.title),
           el("p", {}, item.summary || item.notice || "Bu kaynakta özetlenecek haber metni bulunmuyor."),
           item.summary && item.notice ? el("p", { class: "field-note" }, item.notice) : null,
+          item.relevance_reason ? el("div", { class: "agenda-evaluation" },
+            el("p", { class: "agenda-method" }, `${{high: "Yüksek öncelik", medium: "Orta öncelik", low: "Düşük öncelik"}[item.importance] || "İncelenecek haber"} · ${item.evaluation_method === "local_model" ? "Yerel model değerlendirmesi" : "Konu eşleşmesi · model değerlendirmesi yapılmadı"}`),
+            el("dl", { class: "agenda-explanation" }, el("dt", {}, "Benim için neden önemli?"), el("dd", {}, item.relevance_reason),
+              item.project_impact ? [el("dt", {}, "Projeye etkisi"), el("dd", {}, item.project_impact)] : null,
+              item.suggested_action ? [el("dt", {}, "Sonraki adım"), el("dd", {}, item.suggested_action)] : null),
+            item.evidence_quote ? el("details", {}, el("summary", {}, "Değerlendirmenin dayandığı kaynak metni"), el("blockquote", { class: "agenda-evidence" }, item.evidence_quote)) : null) : null,
           sourceLink(item.url, "Haberi aç")))),
       el("details", { class: "bulletin-sources" },
         el("summary", {}, `Kullanılan kaynaklar · ${groups.length} kaynak · ${data.article_count} haber`),
@@ -197,7 +203,7 @@ export function createNewsBulletin({ el, api, request, sourceLink, beforePlay })
   });
   for (const select of [period, limit]) select.addEventListener("change", update);
   update();
-  return { node, refreshHistory, updateItems(value) { items = value; update(); }, stopAudio,
+  return { node, refreshHistory, showBulletin(data, expanded = true) { if (busy) return false; epoch++; render(data, expanded); status.textContent = ""; void refreshHistory(); return true; }, updateItems(value) { items = value; update(); }, stopAudio,
     reset() {
       epoch++; busy = false; current = null; items = []; saved = []; stopAudio();
       result.replaceChildren(); result.hidden = true; content.hidden = true;

@@ -19,6 +19,14 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function wait(fn,limit=15000){let start=Date.now();while(Date.now()-start<limit){if(await fn())return;await sleep(150);}throw Error('Wait timed out');}
 function check(name,truth){receipt.checks.push({name,passed:!!truth});if(!truth)throw Error(name);}
 async function js(code){return win.webContents.executeJavaScript(code,true);}
+async function click(selector){
+ const point=await js(`(() => {const e=document.querySelector(${JSON.stringify(selector)});if(!e||e.disabled)throw Error('Click target unavailable');e.scrollIntoView({block:'nearest'});const r=e.getBoundingClientRect();if(!r.width||!r.height)throw Error('Click target hidden');return{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)};})()`);
+ win.webContents.sendInputEvent({type:'mouseMove',...point});
+ win.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...point});
+ await sleep(60);
+ win.webContents.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...point});
+ await sleep(120);
+}
 async function snap(name){await sleep(400);fs.writeFileSync(path.join(run,name+'.png'),(await win.webContents.capturePage()).toPNG());}
 async function freePort(){return new Promise((resolve,reject)=>{const server=nodeNet.createServer();server.once('error',reject);server.listen(0,'127.0.0.1',()=>{const port=server.address().port;server.close(()=>resolve(port));});});}
 app.whenReady().then(async()=>{
@@ -93,11 +101,22 @@ app.whenReady().then(async()=>{
   await wait(()=>js(`document.querySelector('#akis-liste').textContent.includes('Sentetik QA haberi')`));
   await js(`for(const d of document.querySelectorAll('dialog[open]')) d.close();document.querySelector('[data-gorunum="akis"]').click()`);
   check('native OTP login unlocks real feed and clears code',await js(`!document.body.classList.contains('session-locked') && !document.querySelector('#giris-kod').value`));
+  check('horizontal navigation lives in header with direct settings',await js(`!!document.querySelector('.topbar .app-nav') && !document.querySelector('.app-sidebar') && !!document.querySelector('#header-ayarlar')`));
+  await js(`document.querySelector('#sekme-akis').focus();document.querySelector('#sekme-akis').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))`);
+  check('header keyboard follows visible tab order',await js(`document.activeElement.id==='sekme-analiz' && document.querySelector('#sekme-analiz').getAttribute('aria-selected')==='true'`));
+  await click('#sekme-akis');
+  await wait(()=>js(`!!document.querySelector('.agenda-explanation')`));
+  check('personal agenda visibly explains relevance project and next step',await js(`document.querySelector('#bulten-sonuc').textContent.includes('Benim için neden önemli?') && document.querySelector('#bulten-sonuc').textContent.includes('Projeye etkisi') && document.querySelector('#bulten-sonuc').textContent.includes('Sonraki adım') && document.querySelector('.agenda-method').textContent.includes('model değerlendirmesi yapılmadı')`));
+  check('personal agenda retains source evidence and persisted profile',await js(`document.querySelector('.agenda-evidence').textContent.includes('Başvuru') && document.querySelector('#gundem-ilgiler').value.includes('Başvuru') && document.querySelector('#gundem-profil input[value="${workspace}"]').checked`));
   await wait(()=>receipt.requests.includes('/api/rasathane/bulletins') && receipt.requests.includes('/api/rasathane/conversations'));
   check('history loads only after product state is ready',receipt.requests.indexOf('/api/rasathane/state') < receipt.requests.indexOf('/api/rasathane/bulletins') && receipt.requests.indexOf('/api/rasathane/state') < receipt.requests.indexOf('/api/rasathane/conversations'));
   await sleep(500);
   check('feed exposes original source and category',await js(`document.querySelector('.radar-source-name').textContent==='Hukuk Gündemi QA' && document.querySelector('.radar-entry-meta').textContent.includes('Türk hukuku')`));
   await snap('02-feed');
+  await click('#bulten-seslendir');
+  await wait(()=>js(`document.querySelector('#bulten-ses').readyState>=2`),60000);
+  check('personal agenda real Turkish audio is playable',await js(`document.querySelector('#bulten-ses').duration>0`));
+  await snap('02-personal-agenda');
   await js(`for(const item of document.querySelectorAll('.radar-entry'))item.open=true`);
   await wait(()=>js(`!!document.querySelector('.news-summary-control button')`));
   await js(`document.querySelector('.news-summary-control button').click()`);
@@ -116,6 +135,7 @@ app.whenReady().then(async()=>{
   await js(`document.querySelector('#bulten-ac').click();document.querySelector('#bulten-donem').value='0';document.querySelector('#bulten-donem').dispatchEvent(new Event('change'));document.querySelector('#bulten-form').requestSubmit()`);
   await wait(()=>js(`!document.querySelector('#bulten-sonuc').hidden && document.querySelectorAll('.bulletin-items li').length===2`));
   check('bulletin saves two source-bound items including honest metadata notice',await js(`document.querySelector('#bulten-sonuc').textContent.includes('Başvuru süresi otuz gündür') && document.querySelector('#bulten-sonuc').textContent.includes('özetlenebilecek haber metni bulunmuyor') && document.querySelectorAll('.bulletin-items a').length===2`));
+  const manualBulletinId=await js(`document.querySelector('#bulten-gecmis').value`);
   await wait(()=>js(`!document.querySelector('#bulten-seslendir').disabled`));
   await js(`document.querySelector('#bulten-seslendir').click()`);
   await wait(()=>js(`document.querySelector('#bulten-ses').readyState>=2`),60000);
@@ -143,6 +163,18 @@ app.whenReady().then(async()=>{
   await wait(()=>js(`document.querySelector(${JSON.stringify(originalSourceSelector)}+' .source-switch').getAttribute('aria-checked')==='false'`));
   check('source toggle round trip preserves two archived articles',await js(`document.querySelector(${JSON.stringify(originalSourceSelector)}).textContent.includes('2 kayıtlı içerik')`));
   await snap('02g-sources');
+  check('source categories group and filter the real archive',await js(`document.querySelectorAll('.source-group').length===2 && document.querySelectorAll('#kaynak-kategori-filter button').length===3`));
+  await js(`Array.from(document.querySelectorAll('#kaynak-kategori-filter button')).find(n=>n.textContent.startsWith('Legaltech')).click()`);
+  check('category chip limits table to its sources',await js(`document.querySelectorAll('[data-source-id]').length===1 && document.querySelector('[data-source-id]').dataset.sourceId===${JSON.stringify(addedSourceId)}`));
+  await js(`document.querySelector('#kaynak-kategori-filter button').click();document.querySelector('#kaynak-sohbet-mesaj').value='Düzenlenen QA kaynağı kaynağını "QA projeleri" kategorisine taşı';document.querySelector('#kaynak-sohbet-form').requestSubmit()`);
+  await wait(()=>js(`document.querySelector(${JSON.stringify(addedSourceSelector)}).textContent.includes('QA projeleri') && !document.querySelector('#kaynak-sohbet-gonder').disabled`));
+  check('chat command applies custom category with visible action receipt',await js(`document.querySelector('#kaynak-sohbet-gecmis').textContent.includes('QA projeleri') && document.querySelector('#kaynak-sohbet-gecmis .action-receipt') && document.querySelector(${JSON.stringify(addedSourceSelector)}+' .source-switch').getAttribute('aria-checked')==='false'`));
+  await js(`document.querySelector('#kaynak-sohbet-mesaj').value='Düzenlenen QA kaynağı kaynağını Legaltech kategorisine taşı';document.querySelector('#kaynak-sohbet-form').requestSubmit()`);
+  await wait(()=>js(`document.querySelector(${JSON.stringify(addedSourceSelector)}).textContent.includes('Legaltech') && !document.querySelector('#kaynak-sohbet-gonder').disabled`));
+  await js(`document.querySelector('#kaynak-sohbet-mesaj').value='AI kaynakları öner';document.querySelector('#kaynak-sohbet-form').requestSubmit()`);
+  await wait(()=>js(`document.querySelectorAll('.source-chat-suggestions button').length>0 && !document.querySelector('#kaynak-sohbet-gonder').disabled`));
+  check('source assistant offers actionable safe source suggestions',await js(`document.querySelectorAll('.source-chat-suggestions button').length>0 && document.querySelectorAll('[data-source-id]').length===2`));
+  await snap('02j-source-chat');
   win.setSize(720,600); await sleep(250);
   await snap('02h-sources-narrow');
   check('source screen fits narrow viewport with local table scrolling',await js(`document.documentElement.scrollWidth<=innerWidth+1 && document.querySelector('#kaynak-liste').scrollWidth>=document.querySelector('#kaynak-liste').clientWidth`));
@@ -160,7 +192,9 @@ app.whenReady().then(async()=>{
   await js(`document.querySelector('[data-gorunum="konular"]').click();document.querySelector('.topic-results').click()`);
   await wait(()=>js(`document.querySelector('#konu-sonuc-dialog').open`));
   check('topic results explain no completed search without fake news',await js(`document.querySelector('#konu-sonuc-liste').textContent.includes('Henüz tamamlanmış kontrol yok')`));
-  await js(`document.querySelector('#konu-sonuc-dialog').close();document.querySelector('#profil-ac').click();document.querySelector('#profil-ayarlar').click()`);
+  await js(`document.querySelector('#konu-sonuc-dialog').close()`);
+  await click('#profil-ac');
+  await click('#profil-ayarlar');
   check('profile opens settings as modal and keeps underlying topic view',await js(`document.querySelector('#gorunum-ayarlar').open && !document.querySelector('#gorunum-konular').classList.contains('gizli') && !document.querySelector('#sekme-ayarlar')`));
   await snap('02e-settings');
   await js(`document.querySelector('#ayar-sekme-arama').click();document.querySelector('#urun-takip-sikligi').value='300';document.querySelector('#urun-takip-sikligi').dispatchEvent(new Event('input',{bubbles:true}))`);
@@ -183,6 +217,19 @@ app.whenReady().then(async()=>{
   check('settings fit narrow viewport after light theme save',await js(`document.documentElement.scrollWidth<=innerWidth+1 && document.querySelector('#gorunum-ayarlar').getBoundingClientRect().right<=innerWidth+1 && document.querySelector('#ayarlar-kaydet').getBoundingClientRect().bottom<=innerHeight`));
   win.setSize(1440,1000);
   await js(`document.querySelector('#ayarlar-kapat').click()`);
+  await click('#header-ayarlar');
+  check('header directly opens working settings dialog',await js(`document.querySelector('#gorunum-ayarlar').open`));
+  await click('#ayarlar-kapat');
+  await click('#sekme-akis');
+  await js(`document.querySelector('#gundem-profil').open=true;window.__qaOriginalInterests=document.querySelector('#gundem-ilgiler').value;window.__qaOriginalProjects=document.querySelector('#gundem-projeler').value;document.querySelector('#gundem-ilgiler').value='ş'.repeat(3000);document.querySelector('#gundem-projeler').value='ğ'.repeat(4000);document.querySelector('#gundem-ilgiler').dispatchEvent(new Event('input',{bubbles:true}))`);
+  await click('#gundem-profil-kaydet');
+  await wait(()=>js(`document.querySelector('#gundem-profil-durum').textContent.includes('Profil kaydedildi')`));
+  check('valid long Turkish agenda profile saves through UI IPC and database',await js(`document.querySelector('#gundem-ilgiler').value.length===3000 && document.querySelector('#gundem-projeler').value.length===4000`));
+  check('changed profile hides outdated personal agenda',await js(`document.querySelector('#gundem-son-ac').hidden`));
+  await js(`document.querySelector('#gundem-ilgiler').value=window.__qaOriginalInterests;document.querySelector('#gundem-projeler').value=window.__qaOriginalProjects;document.querySelector('#gundem-ilgiler').dispatchEvent(new Event('input',{bubbles:true}))`);
+  await click('#gundem-profil-kaydet');
+  await wait(()=>js(`document.querySelector('#gundem-profil-durum').textContent.includes('Profil kaydedildi') && document.querySelector('#gundem-ilgiler').value===window.__qaOriginalInterests`));
+  await js(`document.querySelector('#gundem-profil').open=false`);
   await js(`document.querySelector('[data-gorunum="arastir"]').click();document.querySelector('#arastir-web').checked=false;document.querySelector('#arastir-sorgu').value='Başvuru süresi nedir?';document.querySelector('#arastir-form').requestSubmit()`);
   await wait(()=>js(`document.querySelectorAll('.chat-assistant').length===1 && !document.querySelector('#arastir-btn').disabled`),20000);
   check('first source-bound chat answer',await js(`document.querySelector('.chat-assistant').textContent.includes('otuz')`));
@@ -193,17 +240,20 @@ app.whenReady().then(async()=>{
   win.reload(); await new Promise(r=>win.webContents.once('did-finish-load',r));
   await wait(()=>js(`document.querySelectorAll('.chat-history-item').length>0`));
   check('settings survive a full renderer reload',await js(`document.querySelector('#urun-takip-sikligi').value==='240' && document.querySelector('#urun-tema').value==='light' && document.documentElement.dataset.theme==='light'`));
+  check('personal profile survives full renderer reload',await js(`document.querySelector('#gundem-ilgiler').value==='Başvuru süresi ve Türk hukuku' && document.querySelector('#gundem-projeler').value==='Başvuru iş akışındaki sürelerin incelenmesi'`));
   await js(`for(const d of document.querySelectorAll('dialog[open]'))d.close();document.querySelector('[data-gorunum="kaynaklar"]').click()`);
   await wait(()=>js(`!!document.querySelector(${JSON.stringify(addedSourceSelector)})`));
   check('edited source identity category URL and paused state survive reload',await js(`document.querySelector(${JSON.stringify(addedSourceSelector)}).textContent.includes('Düzenlenen QA kaynağı') && document.querySelector(${JSON.stringify(addedSourceSelector)}).textContent.includes('https://example.org/updated-qa.xml') && document.querySelector(${JSON.stringify(addedSourceSelector)}).textContent.includes('Legaltech') && document.querySelector(${JSON.stringify(addedSourceSelector)}+' .source-switch').getAttribute('aria-checked')==='false'`));
+  await wait(()=>js(`document.querySelectorAll('.source-chat-turn').length===3`));
+  check('source chat action receipts survive renderer reload',await js(`document.querySelector('#kaynak-sohbet-gecmis').textContent.includes('QA projeleri')`));
   check('source QA never submitted a real publisher refresh',!receipt.requests.some(route=>/^\/api\/rasathane\/sources\/[^/]+\/refresh/.test(route)));
   await snap('04a-sources-light-persisted');
   await js(`for(const d of document.querySelectorAll('dialog[open]')) d.close();document.querySelector('[data-gorunum="arastir"]').click();document.querySelector('#arastir-gecmis-ac').click();document.querySelector('.chat-history-item').click()`);
   await wait(()=>js(`document.querySelectorAll('.chat-assistant').length===2`));
   check('conversation survives reload',await js(`document.querySelectorAll('.chat-user').length===2`)); await snap('04-persisted');
   check('history lives in research header instead of nested sidebar',await js(`!!document.querySelector('#gorunum-arastir .research-heading #arastir-gecmis') && !document.querySelector('#gorunum-arastir .chat-sidebar')`));
-  await js(`document.querySelector('[data-gorunum="akis"]').click();document.querySelector('#bulten-ac').click();const history=document.querySelector('#bulten-gecmis');history.selectedIndex=1;history.dispatchEvent(new Event('change'))`);
-  await wait(()=>js(`!document.querySelector('#bulten-sonuc').hidden`));
+  await js(`document.querySelector('[data-gorunum="akis"]').click();document.querySelector('#bulten-ac').click();const history=document.querySelector('#bulten-gecmis');history.value=${JSON.stringify(manualBulletinId)};history.dispatchEvent(new Event('change'))`);
+  await wait(()=>js(`!document.querySelector('#bulten-sonuc').hidden && document.querySelectorAll('.bulletin-items li').length===2 && !document.querySelector('#bulten-gecmis').disabled`));
   check('saved bulletin survives reload',await js(`document.querySelectorAll('.bulletin-items li').length===2`));
   await js(`document.querySelector('[data-gorunum="arastir"]').click()`);
   await js(`document.querySelector('#arastir-gecmis-ac').click();Array.from(document.querySelectorAll('.chat-history-item')).find(n=>n.textContent.startsWith('Uzun QA geçmişi')).click()`);
@@ -216,6 +266,21 @@ app.whenReady().then(async()=>{
   check('older page restores all 55 turns in order',await js(`document.querySelectorAll('.chat-user').length===55 && document.querySelectorAll('.chat-assistant').length===55 && document.querySelector('.chat-user').textContent.includes('tur 01') && !document.querySelector('.chat-older')`));
   check('history requested real cursor API',receipt.requests.some(route=>route.includes('/conversations/') && route.includes('?before=')));
   await js(`document.querySelector('#arastir-sonuc').scrollTop=0`); await snap('04c-history-complete');
+  if(process.env.RASATHANE_QA_LIVE_SOURCE==='1'){
+    receipt.live_source='https://simonwillison.net/atom/everything/';
+    await click('#sekme-kaynaklar');
+    await js(`document.querySelector('#kaynak-sohbet-mesaj').value='https://simonwillison.net/atom/everything/ adresini Dünya AI kategorisine ekle';document.querySelector('#kaynak-sohbet-form').requestSubmit()`);
+    await wait(()=>js(`Array.from(document.querySelectorAll('[data-source-id]')).some(n=>n.textContent.includes('simonwillison.net/atom/everything/')) && !document.querySelector('#kaynak-sohbet-gonder').disabled`),60000);
+    check('chat discovers and adds a real public Atom source end to end',await js(`document.querySelector('#kaynak-sohbet-gecmis').textContent.includes('Dünya AI kategorisine eklendi')`));
+    await js(`document.querySelector('#kaynak-sohbet-mesaj').value='https://simonwillison.net/atom/everything/ kaynağını duraklat';document.querySelector('#kaynak-sohbet-form').requestSubmit()`);
+    await wait(()=>js(`Array.from(document.querySelectorAll('[data-source-id]')).find(n=>n.textContent.includes('simonwillison.net/atom/everything/'))?.querySelector('.source-switch').getAttribute('aria-checked')==='false' && !document.querySelector('#kaynak-sohbet-gonder').disabled`));
+    check('chat pauses the discovered source and records the action',await js(`document.querySelector('#kaynak-sohbet-gecmis').textContent.includes('takibi duraklatıldı')`));
+    await snap('04d-live-source');
+    win.reload(); await new Promise(r=>win.webContents.once('did-finish-load',r));
+    await wait(()=>js(`document.querySelectorAll('.source-chat-turn').length===5`));
+    await click('#sekme-kaynaklar');
+    check('discovered source and chat receipts persist after full reload',await js(`Array.from(document.querySelectorAll('[data-source-id]')).find(n=>n.textContent.includes('simonwillison.net/atom/everything/'))?.querySelector('.source-switch').getAttribute('aria-checked')==='false' && document.querySelector('#kaynak-sohbet-gecmis').textContent.includes('Dünya AI kategorisine eklendi')`));
+  }
   // Logout reloads the renderer. Await the new document, not the old world's IPC promise.
   const logoutReload=new Promise(resolve=>win.webContents.once('did-finish-load',resolve));
   await js(`document.querySelector('#hesap-cikis').click(); true`);
@@ -225,6 +290,7 @@ app.whenReady().then(async()=>{
   check('logout locks and clears news',await js(`document.body.classList.contains('session-locked') && document.querySelector('#app-main').inert && !document.querySelector('#akis-liste').textContent`));
   check('logout clears conversation',await js(`!document.querySelector('.chat-assistant')`)); await snap('05-logout');
   check('logout clears bulletin and examples status',await js(`document.querySelector('#bulten-sonuc').hidden && !document.querySelector('#bulten-sonuc').textContent && !document.querySelector('#bulten-ses')?.getAttribute('src')`));
+  check('logout clears personal context and source chat',await js(`!document.querySelector('#gundem-ilgiler').value && !document.querySelector('#gundem-projeler').value && !document.querySelector('.source-chat-turn') && document.querySelector('#gundem-son-ac').hidden`));
   receipt.ok=true;
  }catch(e){receipt.ok=false;receipt.failure=e.stack;if(win){receipt.dom=await js(`document.body.innerText`).catch(()=>null);await snap('failure').catch(()=>{});}}
  finally{

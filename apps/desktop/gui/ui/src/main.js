@@ -1347,11 +1347,11 @@ async function kurulumDurumu() {
 /* ---- 7. görünüm geçişi + kütüphane ------------------------------------- */
 const GORUNUMLER = [
   "akis",
-  "kaynaklar",
   "analiz",
   "arastir",
   "calisma",
   "konular",
+  "kaynaklar",
 ];
 function setGorunum(ad) {
   if (!loginGate?.allowed()) return;

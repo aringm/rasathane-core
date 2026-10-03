@@ -17,6 +17,7 @@ const SCHEME = "rasathane";
 const APP_ORIGIN = `${SCHEME}://app`;
 const SMOKE_MODE = process.argv.includes("--smoke-test");
 const SMOKE_ANALYSIS = SMOKE_MODE && process.argv.includes("--smoke-analysis");
+const SMOKE_PRODUCT = SMOKE_MODE && process.argv.includes("--smoke-product");
 const SMOKE_GENERIC = SMOKE_ANALYSIS && process.argv.includes("--smoke-generic");
 // Motor portu artık sabit değil: 8765'i başka bir uygulama tutuyorsa sidecar bind
 // hatasıyla ölüyor ve arayüzde yalnız "Motor başlatılamadı" kalıyordu. Açılışta
@@ -385,7 +386,7 @@ async function pencereOlustur(port) {
 
 async function smokeDogrula(pencere) {
   const initialAccount = await account.checkSession();
-  if (SMOKE_ANALYSIS && initialAccount.state !== "signed_in") throw new Error("Analiz smoke testi için doğrulanmış Muhakeme girişi gerekli; test modu giriş zorunluluğunu kaldırmaz.");
+  if ((SMOKE_ANALYSIS || SMOKE_PRODUCT) && initialAccount.state !== "signed_in") throw new Error("Ürün/analiz smoke testi için doğrulanmış Muhakeme girişi gerekli; test modu giriş zorunluluğunu kaldırmaz.");
   const son = Date.now() + 90_000;
   while (Date.now() < son) {
     const durum = await pencere.webContents.executeJavaScript(`(() => ({
@@ -419,6 +420,7 @@ async function smokeDogrula(pencere) {
       }
       const setup = await pencere.webContents.executeJavaScript(`Promise.race([window.rasathane.setupStatus(), new Promise((_, reject) => setTimeout(() => reject(new Error('Model IPC zaman aşımı')), 190000))])`);
       console.log(JSON.stringify({ smoke: "renderer-ipc", modelReady: setup.ready, modelCount: setup.models.length }));
+      if (SMOKE_PRODUCT) await require("./smoke-product-ui.cjs").verifyProductUI(pencere);
       if (SMOKE_ANALYSIS) await smokeAnaliz(pencere);
       return;
     }

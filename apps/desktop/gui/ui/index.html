@@ -11,6 +11,7 @@
     <link rel="icon" href="/brand/rasathane-mark.svg" />
     <link rel="stylesheet" href="/styles.css?v=urun-1" />
     <link rel="stylesheet" href="/radar.css" />
+    <link rel="stylesheet" href="/workspace.css" />
   </head>
   <body class="session-locked">
     <section
@@ -98,12 +99,11 @@
           ><span id="motor-metin">Motor başlatılıyor…</span></span
         ></span
       >
-    </header>
-    <aside class="app-sidebar">
+      <div class="header-navigation">
       <nav
         class="sekmeler app-nav"
         role="tablist"
-        aria-orientation="vertical"
+        aria-orientation="horizontal"
         aria-label="Çalışma görünümleri"
       >
         <button
@@ -164,7 +164,8 @@
         >
         <button class="sekme" id="sekme-kaynaklar" type="button" role="tab" data-gorunum="kaynaklar" aria-controls="gorunum-kaynaklar" aria-selected="false" tabindex="-1"><span aria-hidden="true">▥</span>Kaynaklar</button>
       </nav>
-      <div class="sidebar-foot profile-card">
+      <button type="button" class="btn btn-ikincil header-settings" id="header-ayarlar">Ayarlar</button>
+      <div class="profile-card">
         <div id="profil-menu" class="profile-menu" role="menu" aria-label="Hesap ve ayarlar" hidden>
           <div class="profile-menu-heading"><strong id="profil-menu-ad">Muhakeme hesabı</strong><span id="profil-menu-plan">Rasathane</span></div>
           <button type="button" role="menuitem" id="hesap-ac">Hesap ve plan</button>
@@ -175,10 +176,11 @@
         <button type="button" id="profil-ac" class="profile-trigger" aria-haspopup="menu" aria-controls="profil-menu" aria-expanded="false">
           <span id="profil-avatar" class="profile-avatar" aria-hidden="true">M</span>
           <span class="profile-meta"><strong id="profil-ad">Muhakeme hesabı</strong><span id="profil-plan">Hesap ve ayarlar</span></span>
-          <span aria-hidden="true">⌃</span>
+          <span aria-hidden="true">⌄</span>
         </button>
       </div>
-    </aside>
+      </div>
+    </header>
     <main class="app-main" id="app-main">
       <section
         id="gorunum-akis"

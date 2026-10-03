@@ -115,6 +115,7 @@ class ProductStore:
                     updated_at TEXT NOT NULL,cancel_requested INTEGER NOT NULL DEFAULT 0);
                 CREATE INDEX IF NOT EXISTS jobs_status_created ON jobs(status,created_at);
                 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS agenda_config(key TEXT PRIMARY KEY,value TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS migration_ledger(
                     fingerprint TEXT PRIMARY KEY,imported_at TEXT NOT NULL,source TEXT NOT NULL,
                     counts TEXT NOT NULL);
@@ -808,6 +809,19 @@ class ProductStore:
             "cancel_requested": 0,
         }
         with self.connection() as conn:
+            if kind == "feed_refresh" and request.get("automatic"):
+                conn.execute("BEGIN IMMEDIATE")
+                pending = conn.execute(
+                    "SELECT * FROM jobs WHERE kind='feed_refresh' AND status IN "
+                    "('queued','running','cancel_requested') AND ("
+                    "json_extract(request,'$.source_id') IS NULL OR "
+                    "json_extract(request,'$.source_id') IS ?) LIMIT 1",
+                    (request.get("source_id"),),
+                ).fetchone()
+                if pending is not None:
+                    result = self.decoded(pending)
+                    assert result is not None
+                    return result
             if kind == "research":
                 # A turn, conversation and queued job commit together. Its durable job
                 # owns status/result, so cancellation and crash recovery cannot diverge.
@@ -1013,9 +1027,16 @@ class ProductStore:
             ).fetchone():
                 return None
             row = conn.execute(
-                "SELECT * FROM jobs WHERE status='queued' ORDER BY "
-                "CASE WHEN kind='feed_refresh' AND json_extract(request,'$.automatic')=1 "
-                "THEN 1 ELSE 0 END,created_at,rowid LIMIT 1"
+                "SELECT * FROM jobs WHERE status='queued' AND NOT EXISTS ("
+                "SELECT 1 FROM jobs dependency JOIN json_each(jobs.request,'$.depends_on') d "
+                "ON dependency.id=d.value WHERE dependency.status IN "
+                "('queued','running','cancel_requested')) AND NOT (kind='agenda' "
+                "AND (json_extract(request,'$.automatic')=1 OR "
+                "json_extract(request,'$.refresh_sources')=1) AND EXISTS ("
+                "SELECT 1 FROM jobs source_job WHERE source_job.kind='feed_refresh' "
+                "AND source_job.status IN ('queued','running','cancel_requested'))) ORDER BY "
+                "CASE WHEN json_extract(request,'$.automatic')=1 "
+                "THEN CASE WHEN kind='agenda' THEN 1 ELSE 2 END ELSE 0 END,created_at,rowid LIMIT 1"
             ).fetchone()
             if row is None:
                 return None
@@ -1090,6 +1111,127 @@ class ProductStore:
                 }
             )
         return result
+
+    def agenda_profile(self) -> dict[str, Any]:
+        from rasathane.product.agenda import AgendaProfile
+
+        rows = self.rows("SELECT value FROM agenda_config WHERE key='profile'")
+        return AgendaProfile.model_validate(
+            json.loads(rows[0]["value"]) if rows else {}
+        ).model_dump()
+
+    def save_agenda_profile(self, data: dict[str, Any]) -> dict[str, Any]:
+        from rasathane.product.agenda import AgendaProfile
+
+        value = AgendaProfile.model_validate({**self.agenda_profile(), **data}).model_dump()
+        value["workspace_ids"] = list(dict.fromkeys(value["workspace_ids"]))
+        with self.connection() as conn:
+            for item_id in value["workspace_ids"]:
+                self._require_workspace(conn, item_id)
+            conn.execute(
+                "INSERT OR REPLACE INTO agenda_config VALUES('profile',?)", (json_text(value),)
+            )
+        return self.agenda_profile()
+
+    def agenda_state(self) -> dict[str, Any]:
+        rows = self.rows("SELECT value FROM agenda_config WHERE key='state'")
+        return dict(json.loads(rows[0]["value"])) if rows else {}
+
+    def enqueue_agenda(
+        self, request: dict[str, Any], *, feed_ids: list[str] | None = None
+    ) -> dict[str, Any]:
+        with self.connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT * FROM jobs WHERE kind='agenda' AND status IN "
+                "('queued','running','cancel_requested') LIMIT 1"
+            ).fetchone()
+            if row is not None and (row["status"] != "queued" or feed_ids is None):
+                result = self.decoded(row)
+                assert result is not None
+                return result
+            stamp = now()
+            pending = conn.execute(
+                "SELECT id,request FROM jobs WHERE kind='feed_refresh' "
+                "AND status IN ('queued','running','cancel_requested')"
+            ).fetchall()
+            dependencies = (
+                [p["id"] for p in pending]
+                if (request.get("automatic") or feed_ids is not None)
+                else []
+            )
+            for source_id in feed_ids or []:
+                if any(
+                    json.loads(p["request"]).get("source_id") in {None, source_id} for p in pending
+                ):
+                    continue
+                dependency_id = uuid.uuid4().hex
+                conn.execute(
+                    "INSERT INTO jobs VALUES(?,?,'queued','queued',?,NULL,NULL,?,?,0)",
+                    (
+                        dependency_id,
+                        "feed_refresh",
+                        json_text(
+                            {
+                                "source_id": source_id,
+                                "automatic": True,
+                                "settings": request.get("settings", {}),
+                            }
+                        ),
+                        stamp,
+                        stamp,
+                    ),
+                )
+                dependencies.append(dependency_id)
+            frozen = {**request, "depends_on": dependencies}
+            if row is not None:
+                job_id = row["id"]
+                conn.execute(
+                    "UPDATE jobs SET request=?,updated_at=? WHERE id=?",
+                    (json_text(frozen), stamp, job_id),
+                )
+            else:
+                job_id = uuid.uuid4().hex
+                conn.execute(
+                    "INSERT INTO jobs VALUES(?,?,'queued','queued',?,NULL,NULL,?,?,0)",
+                    (job_id, "agenda", json_text(frozen), stamp, stamp),
+                )
+        return self.get_job(job_id)
+
+    def finish_agenda(self, job_id: str, result: dict[str, Any]) -> None:
+        from rasathane.product.agenda import context
+
+        with self.connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            job = conn.execute("SELECT cancel_requested FROM jobs WHERE id=?", (job_id,)).fetchone()
+            if job is None or job["cancel_requested"]:
+                raise ValueError("Gündem işi iptal edildi.")
+            snapshot = result.get("snapshot")
+            if snapshot:
+                if digest(json_text(context(self))) != snapshot["context_hash"]:
+                    raise ValueError("Gündem bağlamı değişti; yeniden oluşturun.")
+                self._document(
+                    conn,
+                    snapshot["id"],
+                    "bulletin",
+                    None,
+                    snapshot["title"],
+                    snapshot["summary"],
+                    provenance={"bulletin": snapshot, "content_hash": snapshot["content_hash"]},
+                )
+            saved = {k: v for k, v in result.items() if k != "snapshot"}
+            saved["last_success_at"] = now()
+            saved["last_generated_at"] = (
+                snapshot["created_at"] if snapshot else self.agenda_state().get("last_generated_at")
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO agenda_config VALUES('state',?)", (json_text(saved),)
+            )
+            conn.execute(
+                "UPDATE jobs SET status='completed',stage='completed',result=?,updated_at=? "
+                "WHERE id=?",
+                (json_text(saved), now(), job_id),
+            )
 
     def save_settings(self, data: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(data, dict) or set(data) - set(DEFAULT_SETTINGS):
@@ -1167,6 +1309,15 @@ class ProductStore:
             for table in ("feeds", "articles", "topics", "topic_hits", "jobs", "migration_ledger"):
                 payload[table] = self.rows(f"SELECT * FROM {table}")
             payload["settings"] = self.settings()
+            payload["agenda_profile"] = self.agenda_profile()
+            payload["agenda_state"] = self.agenda_state()
+            if self.rows(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='source_assistant_turns'"
+            ):
+                payload["source_assistant_turns"] = self.rows(
+                    "SELECT * FROM source_assistant_turns ORDER BY created_at"
+                )
         payload["content_hash"] = digest(json_text(payload))
         return payload
 

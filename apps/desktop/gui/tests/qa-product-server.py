@@ -56,6 +56,19 @@ store.save_note(
 )
 service = ProductService(store, autostart=False)
 api._service = service
+# Persist a real source-bound agenda in the isolated fixture. No publisher
+# request or model download is made; the enabled source was checked above.
+store.save_agenda_profile({
+    "enabled": False, "use_local_model": False, "include_topics": False,
+    "interests": "Başvuru süresi ve Türk hukuku",
+    "project_context": "Başvuru iş akışındaki sürelerin incelenmesi",
+    "workspace_ids": [space["id"]],
+})
+store.update_feed(news_feed["id"], enabled=True)
+agenda_job = service.submit("agenda", {})
+service.run_once()
+assert store.get_job(agenda_job["id"])["status"] == "completed"
+store.update_feed(news_feed["id"], enabled=False)
 archive_id = None
 for index in range(1, 56):
     archive_job = store.enqueue(

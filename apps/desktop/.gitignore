@@ -1,4 +1,5 @@
 # --- Python / uv ---
+.local/
 .venv/
 __pycache__/
 *.py[cod]

@@ -8,7 +8,7 @@ export const categoryLabel = value => CATEGORY_LABELS[value] || value || "Genel"
 const KINDS = { rss: "RSS / Atom", arxiv: "arXiv", reddit: "Reddit", youtube_channel: "YouTube kanalı", resmi_gazete: "Resmî Gazete", yargitay_public: "Yargıtay karar künyeleri", yargitay: "Yargıtay bağlantısı", mevzuat: "Mevzuat bağlantısı" };
 
 export function createSourceManager({ $, el, api, sourceLink, date, onChange, onRefresh, onFilter }) {
-  let sources = [], editing = null, epoch = 0, busy = false;
+  let sources = [], editing = null, epoch = 0, busy = false, selectedCategory = "";
   const container = $("kaynak-yonetimi");
   const list = $("kaynak-liste");
   const search = el("input", { id: "kaynak-ara", type: "search", placeholder: "Kaynak adı veya adresi", "aria-label": "Kaynaklarda ara" });
@@ -16,13 +16,15 @@ export function createSourceManager({ $, el, api, sourceLink, date, onChange, on
     el("option", { value: "all" }, "Tüm kaynaklar"), el("option", { value: "enabled" }, "Takip edilenler"),
     el("option", { value: "paused" }, "Duraklatılanlar"), el("option", { value: "error" }, "Kontrol gerekenler"));
   const count = el("p", { class: "source-overview", id: "kaynak-sayac", role: "status" });
+  const categoryFilters = el("div", { class: "source-category-filters", id: "kaynak-kategori-filter", "aria-label": "Kaynak kategorileri" });
   const status = el("p", { class: "product-status", id: "kaynak-yonetim-durum", role: "status" });
-  container.prepend(count, el("div", { class: "source-toolbar" }, search, scope));
+  container.prepend(count, el("div", { class: "source-toolbar" }, search, scope), categoryFilters);
   container.append(status);
   const name = el("input", { id: "yeni-kaynak-ad", required: true, maxlength: 120, autocomplete: "off" });
   const url = el("input", { id: "yeni-kaynak-url", type: "url", required: true, maxlength: 2048, placeholder: "https://…" });
   const kind = el("select", { id: "yeni-kaynak-tur" });
   const category = el("select", { id: "yeni-kaynak-kategori" });
+  const newCategory = el("input", { id: "yeni-kaynak-yeni-kategori", maxlength: 80, placeholder: "Örneğin: İş hukuku" });
   const enabled = el("input", { id: "yeni-kaynak-aktif", type: "checkbox" });
   const formStatus = el("p", { id: "kaynak-form-durum", role: "status", class: "product-status" });
   const save = el("button", { type: "submit", id: "kaynak-kaydet", class: "btn" }, "Kaynağı ekle");
@@ -31,6 +33,7 @@ export function createSourceManager({ $, el, api, sourceLink, date, onChange, on
   const form = el("form", { id: "kaynak-ekle-form", class: "source-editor" },
     el("label", {}, "Kaynak adı", name), el("label", {}, "Kaynak adresi", url),
     el("div", { class: "source-form-columns" }, el("label", {}, "Tür", kind), el("label", {}, "Kategori", category)),
+    el("label", {}, "Yeni kategori (isteğe bağlı)", newCategory),
     el("label", { class: "source-check" }, enabled, "Bu kaynağı takip et"),
     el("p", { class: "field-note" }, "Seçtiğiniz türe uygun RSS/Atom, arXiv, Reddit, YouTube kanalı veya resmî kaynak adresini girin. Duraklatmak mevcut haberleri silmez."),
     formStatus, el("div", { class: "form-actions" }, close, save));
@@ -61,12 +64,14 @@ export function createSourceManager({ $, el, api, sourceLink, date, onChange, on
     event.preventDefault(); if (busy) return;
     const generation = epoch; busy = true; save.disabled = close.disabled = true;
     message(formStatus, "Kaynak kaydediliyor…");
-    const body = { name: name.value.trim(), url: url.value.trim(), enabled: enabled.checked, category: category.value };
+    const body = { name: name.value.trim(), url: url.value.trim(), enabled: enabled.checked, category: newCategory.value.trim() || category.value };
     if (!editing || editing.kind !== kind.value || KINDS[kind.value]) body.kind = kind.value;
     try {
       await api(editing ? `/sources/${encodeURIComponent(editing.id)}/update` : "/sources", { method: "POST", body });
       if (generation !== epoch) return;
-      await onChange(); dialog.close();
+      await onChange();
+      if (generation !== epoch) return;
+      dialog.close();
       if (generation === epoch) message(status, "Kaynak kaydedildi. Kontrol et düğmesiyle yeni içerikleri alabilirsiniz.");
     } catch (error) { if (generation === epoch) message(formStatus, error.message, true); }
     finally { if (generation === epoch) { busy = false; save.disabled = close.disabled = false; } }
@@ -83,9 +88,14 @@ export function createSourceManager({ $, el, api, sourceLink, date, onChange, on
   }
   function render() {
     const q = search.value.trim().toLocaleLowerCase("tr-TR");
-    const filtered = sources.filter(s => (!q || `${s.name} ${s.url}`.toLocaleLowerCase("tr-TR").includes(q)) &&
+    const groups = [...new Set(sources.map(s => s.category || "genel"))].sort((a, b) => categoryLabel(a).localeCompare(categoryLabel(b), "tr"));
+    // Editing the last source in a category must not strand the list on a
+    // category that no longer exists and cannot be selected or cleared.
+    if (selectedCategory && !groups.includes(selectedCategory)) selectedCategory = "";
+    const filtered = sources.filter(s => (!selectedCategory || (s.category || "genel") === selectedCategory) && (!q || `${s.name} ${s.url}`.toLocaleLowerCase("tr-TR").includes(q)) &&
       (scope.value === "all" || (scope.value === "enabled" && s.enabled) || (scope.value === "paused" && !s.enabled) || (scope.value === "error" && (s.last_error || s.supported === false))));
     count.textContent = `${sources.length} kaynak · ${sources.filter(s => s.enabled).length} takipte · ${sources.filter(s => !s.enabled).length} duraklatıldı`;
+    categoryFilters.replaceChildren(...["", ...groups].map(value => el("button", { type: "button", "aria-pressed": String(value === selectedCategory), onclick: () => { selectedCategory = value; render(); } }, `${value ? categoryLabel(value) : "Tümü"} (${value ? sources.filter(s => (s.category || "genel") === value).length : sources.length})`)));
     const table = el("table", { class: "source-table" },
       el("thead", {}, el("tr", {}, ...["Kaynak", "Kategori / tür", "Son kontrol", "Takip", "İşlemler"].map(label => el("th", { scope: "col" }, label)))),
       el("tbody", {}, ...filtered.map(source => el("tr", { "data-source-id": source.id },
@@ -102,8 +112,14 @@ export function createSourceManager({ $, el, api, sourceLink, date, onChange, on
           el("button", { type: "button", class: "btn btn-ikincil mini", disabled: !source.enabled || source.supported === false, onclick: event => onRefresh(source.id, event.currentTarget) }, "Kontrol et"),
           el("button", { type: "button", class: "source-feed-link", onclick: () => onFilter(source.id) }, "Haberlerini gör"))),
       ))));
+    const body = table.querySelector("tbody");
+    const rows = [...body.children];
+    body.replaceChildren(...groups.flatMap(group => {
+      const entries = rows.filter(row => filtered.find(s => s.id === row.dataset.sourceId)?.category === group || (group === "genel" && !filtered.find(s => s.id === row.dataset.sourceId)?.category));
+      return entries.length ? [el("tr", { class: "source-group" }, el("th", { colspan: 5, scope: "rowgroup" }, `${categoryLabel(group)} — ${entries.length} kaynak`)), ...entries] : [];
+    }));
     list.replaceChildren(filtered.length ? table : el("p", { class: "empty-state" }, "Bu filtreyle eşleşen kaynak yok."));
   }
   search.addEventListener("input", render); scope.addEventListener("change", render);
-  return { update(value) { sources = value || []; render(); }, reset() { epoch++; busy = false; sources = []; list.replaceChildren(); dialog.close(); form.reset(); status.textContent = count.textContent = formStatus.textContent = ""; save.disabled = close.disabled = false; } };
+  return { update(value) { sources = value || []; render(); }, reset() { epoch++; busy = false; editing = null; sources = []; selectedCategory = ""; search.value = ""; scope.value = "all"; list.replaceChildren(); categoryFilters.replaceChildren(); dialog.close(); form.reset(); status.textContent = count.textContent = formStatus.textContent = ""; save.disabled = close.disabled = false; } };
 }

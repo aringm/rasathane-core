@@ -28,6 +28,9 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 
 import httpx
@@ -58,6 +61,7 @@ _ISTEK_ZAMAN_ASIMI_SN = 900.0  # CPU çıkarımı uzun sürebilir (12B özet/map
 
 _kilit = threading.Lock()
 _cikarim_kilidi = threading.RLock()
+_generation_profile: ContextVar[str | None] = ContextVar("generation_profile", default=None)
 # tur ("llm"/"embed") → bu proseste başlatılan llama-server Popen'i
 _prosesler: dict[str, subprocess.Popen[bytes]] = {}
 _aktif_hostlar: dict[str, str] = {}
@@ -91,7 +95,7 @@ def aktif_profil() -> str:
     mevcutsa. Paketli kurulumda yalnız ram8 seti gömülüdür (NSIS sınırı); 16GB+ makinede
     bile ram16 dosyaları yoksa ram8'e düşer (paket içi tutarlılık garantisi).
     """
-    secim = get_config().llamacpp_profil
+    secim = _generation_profile.get() or get_config().llamacpp_profil
     if secim in PROFILLER:
         return secim
     from ytcore.config import fiziksel_ram_gb  # monkeypatch dostu (test: ytcore.config)
@@ -242,7 +246,12 @@ def _host_port_ayristir(host: str) -> tuple[str, int]:
     return (u.hostname or "127.0.0.1", u.port or 8077)
 
 
-def sunucu_baslat_gerekirse(tur: str) -> str:
+def sunucu_baslat_gerekirse(
+    tur: str,
+    *,
+    check: Callable[[], None] | None = None,
+    startup_timeout: float | None = None,
+) -> str:
     """İstenen türde (llm/embed) sağlıklı sunucu yoksa başlat; host URL'sini döndür.
 
     - Dış sunucu yalnız /v1/models beklenen model dosyasını doğrularsa kullanılır.
@@ -252,6 +261,8 @@ def sunucu_baslat_gerekirse(tur: str) -> str:
     """
     if tur not in {"llm", "embed"}:
         raise ValueError(f"Bilinmeyen model türü: {tur}")
+    if check:
+        check()
     with _kilit:
         profil = aktif_profil()
         beklenen = str(PROFILLER[profil][f"{tur}_dosya"])
@@ -330,8 +341,17 @@ def sunucu_baslat_gerekirse(tur: str) -> str:
             _model_fingerprints[tur] = fingerprint
         # Kilit hazır olana dek tutulur: başka thread karşı modeli açıp ram8 sınırını
         # aşamaz ve yüklenmekte olan sunucuyu hazır sanıp kullanamaz.
-        son = time.monotonic() + _ACILIS_ZAMAN_ASIMI_SN
+        deadline_seconds = (
+            startup_timeout if startup_timeout is not None else _ACILIS_ZAMAN_ASIMI_SN
+        )
+        son = time.monotonic() + deadline_seconds
         while time.monotonic() < son:
+            if check:
+                try:
+                    check()
+                except Exception:
+                    _proses_kapat(tur)
+                    raise
             if sunucu_saglikli_mi(host):
                 kimlik = sunucu_model_kimligi(host)
                 if kimlik is not None and _model_adi(kimlik) == _model_adi(beklenen):
@@ -346,9 +366,26 @@ def sunucu_baslat_gerekirse(tur: str) -> str:
                 raise RuntimeError(f"llama-server ({tur}) çıkış kodu {kod} ile kapandı.")
             time.sleep(0.5)
         _proses_kapat(tur)
-        raise TimeoutError(
-            f"llama-server ({tur}) {_ACILIS_ZAMAN_ASIMI_SN:.0f}s içinde hazır olmadı."
-        )
+        raise TimeoutError(f"llama-server ({tur}) {deadline_seconds:.0f}s içinde hazır olmadı.")
+
+
+@contextmanager
+def generation_session(check: Callable[[], None], *, profile: str | None = None) -> Iterator[str]:
+    """Gündem gibi stream istemcileri için iptal edilebilir, sınırlı çıkarım lease'i."""
+    if profile not in {None, "auto", "ram8", "ram16"}:
+        raise ValueError("Bilinmeyen yerel model profili.")
+    deadline = time.monotonic() + 90
+    while not _cikarim_kilidi.acquire(timeout=0.25):
+        check()
+        if time.monotonic() >= deadline:
+            raise TimeoutError("Yerel model başka bir işlemde; gündem sonraki aralıkta denenecek.")
+    token = _generation_profile.set(profile)
+    try:
+        check()
+        yield sunucu_baslat_gerekirse("llm", check=check, startup_timeout=90)
+    finally:
+        _generation_profile.reset(token)
+        _cikarim_kilidi.release()
 
 
 def _proses_kapat(tur: str) -> None:

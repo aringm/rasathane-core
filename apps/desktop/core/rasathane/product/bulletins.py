@@ -73,6 +73,11 @@ def speak_bulletin(store: ProductStore, bulletin_id: str) -> bytes:
     paragraphs = [bulletin["title"], bulletin["notice"]]
     for number, item in enumerate(bulletin["items"], 1):
         paragraphs.append(f"{number}. {item['title']}. {item['summary'] or item['notice']}")
+        if bulletin.get("agenda"):
+            paragraphs.append(
+                f"İlgi nedeni: {item['relevance_reason']}. "
+                f"Proje etkisi: {item['project_impact']}. Öneri: {item['suggested_action']}."
+            )
         if item["status"] == "ready" and item["text_scope"] == "managed_summary":
             paragraphs.append(item["notice"])
         elif "AI tarafından" in item["notice"]:

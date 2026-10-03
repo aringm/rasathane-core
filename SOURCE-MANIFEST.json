@@ -32,8 +32,8 @@
     },
     {
       "path": "AGENTS.md",
-      "source_sha256": "c5e5fc0569d1cb97367473ce7cbf99e053e316479a36706dea1b9fa9b20bf8d3",
-      "sha256": "d4d7bd0cab987d0840fd23b0f24a01360f5ed54881412e35c20b348c16cbf87f",
+      "source_sha256": "f51f0558eb5d332a4f7c477672252696bc04a529d98c92f374ae349669e5f4c8",
+      "sha256": "371a53b3d332b8a527dead31855e36b9141d47b3928b8f62c9dde287e260fdb2",
       "bytes": 3039
     },
     {
@@ -68,9 +68,9 @@
     },
     {
       "path": "apps/desktop/.gitignore",
-      "source_sha256": "ecded2dfd13ca145a11ddaeaacd62c03fa23c26b8a3d8a926a473c47e83962a1",
-      "sha256": "ecded2dfd13ca145a11ddaeaacd62c03fa23c26b8a3d8a926a473c47e83962a1",
-      "bytes": 1661
+      "source_sha256": "b81b2341bc6c6b68dfa3e986819ff7f9454686e7e4fd88eb165d4ec2aca875e4",
+      "sha256": "b81b2341bc6c6b68dfa3e986819ff7f9454686e7e4fd88eb165d4ec2aca875e4",
+      "bytes": 1667
     },
     {
       "path": "apps/desktop/LICENSE",
@@ -91,10 +91,16 @@
       "bytes": 86
     },
     {
+      "path": "apps/desktop/core/rasathane/product/agenda.py",
+      "source_sha256": "a5a9a3db96376e3dadd0c520d045ac9717e9180801b52f35783c056837ccc103",
+      "sha256": "a5a9a3db96376e3dadd0c520d045ac9717e9180801b52f35783c056837ccc103",
+      "bytes": 19211
+    },
+    {
       "path": "apps/desktop/core/rasathane/product/api.py",
-      "source_sha256": "d54f6981e7c95e39c7e0aee75616a2aa868cc1a368564d758a3b1b52d634861a",
-      "sha256": "d54f6981e7c95e39c7e0aee75616a2aa868cc1a368564d758a3b1b52d634861a",
-      "bytes": 15998
+      "source_sha256": "01d4a30ce63a79522e5e724e4ee34e08f879c4134176962d1f34df28107e353c",
+      "sha256": "01d4a30ce63a79522e5e724e4ee34e08f879c4134176962d1f34df28107e353c",
+      "bytes": 16747
     },
     {
       "path": "apps/desktop/core/rasathane/product/artifacts.py",
@@ -104,9 +110,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/bulletins.py",
-      "source_sha256": "7a6c1feaa03bc192e43b14e52ee84a346bacb8cc17b2075ff08f7499224e1613",
-      "sha256": "7a6c1feaa03bc192e43b14e52ee84a346bacb8cc17b2075ff08f7499224e1613",
-      "bytes": 3389
+      "source_sha256": "416a1518b634934ec3f57a0b72557ab5d50566d5680bf6961db4217876572972",
+      "sha256": "416a1518b634934ec3f57a0b72557ab5d50566d5680bf6961db4217876572972",
+      "bytes": 3626
     },
     {
       "path": "apps/desktop/core/rasathane/product/capabilities.py",
@@ -140,9 +146,15 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/service.py",
-      "source_sha256": "534afb9f7b367642874c6895065ce5faaae63ec108be875d8f64555454a0b0dd",
-      "sha256": "534afb9f7b367642874c6895065ce5faaae63ec108be875d8f64555454a0b0dd",
-      "bytes": 23718
+      "source_sha256": "b2cab253816ddbeb01e020472cabb282eacae3547cdab4386b582e17f2758a77",
+      "sha256": "b2cab253816ddbeb01e020472cabb282eacae3547cdab4386b582e17f2758a77",
+      "bytes": 28795
+    },
+    {
+      "path": "apps/desktop/core/rasathane/product/source_assistant.py",
+      "source_sha256": "13ab3e644a2a1710b07b9362bf6b5bcde5ecb62540b2d0e32fa5918c0d9b2ce4",
+      "sha256": "13ab3e644a2a1710b07b9362bf6b5bcde5ecb62540b2d0e32fa5918c0d9b2ce4",
+      "bytes": 20956
     },
     {
       "path": "apps/desktop/core/rasathane/product/source_catalog.py",
@@ -152,9 +164,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/store.py",
-      "source_sha256": "17b6b8f5e2db3f1bd808b991f1b4a5bb5e74b5bc23ff49634bb286b50ff00b2a",
-      "sha256": "17b6b8f5e2db3f1bd808b991f1b4a5bb5e74b5bc23ff49634bb286b50ff00b2a",
-      "bytes": 58357
+      "source_sha256": "33206679de66b2018078a3ee3bbb10a49264c690e59353f3fe348dcd97c2a833",
+      "sha256": "33206679de66b2018078a3ee3bbb10a49264c690e59353f3fe348dcd97c2a833",
+      "bytes": 65533
     },
     {
       "path": "apps/desktop/core/rasathane/product/web.py",
@@ -350,9 +362,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/local/llamacpp.py",
-      "source_sha256": "c94d323d71a9bb7d09a9e11f8e0e69013f6c98567285ff40746a84ce4f4d4de0",
-      "sha256": "c94d323d71a9bb7d09a9e11f8e0e69013f6c98567285ff40746a84ce4f4d4de0",
-      "bytes": 25043
+      "source_sha256": "4a53099ced95d2bcf4d29c5cd06229e5ea47269b34dff8f6e54923e8e83b9260",
+      "sha256": "4a53099ced95d2bcf4d29c5cd06229e5ea47269b34dff8f6e54923e8e83b9260",
+      "bytes": 26494
     },
     {
       "path": "apps/desktop/core/ytcore/local/ollama_ping.py",
@@ -782,21 +794,21 @@
     },
     {
       "path": "apps/desktop/gui/electron/ipc-policy.cjs",
-      "source_sha256": "8d6f3e60e8f3bdbffc847fbdf7250eaeb77398207669347191e92542429423e2",
-      "sha256": "8d6f3e60e8f3bdbffc847fbdf7250eaeb77398207669347191e92542429423e2",
-      "bytes": 3858
+      "source_sha256": "69d207ac85c3ae433f02ad4cf5d9a6cee2b6d2a5d9b7409fbd1238020f60eb02",
+      "sha256": "69d207ac85c3ae433f02ad4cf5d9a6cee2b6d2a5d9b7409fbd1238020f60eb02",
+      "bytes": 4059
     },
     {
       "path": "apps/desktop/gui/electron/ipc-policy.test.cjs",
-      "source_sha256": "a4bc09d9a29d4c8625872023e67f16fda44cc07a42c987fa925c6ee88136adfc",
-      "sha256": "a4bc09d9a29d4c8625872023e67f16fda44cc07a42c987fa925c6ee88136adfc",
-      "bytes": 3937
+      "source_sha256": "0db3a17bdd1976b75f6a0d80d248d00857888ff2bf4549fed3152fbb90112233",
+      "sha256": "0db3a17bdd1976b75f6a0d80d248d00857888ff2bf4549fed3152fbb90112233",
+      "bytes": 4729
     },
     {
       "path": "apps/desktop/gui/electron/main.cjs",
-      "source_sha256": "6cfdc6b63554029b113cd68ac427b9a0b36017274f7f65daf92658dc96ad9d37",
-      "sha256": "6cfdc6b63554029b113cd68ac427b9a0b36017274f7f65daf92658dc96ad9d37",
-      "bytes": 29659
+      "source_sha256": "c404e856eb28b3ce166e63912355efda4ffd84e101697b62573f9cecd0466bb0",
+      "sha256": "c404e856eb28b3ce166e63912355efda4ffd84e101697b62573f9cecd0466bb0",
+      "bytes": 29854
     },
     {
       "path": "apps/desktop/gui/electron/model-catalog.json",
@@ -859,9 +871,15 @@
       "bytes": 1778
     },
     {
+      "path": "apps/desktop/gui/electron/smoke-product-ui.cjs",
+      "source_sha256": "055a970bea94f9cdb74bdc2e25000d3823f2530a47c7e495252f238c70a9615b",
+      "sha256": "055a970bea94f9cdb74bdc2e25000d3823f2530a47c7e495252f238c70a9615b",
+      "bytes": 3519
+    },
+    {
       "path": "apps/desktop/gui/package.json",
-      "source_sha256": "399fb675f0fdb1682ba55a27e110b70dc4f55b4a34ecb5340751d27b327a888c",
-      "sha256": "399fb675f0fdb1682ba55a27e110b70dc4f55b4a34ecb5340751d27b327a888c",
+      "source_sha256": "6302ed0a8f8d70f354bc2167273a06e625056b81ca73c29829ff548c1241265b",
+      "sha256": "6302ed0a8f8d70f354bc2167273a06e625056b81ca73c29829ff548c1241265b",
       "bytes": 4270
     },
     {
@@ -1046,15 +1064,15 @@
     },
     {
       "path": "apps/desktop/gui/tests/product-flow.cjs",
-      "source_sha256": "9121963958148d0480854cdd708ede872882d61454e8bfcd298abf56184eb7ea",
-      "sha256": "9121963958148d0480854cdd708ede872882d61454e8bfcd298abf56184eb7ea",
-      "bytes": 30393
+      "source_sha256": "1f3368a638a221c0f51d1d7857f5d3352ae6f312e6c4b10b99ef4e23230df8b6",
+      "sha256": "1f3368a638a221c0f51d1d7857f5d3352ae6f312e6c4b10b99ef4e23230df8b6",
+      "bytes": 39872
     },
     {
       "path": "apps/desktop/gui/tests/qa-product-server.py",
-      "source_sha256": "a0a68df104347c374faeb1b49d4345d10d3b1280abbe3e620346a2c78e089d9d",
-      "sha256": "a0a68df104347c374faeb1b49d4345d10d3b1280abbe3e620346a2c78e089d9d",
-      "bytes": 3617
+      "source_sha256": "502ff6a3322fb7ba6dd6d1c48598e1a28ba7cfe999f06c590f756948fc613267",
+      "sha256": "502ff6a3322fb7ba6dd6d1c48598e1a28ba7cfe999f06c590f756948fc613267",
+      "bytes": 4260
     },
     {
       "path": "apps/desktop/gui/ui/brand/rasathane-mark.svg",
@@ -1148,9 +1166,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/index.html",
-      "source_sha256": "85ffdea9315137496e01e44be50f84a80dd10a147b04b620e53118ba4d4f3f14",
-      "sha256": "85ffdea9315137496e01e44be50f84a80dd10a147b04b620e53118ba4d4f3f14",
-      "bytes": 43976
+      "source_sha256": "53248246c86e7e87c4918589344cddc5945158e20588d0776f05a48a3983dcd0",
+      "sha256": "53248246c86e7e87c4918589344cddc5945158e20588d0776f05a48a3983dcd0",
+      "bytes": 44128
     },
     {
       "path": "apps/desktop/gui/ui/lib/pdfjs/LICENSE",
@@ -2402,15 +2420,15 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/main.js",
-      "source_sha256": "920eee4c3ae12d65817bc337b9441bb301327655463e926790773bc43788bd44",
-      "sha256": "920eee4c3ae12d65817bc337b9441bb301327655463e926790773bc43788bd44",
+      "source_sha256": "f43f098a4d9ef6415520fe279b9823ae93f60d4723fabc8bc2b0cd1acf9c2443",
+      "sha256": "f43f098a4d9ef6415520fe279b9823ae93f60d4723fabc8bc2b0cd1acf9c2443",
       "bytes": 60578
     },
     {
       "path": "apps/desktop/gui/ui/src/news-bulletin.js",
-      "source_sha256": "9ebc901ab00f28be99e6452e6cc23c8fcd2097a5b235cd5f9ac5611e8a43c9d9",
-      "sha256": "9ebc901ab00f28be99e6452e6cc23c8fcd2097a5b235cd5f9ac5611e8a43c9d9",
-      "bytes": 13951
+      "source_sha256": "cea65a149950f80675c74f41ce56b115d43b912a53364bb63d9c2e17f0a18d89",
+      "sha256": "cea65a149950f80675c74f41ce56b115d43b912a53364bb63d9c2e17f0a18d89",
+      "bytes": 15135
     },
     {
       "path": "apps/desktop/gui/ui/src/news-summary.js",
@@ -2419,16 +2437,22 @@
       "bytes": 3922
     },
     {
+      "path": "apps/desktop/gui/ui/src/personal-agenda.js",
+      "source_sha256": "cb565af16982622bed0d230547890a29bb11555f3c83b1d05b11edc24d40a55f",
+      "sha256": "cb565af16982622bed0d230547890a29bb11555f3c83b1d05b11edc24d40a55f",
+      "bytes": 11757
+    },
+    {
       "path": "apps/desktop/gui/ui/src/product.js",
-      "source_sha256": "d52e19c0fd11bf2848063f36da9813691a67cfe7fb33fcf2b694c9ada338bed6",
-      "sha256": "d52e19c0fd11bf2848063f36da9813691a67cfe7fb33fcf2b694c9ada338bed6",
-      "bytes": 50466
+      "source_sha256": "eb1d0347fb466c325c5aa612cba0080aa927f304311368657ceabb1023ed19ac",
+      "sha256": "eb1d0347fb466c325c5aa612cba0080aa927f304311368657ceabb1023ed19ac",
+      "bytes": 51168
     },
     {
       "path": "apps/desktop/gui/ui/src/profile-settings.js",
-      "source_sha256": "3ae31d7423b5ee26049ad07c59cb860ab1feb09545686b560d3dfeaed84cd900",
-      "sha256": "3ae31d7423b5ee26049ad07c59cb860ab1feb09545686b560d3dfeaed84cd900",
-      "bytes": 9954
+      "source_sha256": "0581c2b61ca303cc4adde632ff92466dac1a05554cf1ea649ab51585be8c088b",
+      "sha256": "0581c2b61ca303cc4adde632ff92466dac1a05554cf1ea649ab51585be8c088b",
+      "bytes": 10261
     },
     {
       "path": "apps/desktop/gui/ui/src/radar-feed.js",
@@ -2455,10 +2479,16 @@
       "bytes": 1527
     },
     {
+      "path": "apps/desktop/gui/ui/src/source-chat.js",
+      "source_sha256": "3ed03c2988d2c364e1e6721605d1da89fe97b78fd14bce92203edb7301975c2c",
+      "sha256": "3ed03c2988d2c364e1e6721605d1da89fe97b78fd14bce92203edb7301975c2c",
+      "bytes": 4821
+    },
+    {
       "path": "apps/desktop/gui/ui/src/source-manager.js",
-      "source_sha256": "c9024f45dac8e6b9b7310e68704756fcf2b7a65289cf7b85e3bf00027baba465",
-      "sha256": "c9024f45dac8e6b9b7310e68704756fcf2b7a65289cf7b85e3bf00027baba465",
-      "bytes": 9436
+      "source_sha256": "e1795a37b1af40264d54ac027c4d224ea98b88f8227f05fec4bd43bda1c30463",
+      "sha256": "e1795a37b1af40264d54ac027c4d224ea98b88f8227f05fec4bd43bda1c30463",
+      "bytes": 11336
     },
     {
       "path": "apps/desktop/gui/ui/src/workspace-examples.js",
@@ -2491,6 +2521,12 @@
       "bytes": 1839
     },
     {
+      "path": "apps/desktop/gui/ui/tests/personal-agenda.test.mjs",
+      "source_sha256": "db29f28076dc149cbb4d79ba8e5f1b2ec522ef3e106f417139ca84c7e63876a5",
+      "sha256": "db29f28076dc149cbb4d79ba8e5f1b2ec522ef3e106f417139ca84c7e63876a5",
+      "bytes": 7436
+    },
+    {
       "path": "apps/desktop/gui/ui/tests/record-provenance.test.mjs",
       "source_sha256": "1e458cf1ac2847f5f826fff548a932985825fb499a5609de3d999ceca9b87f5f",
       "sha256": "1e458cf1ac2847f5f826fff548a932985825fb499a5609de3d999ceca9b87f5f",
@@ -2503,10 +2539,22 @@
       "bytes": 2149
     },
     {
+      "path": "apps/desktop/gui/ui/tests/source-interactions.test.mjs",
+      "source_sha256": "3cc40c41848adb1d0a4e0a5ae6c60240f306ca4b5bd51b5e880da09252933f9a",
+      "sha256": "3cc40c41848adb1d0a4e0a5ae6c60240f306ca4b5bd51b5e880da09252933f9a",
+      "bytes": 6888
+    },
+    {
       "path": "apps/desktop/gui/ui/tests/workspace-examples.test.mjs",
       "source_sha256": "495e6e01721fb354ee01cbdaab153aad998e58da316cbf0928d02b05fe0de476",
       "sha256": "495e6e01721fb354ee01cbdaab153aad998e58da316cbf0928d02b05fe0de476",
       "bytes": 3151
+    },
+    {
+      "path": "apps/desktop/gui/ui/workspace.css",
+      "source_sha256": "0bb3cb11eb421b102ef9dc112322addf640b90a27bbb13a7c826a0957d30f94e",
+      "sha256": "0bb3cb11eb421b102ef9dc112322addf640b90a27bbb13a7c826a0957d30f94e",
+      "bytes": 5698
     },
     {
       "path": "apps/desktop/infra/.env.example",
@@ -2648,8 +2696,8 @@
     },
     {
       "path": "apps/desktop/pyproject.toml",
-      "source_sha256": "e4e4f9ade044ea54f054d17a879d98052c66ec88156c2c6c8dc7ab3b403fac85",
-      "sha256": "e4e4f9ade044ea54f054d17a879d98052c66ec88156c2c6c8dc7ab3b403fac85",
+      "source_sha256": "3fdc5e9bd69de82f0c45b69f430e548f0a6ce71ed38eb7bf64fb91beb0b10c81",
+      "sha256": "3fdc5e9bd69de82f0c45b69f430e548f0a6ce71ed38eb7bf64fb91beb0b10c81",
       "bytes": 3878
     },
     {
@@ -3037,6 +3085,12 @@
       "bytes": 2207
     },
     {
+      "path": "apps/desktop/tests/test_product_agenda.py",
+      "source_sha256": "5f3ef33a6593cf9b8d1067d0d1a0d42e2a6c6546c9a91b505b31403845326a51",
+      "sha256": "5f3ef33a6593cf9b8d1067d0d1a0d42e2a6c6546c9a91b505b31403845326a51",
+      "bytes": 16108
+    },
+    {
       "path": "apps/desktop/tests/test_product_api.py",
       "source_sha256": "26930d7d62da8713451e828da9fc2bfd358cdd5185acc24dde6750d2886ebd81",
       "sha256": "26930d7d62da8713451e828da9fc2bfd358cdd5185acc24dde6750d2886ebd81",
@@ -3157,6 +3211,12 @@
       "bytes": 488
     },
     {
+      "path": "apps/desktop/tests/test_source_assistant.py",
+      "source_sha256": "3ab3413ffb43e0395457d4ea24e022e15535b26fb90dd82cb367aa66254f9163",
+      "sha256": "3ab3413ffb43e0395457d4ea24e022e15535b26fb90dd82cb367aa66254f9163",
+      "bytes": 10603
+    },
+    {
       "path": "apps/desktop/tests/test_source_encoding.py",
       "source_sha256": "e403e5132a6f4b0384d8219408babf287a487007cc21ce3e6c7428e62c6e795c",
       "sha256": "e403e5132a6f4b0384d8219408babf287a487007cc21ce3e6c7428e62c6e795c",
@@ -3248,8 +3308,8 @@
     },
     {
       "path": "apps/desktop/uv.lock",
-      "source_sha256": "4d14c9911f69b9ecfbc8b8d39c27778a0da3ff12d8abd7d1e3915f9bd979bba0",
-      "sha256": "4d14c9911f69b9ecfbc8b8d39c27778a0da3ff12d8abd7d1e3915f9bd979bba0",
+      "source_sha256": "dac3f58d33d1add01445cd8d6e5203b1871b4dc41f4be3022ba5dfb491b7df85",
+      "sha256": "dac3f58d33d1add01445cd8d6e5203b1871b4dc41f4be3022ba5dfb491b7df85",
       "bytes": 370814
     },
     {
@@ -4723,6 +4783,12 @@
       "bytes": 36535
     },
     {
+      "path": "docs/urun/KISISEL-GUNDEM-KAYNAK-ASISTANI.md",
+      "source_sha256": "97d6cf85257e21d9995fa85d658b2ba3ae833a05056d1d43826d535abd089472",
+      "sha256": "97d6cf85257e21d9995fa85d658b2ba3ae833a05056d1d43826d535abd089472",
+      "bytes": 2873
+    },
+    {
       "path": "docs/urun/LOGO.md",
       "source_sha256": "b2636d18c4abcaff39bd6eaddebf75793cbbe05c5e180fea3c533b948906d10e",
       "sha256": "b2636d18c4abcaff39bd6eaddebf75793cbbe05c5e180fea3c533b948906d10e",
@@ -4751,6 +4817,12 @@
       "source_sha256": "95006e02b1a5e961730703b5f6d36a4a7c32a50f4b85c45e0578024eec8125b0",
       "sha256": "95006e02b1a5e961730703b5f6d36a4a7c32a50f4b85c45e0578024eec8125b0",
       "bytes": 5275
+    },
+    {
+      "path": "docs/urun/REVIZYON-0.7-PLANI.md",
+      "source_sha256": "5158e8b51c8d4c624e21d35e1579779d1e8f92edf7b522eab980297dec1defbd",
+      "sha256": "5158e8b51c8d4c624e21d35e1579779d1e8f92edf7b522eab980297dec1defbd",
+      "bytes": 4298
     },
     {
       "path": "docs/urun/TASARIM.md",

@@ -10,6 +10,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from rasathane.product.agenda import AgendaProfile
 from rasathane.product.connectors import set_service_session
 from rasathane.product.service import ProductService
 from rasathane.product.store import ProductStore
@@ -54,6 +55,10 @@ class Bulletin(Input):
     )
     title: str = Field(default="Akış bülteni", min_length=1, max_length=120)
     workspace_id: str | None = Field(default=None, min_length=1, max_length=64)
+
+
+class Agenda(Input):
+    refresh_sources: StrictBool = False
 
 
 class Note(Input):
@@ -125,7 +130,7 @@ class ServiceSession(Input):
     access_token: str | None = Field(pattern=r"^at_[A-Za-z0-9_-]{43}$")
 
 
-async def _input(request: Request, model: type[Input]) -> dict[str, Any]:
+async def _input(request: Request, model: type[BaseModel]) -> dict[str, Any]:
     if not request.headers.get("content-type", "").lower().startswith("application/json"):
         raise ValueError("JSON Content-Type zorunlu.")
     raw = await request.body()
@@ -135,6 +140,10 @@ async def _input(request: Request, model: type[Input]) -> dict[str, Any]:
 
 
 def register_routes(mcp: FastMCP) -> None:
+    from rasathane.product.source_assistant import register_routes as register_source_routes
+
+    register_source_routes(mcp, get_service)
+
     @mcp.custom_route("/api/product/service-session", methods=["POST", "OPTIONS"])
     async def product_service_session(request: Request) -> Response:
         if request.method == "OPTIONS":
@@ -162,6 +171,10 @@ def register_routes(mcp: FastMCP) -> None:
         store = service.store
         try:
             if request.method == "GET":
+                if resource == "agenda":
+                    return JSONResponse(await run_in_threadpool(service.agenda_status))
+                if resource == "agenda-profile":
+                    return JSONResponse(await run_in_threadpool(store.agenda_profile))
                 if resource == "state":
                     return JSONResponse(await run_in_threadpool(service.state))
                 if resource == "articles":
@@ -204,7 +217,7 @@ def register_routes(mcp: FastMCP) -> None:
                         },
                     )
                 return JSONResponse({"error": "Uç bulunamadı."}, status_code=404)
-            models: dict[str, type[Input]] = {
+            models: dict[str, type[BaseModel]] = {
                 "analysis": Analysis,
                 "research": Research,
                 "workspaces": Workspace,
@@ -213,15 +226,19 @@ def register_routes(mcp: FastMCP) -> None:
                 "sources": Source,
                 "settings": Settings,
                 "bulletins": Bulletin,
+                "agenda": Agenda,
+                "agenda-profile": AgendaProfile,
             }
             if resource not in models:
                 return JSONResponse({"error": "Uç bulunamadı."}, status_code=404)
             body = await _input(request, models[resource])
-            if resource in {"analysis", "research"}:
+            if resource in {"analysis", "research", "agenda"}:
                 return JSONResponse(
                     await run_in_threadpool(service.submit, resource, body), status_code=202
                 )
-            if resource == "bulletins":
+            if resource == "agenda-profile":
+                result = await run_in_threadpool(store.save_agenda_profile, body)
+            elif resource == "bulletins":
                 from rasathane.product.bulletins import create_bulletin
 
                 result = await run_in_threadpool(create_bulletin, store, **body)

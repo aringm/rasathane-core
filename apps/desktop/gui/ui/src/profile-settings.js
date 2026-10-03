@@ -37,9 +37,12 @@ export function createProfileSettings({ $, onSettings }) {
       closeMenu(true);
     }
   });
-  menu.addEventListener("focusout", () => queueMicrotask(() => {
-    if (!menu.contains(document.activeElement) && document.activeElement !== trigger) closeMenu();
-  }));
+  document.addEventListener("focusin", (event) => {
+    // Close after the new focus is known. A temporary blur during a mouse press
+    // must not remove the destination menu item before its click is delivered.
+    if (event.target === document.body || event.target === document.documentElement) return;
+    if (!menu.contains(event.target) && event.target !== trigger) closeMenu();
+  });
   document.addEventListener("pointerdown", (event) => {
     if (!menu.contains(event.target) && !trigger.contains(event.target)) closeMenu();
   });
@@ -48,6 +51,7 @@ export function createProfileSettings({ $, onSettings }) {
     closeMenu();
     onSettings();
   });
+  $("header-ayarlar").addEventListener("click", () => { closeMenu(); onSettings(); });
   $("profil-cikis").addEventListener("click", () => {
     closeMenu();
     $("hesap-cikis").click();
