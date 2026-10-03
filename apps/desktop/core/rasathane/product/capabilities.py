@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -26,7 +27,7 @@ def _model_ready(name: str, required: tuple[str, ...], weights: tuple[str, ...])
 
 def windows_turkish_voice_ready() -> bool:
     """SAPI/OneCore kurulu Türkçe ses kaydı; ses üretimi yapmadan capability kontrolü."""
-    if os.name != "nt":
+    if sys.platform != "win32":
         return False
     import winreg
 

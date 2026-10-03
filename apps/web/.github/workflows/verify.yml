@@ -1,0 +1,53 @@
+name: Rasathane sitesi kontrolleri
+on:
+  pull_request:
+  push:
+    branches: [main, codex/**]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  site-kontrolleri:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+      - name: Kilitli bağımlılıklar
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.23.0 --activate
+          pnpm install --frozen-lockfile
+      - name: Lint, tipler, üyelik sözleşmesi ve production build
+        run: |
+          pnpm lint
+          pnpm exec tsc --noEmit
+          node --test scripts/hesap-sozlesmesi.test.mjs
+          pnpm build
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Sabit sürümlü secret scan
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --output gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz' | sha256sum --check
+          tar -xzf gitleaks.tar.gz gitleaks
+          if [ -n "$BASE_SHA" ]; then
+            ./gitleaks git --redact --no-banner --log-opts="$BASE_SHA..$HEAD_SHA" .
+          else
+            ./gitleaks git --redact --no-banner --log-opts="-1" .
+          fi

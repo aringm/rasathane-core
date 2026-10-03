@@ -88,3 +88,42 @@ def test_dokum_node_fallback_yok():
 def test_ozet_node_fallback_yok():
     out = ozet_node({"icerik_tr": "", "transkript_metni": "Sözleşme hukuku. " * 20})
     assert out["ozet_faithfulness_durum"] == "ozet_yok"
+
+
+def test_arxiv_short_medium_keep_source_sentences_instead_of_bad_compression(monkeypatch):
+    from ytcore.content.llm import FakeLLM
+
+    calls = []
+    body = (
+        "Eski dizi modelleri RNN veya CNN kullanır. "
+        "Bu modellerde kodlayıcı ve kod çözücü dikkat mekanizmasıyla bağlanır. "
+        "Yeni Transformer yalnız dikkat kullanır, RNN ve CNN kullanmaz. "
+        "İngilizce-Almanca sonucu 28,4 BLEU, İngilizce-Fransızca sonucu 41,8 BLEU'dur. "
+        "Eğitim 3,5 gün ve sekiz GPU gerektirmiştir."
+    )
+
+    class BadCompression(FakeLLM):
+        def uret(self, sistem, kullanici, *, model=None):
+            calls.append(sistem)
+            if "tek paragraflık" in sistem or "TL;DR" in sistem:
+                return "Eski RNN ve CNN modelleri Transformer kullanır."
+            if "birleştir" in sistem:
+                return "Detaylı model özeti; kaynak sonuçları ayrıca incelenmelidir."
+            return super().uret(sistem, kullanici, model=model)
+
+    monkeypatch.setattr("ytcore.content.node.llm_al", lambda *args, **kwargs: BadCompression())
+    out = ozet_node(
+        {
+            "icerik_tr": body,
+            "kaynak_turu": "arxiv",
+            "kaynak_ozel": {"text_scope": "abstract_only", "full_text_fetched": False},
+        }
+    )
+    assert out["ozet"]["kisa"] == ". ".join(body.split(". ")[:3]) + "."
+    assert out["ozet"]["orta"] == body
+    assert "28,4 BLEU" in out["ozet"]["orta"]
+    assert "41,8 BLEU" in out["ozet"]["orta"]
+    assert "3,5 gün" in out["ozet"]["orta"]
+    assert "Eski RNN ve CNN modelleri Transformer kullanır." not in str(out)
+    assert not any("tek paragraflık" in call or "TL;DR" in call for call in calls)
+    assert out["ozet"]["detay"].startswith("Detaylı model özeti")

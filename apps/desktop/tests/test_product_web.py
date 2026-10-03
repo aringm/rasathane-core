@@ -6,6 +6,7 @@ from datetime import date
 import httpx
 import pytest
 from rasathane.product import connectors, web
+from rasathane.product.store import ProductStore
 
 
 def test_ddg_html_extraction_and_private_result_rejection(monkeypatch):
@@ -137,9 +138,91 @@ def test_muhakeme_native_token_overrides_env_and_keeps_case_provenance(monkeypat
         assert calls[0].headers["authorization"] == "Bearer " + native
         assert result[0]["provenance"]["case_id"] == "2026/1 E. 2026/2 K."
         assert result[0]["published_at"] == "2026-10-03"
+        assert result[0]["provenance"]["date_kind"] == "unknown"
+        assert result[0]["provenance"]["date_semantics"] == "upstream_date_unverified"
+        assert result[0]["provenance"]["analysis_supported"] is False
         assert native not in str(result)
     finally:
         connectors.set_service_session(None)
+
+
+@pytest.mark.parametrize("summary_kind", ["ai_generated", "source_excerpt", "none"])
+def test_managed_cache_preserves_decision_date_scope_and_receipt(
+    monkeypatch, tmp_path, summary_kind
+):
+    payload = {
+        "schema_version": "2.0",
+        "source_kind": "curated_cache",
+        "source_fetched_at": "2026-10-03T12:00:00+00:00",
+        "items": [
+            {
+                "kind": "case",
+                "title": "Yargıtay 10. Ceza Dairesi · E. 2026/8295 · K. 2026/12094",
+                "url": "https://mevzuat.adalet.gov.tr/ictihat/1228680200",
+                "summary": "Özet" if summary_kind != "none" else "",
+                "published_at": None,
+                "decision_date": "2026-09-23",
+                "date_kind": "decision",
+                "summary_kind": summary_kind,
+                "analysis_supported": False,
+                "case_id": "1228680200",
+                "authority": "Yargıtay",
+            }
+        ],
+    }
+    monkeypatch.setenv("RASATHANE_MUHAKEME_API_URL", "https://www.muhakeme.ai")
+    monkeypatch.setattr(connectors, "safe_json_request", lambda *args, **kwargs: payload)
+    rows = connectors.fetch_muhakeme("yargitay")
+    assert rows[0]["published_at"] is None
+    receipt = rows[0]["provenance"]
+    assert receipt["decision_date"] == "2026-09-23"
+    assert receipt["date_kind"] == "decision"
+    assert receipt["date_semantics"] == "decision_date_not_publication_date"
+    assert receipt["summary_kind"] == summary_kind
+    assert receipt["item_kind"] == "case"
+    assert receipt["analysis_supported"] is False
+    assert receipt["source_kind"] == "curated_cache"
+    assert receipt["source_fetched_at"] == payload["source_fetched_at"]
+    assert receipt["schema_version"] == "2.0"
+    assert receipt["text_scope"] == (
+        "official_metadata" if summary_kind == "none" else "managed_summary"
+    )
+    store = ProductStore(tmp_path / "product.sqlite3")
+    store.add_articles(None, rows)
+    saved = store.list_articles()[0]
+    assert saved["published_at"] is None
+    assert saved["provenance"]["decision_date"] == "2026-09-23"
+    assert saved["provenance"]["summary_kind"] == summary_kind
+    assert saved["provenance"]["source_fetched_at"] != saved["created_at"]
+
+
+def test_managed_cache_preserves_actual_legislation_publication_date(monkeypatch):
+    payload = {
+        "schema_version": "2.0",
+        "source_kind": "curated_cache",
+        "source_fetched_at": "2026-10-03T12:00:00+00:00",
+        "items": [
+            {
+                "kind": "legislation",
+                "title": "Yönetmelik",
+                "url": "https://www.resmigazete.gov.tr/eskiler/2026/10/20261003-1.htm",
+                "summary": "Kaynak alıntısı",
+                "published_at": "2026-10-03",
+                "decision_date": None,
+                "date_kind": "publication",
+                "summary_kind": "source_excerpt",
+                "analysis_supported": False,
+            }
+        ],
+    }
+    monkeypatch.setenv("RASATHANE_MUHAKEME_API_URL", "https://www.muhakeme.ai")
+    monkeypatch.setattr(connectors, "safe_json_request", lambda *args, **kwargs: payload)
+    row = connectors.fetch_muhakeme("mevzuat")[0]
+    assert row["published_at"] == "2026-10-03"
+    assert row["provenance"]["decision_date"] is None
+    assert row["provenance"]["date_kind"] == "publication"
+    assert row["provenance"]["summary_kind"] == "source_excerpt"
+    assert row["provenance"]["analysis_supported"] is False
 
 
 def test_public_yargitay_exact_protocol_date_semantics_and_error_envelope(monkeypatch):
@@ -171,7 +254,9 @@ def test_public_yargitay_exact_protocol_date_semantics_and_error_envelope(monkey
     assert calls[0][1]["data"]["sortFields"] == ["KARAR_TARIHI"]
     assert rows[0]["url"] == "https://mevzuat.adalet.gov.tr/ictihat/1228680200"
     assert rows[0]["provenance"]["case_id"] == "1228680200"
-    assert rows[0]["provenance"]["decision_date"] == rows[0]["published_at"]
+    assert rows[0]["published_at"] is None
+    assert rows[0]["provenance"]["decision_date"] == "2026-09-23T00:00:00+03:00"
+    assert rows[0]["provenance"]["date_kind"] == "decision"
     assert rows[0]["provenance"]["analysis_supported"] is False
     assert rows[0]["provenance"]["text_scope"] == "official_metadata"
     payload = {"data": None, "metadata": {"FMTY": "ERROR", "FMC": "quota"}}

@@ -19,11 +19,15 @@ def kaynak_icerigi_yaz(
     govde = metin.strip()
     if not govde:
         govde = f"_Kaynak içeriği edinilemedi: {hata or durum or 'bilinmeyen hata'}._"
+    kapsam = ""
+    if kayit.kaynak_turu == "arxiv" and kayit.kaynak_ozel.get("text_scope") == "abstract_only":
+        kapsam = "> Kapsam: Orijinal yayın özeti (abstract); tam makale edinilmedi.\n"
     icerik = (
         f"# {kayit.baslik} — Kaynak İçeriği\n\n"
         f"> Kaynak türü: {kayit.kaynak_turu}\n"
         f"> Kanonik URL: {kayit.kaynak_url or kayit.video_url}\n"
         f"> Sahip/Yazar: {sahip} · Yayın: {tarih} · Dil: {kayit.anadil or '?'}\n"
+        f"{kapsam}"
         f"> Edinim: {durum} · Analiz: {kayit.analiz_tarihi}\n\n"
         f"{govde}\n\n---\n_{IMZA}_\n"
     )

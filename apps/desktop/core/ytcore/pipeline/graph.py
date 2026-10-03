@@ -437,6 +437,29 @@ def _output_node(state: GState) -> GState:
             KaynakSinyali.model_validate(sinyal)
             for sinyal in (state.get("kaynak_sinyalleri") or [])
         ]
+        abstract_only = (
+            kayit.kaynak_turu == "arxiv" and kayit.kaynak_ozel.get("text_scope") == "abstract_only"
+        )
+        summary_provenance = resmi.provenance() if resmi else {"method": "local_model_summary"}
+        if abstract_only:
+            summary_provenance = {
+                "method": "source_sentence_selection_and_model_summary",
+                "scope": "abstract_only",
+                "layers": {
+                    "kisa": "translated_source_sentences",
+                    "orta": "translated_source_sentences",
+                    "detay": "local_model_summary",
+                },
+                "reference": "icerik_tr",
+                "reference_sha256": hashlib.sha256(
+                    (state.get("icerik_tr") or "").encode("utf-8")
+                ).hexdigest(),
+                "original_reference": "01_kaynak-icerigi.md",
+                "original_text_sha256": kayit.kaynak_ozel.get("original_text_sha256"),
+                "source_language": kayit.anadil,
+                "translation_status": ceviri_durumu,
+                "independent_verification": False,
+            }
         sonuc = AnalizSonucu(
             index=kayit,
             klasor=str(klasor),
@@ -460,7 +483,7 @@ def _output_node(state: GState) -> GState:
             ozet_faithfulness_durum=state.get("ozet_faithfulness_durum"),
             analysis_mode=MODE if resmi else "model_analysis",
             quality_provenance={
-                "summary": resmi.provenance() if resmi else {"method": "local_model_summary"},
+                "summary": summary_provenance,
                 "faithfulness": {
                     "method": "not_evaluated_direct_quotes" if resmi else "local_model_claim_judge",
                     "evaluated_output": "ozet_detay",
@@ -479,10 +502,15 @@ def _output_node(state: GState) -> GState:
                     "encoding": kayit.kaynak_ozel.get("encoding"),
                     "language_source": kayit.kaynak_ozel.get("language_source"),
                     "translation_status": ceviri_durumu,
+                    "text_scope": kayit.kaynak_ozel.get("text_scope"),
+                    "full_text_fetched": kayit.kaynak_ozel.get("full_text_fetched"),
+                    "original_text_sha256": kayit.kaynak_ozel.get("original_text_sha256"),
                 },
                 "factcheck": {
                     "confidence_scope": "not_evaluated_normative_source"
                     if resmi
+                    else "search_snippets_not_independent_verification"
+                    if any(i.get("kanit_turu") == "arama_ozeti" for i in factcheck_iddialar)
                     else "uncalibrated_model_heuristic",
                     "reason": state.get("factcheck_reason", ""),
                     "primary_source_url": resmi.url if resmi else None,

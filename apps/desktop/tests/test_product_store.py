@@ -99,6 +99,80 @@ def test_feed_failure_retains_last_success_and_exposes_stale_error(tmp_path):
     assert current["freshness"] == "error"
 
 
+def test_articles_use_decision_date_when_publication_is_unknown(tmp_path):
+    store = ProductStore(tmp_path)
+    store.add_articles(
+        None,
+        [
+            {
+                "title": "Yeni karar",
+                "url": "https://mevzuat.adalet.gov.tr/ictihat/2",
+                "published_at": None,
+                "provenance": {"decision_date": "2026-09-23", "date_kind": "decision"},
+            },
+            {
+                "title": "Eski karar",
+                "url": "https://mevzuat.adalet.gov.tr/ictihat/1",
+                "published_at": None,
+                "provenance": {"decision_date": "2026-09-01", "date_kind": "decision"},
+            },
+        ],
+    )
+    rows = store.list_articles()
+    assert [row["title"] for row in rows] == ["Yeni karar", "Eski karar"]
+    assert all(row["published_at"] is None for row in rows)
+
+
+def test_articles_keep_legislation_publication_and_unknown_date_fallback(tmp_path, monkeypatch):
+    monkeypatch.setattr("rasathane.product.store.now", lambda: "2026-10-04T12:00:00+00:00")
+    store = ProductStore(tmp_path)
+    store.add_articles(
+        None,
+        [
+            {
+                "title": "Karar",
+                "url": "https://mevzuat.adalet.gov.tr/ictihat/2",
+                "published_at": None,
+                "provenance": {"decision_date": "2026-09-23", "date_kind": "decision"},
+            },
+            {
+                "title": "Düzenleme",
+                "url": "https://www.resmigazete.gov.tr/eskiler/2026/10/20261003-1.htm",
+                "published_at": "2026-10-03",
+                "provenance": {"date_kind": "publication"},
+            },
+            {"title": "Tarihsiz kayıt", "url": "https://example.com/unknown"},
+        ],
+    )
+    rows = store.list_articles()
+    assert [row["title"] for row in rows] == ["Tarihsiz kayıt", "Düzenleme", "Karar"]
+    assert rows[1]["published_at"] == "2026-10-03"
+    assert rows[0]["created_at"] == "2026-10-04T12:00:00+00:00"
+
+
+def test_article_date_order_does_not_change_note_created_order(tmp_path, monkeypatch):
+    stamp = {"value": "2026-10-01T12:00:00+00:00"}
+    monkeypatch.setattr("rasathane.product.store.now", lambda: stamp["value"])
+    store = ProductStore(tmp_path)
+    workspace = store.create_workspace("Notlar")
+    old = store.save_note(workspace["id"], "Eski not", "Birinci kayıt")
+    stamp["value"] = "2026-10-02T12:00:00+00:00"
+    new = store.save_note(workspace["id"], "Yeni not", "İkinci kayıt")
+    store.add_articles(
+        None,
+        [
+            {
+                "title": "Yayın",
+                "url": "https://example.com/publication",
+                "published_at": "2030-01-01",
+            }
+        ],
+    )
+    notes = store.list_notes(workspace["id"])
+    assert [note["id"] for note in notes] == [new["id"], old["id"]]
+    assert notes[0]["created_at"] == "2026-10-02T12:00:00+00:00"
+
+
 def test_import_merges_existing_feed_id_and_url_without_losing_current_notes(tmp_path):
     store = ProductStore(tmp_path)
     feed = store.upsert_feed("Güncel kaynak", "https://example.com/rss", feed_id="new-id")

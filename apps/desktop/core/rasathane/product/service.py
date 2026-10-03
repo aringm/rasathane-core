@@ -491,19 +491,23 @@ class ProductService:
                     },
                     {
                         "kind": "yargitay",
-                        "name": "Yargıtay tam karar bağlantısı · Muhakeme",
+                        "name": "Yargıtay özetleri · Muhakeme",
                         "source_link": "https://karararama.yargitay.gov.tr/",
                         "status": "configured_unverified"
                         if bridge_configured
                         else "not_configured",
+                        "text_scope": "managed_summary",
+                        "analysis_supported": False,
                     },
                     {
                         "kind": "mevzuat",
-                        "name": "Mevzuat Bilgi Sistemi",
+                        "name": "Mevzuat özetleri · Muhakeme",
                         "source_link": "https://www.mevzuat.gov.tr/",
                         "status": "configured_unverified"
                         if bridge_configured
                         else "not_configured",
+                        "text_scope": "managed_summary",
+                        "analysis_supported": False,
                     },
                 ],
             },

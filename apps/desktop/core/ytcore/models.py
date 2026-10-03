@@ -77,6 +77,10 @@ class FactIddia(BaseModel):
     guven: float = 0.0
     gerekce: str = ""
     kaynaklar: list[str] = Field(default_factory=list)
+    ilgili_kaynaklar: list[str] = Field(default_factory=list)
+    aday_karar: str | None = None
+    kanit_turu: str = "bilinmiyor"
+    bagimsiz_dogrulama: bool = False
 
 
 class AnalizSonucu(BaseModel):

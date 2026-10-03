@@ -13,7 +13,7 @@ ALLOWED = ("apps/desktop/core/", "apps/desktop/mcp/", "apps/desktop/tests/", "ap
            "apps/desktop/gui/electron/", "apps/desktop/gui/scripts/", "apps/desktop/gui/ui/", "apps/desktop/gui/src-tauri/icons/",
            "apps/desktop/gui/src-tauri/src/", "apps/desktop/gui/src-tauri/capabilities/",
            "apps/desktop/infra/", "apps/radar/apps/", "apps/radar/packages/", "apps/radar/tests/",
-           "apps/radar/alembic/", "apps/web/src/", "apps/web/public/", "apps/web/scripts/", "docs/urun/", "scripts/", ".github/")
+           "apps/radar/alembic/", "apps/web/src/", "apps/web/public/", "apps/web/scripts/", "apps/web/.github/", "docs/urun/", "scripts/", ".github/")
 ROOT_FILES = {"LICENSE", "NOTICE.md", "README.md", "CONTRIBUTING.md", ".gitignore", ".gitattributes", "AGENTS.md",
               "apps/desktop/pyproject.toml", "apps/desktop/uv.lock", "apps/desktop/LICENSE", "apps/desktop/.env.example", "apps/desktop/.gitignore",
               "apps/desktop/gui/package.json", "apps/desktop/gui/pnpm-lock.yaml", "apps/desktop/gui/pnpm-workspace.yaml",

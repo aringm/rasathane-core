@@ -403,9 +403,20 @@ async function smokeAnaliz(pencere) {
         if (job.status !== "completed") throw new Error("Gerçek analiz tamamlanamadı.");
         const result = job.result;
         if (SMOKE_GENERIC) {
+          const source = result.quality_provenance?.source;
+          const summary = result.quality_provenance?.summary;
+          const claims = result.factcheck_iddialar;
           if (result?.stub !== false || result.cloud_cagrisi_sayisi !== 0 ||
               result.kaynak_turu !== "arxiv" || !(result.ozet_detay || "").trim() ||
-              result.analysis_mode === "source_extracts") {
+              result.analysis_mode !== "model_analysis" ||
+              source?.text_scope !== "abstract_only" || source.full_text_fetched !== false ||
+              !/^[a-f0-9]{64}$/.test(source.original_text_sha256 || "") ||
+              summary?.method !== "source_sentence_selection_and_model_summary" ||
+              summary.layers?.kisa !== "translated_source_sentences" ||
+              summary.layers?.orta !== "translated_source_sentences" ||
+              !Array.isArray(claims) || !claims.length ||
+              claims.some(claim => claim.karar !== "BELİRSİZ" || claim.guven !== 0 ||
+                claim.bagimsiz_dogrulama !== false || claim.kanit_turu !== "arama_ozeti")) {
             throw new Error("Genel kaynak yerel analiz yolu doğrulanamadı.");
           }
         } else if (result?.transkript_kaynak_dil !== "tr" || result.ceviri_durumu !== "atlandi" ||
@@ -441,6 +452,8 @@ async function smokeArtifact(pencere) {
         pages: Number(pdf?.dataset.pages || 0), page: Number(pdf?.dataset.page || 0),
         canvas: Boolean(pdf?.querySelector('canvas')?.width),
         summaryHeading: document.getElementById('ozet-baslik')?.textContent,
+        summaryMethod: document.getElementById('ozet-model-not')?.textContent,
+        factcheckSummary: document.getElementById('factcheck-ozet')?.textContent,
         sourceReason: document.getElementById('factcheck-liste')?.textContent };
     })()`);
     if (!pdfOpened && status.mapReady === "true" && status.nodes > 0) {
@@ -453,6 +466,11 @@ async function smokeArtifact(pencere) {
     if (pdfOpened && status.pdfReady === "true" && status.worker === "ready" && status.pages > 0 && status.canvas) {
       if (!SMOKE_GENERIC && (status.summaryHeading !== "Birincil metinden okuma özeti" || !status.sourceReason?.trim())) {
         throw new Error("Birincil kaynak okuma yöntemi arayüzde açıklanmadı.");
+      }
+      if (SMOKE_GENERIC && (status.summaryHeading !== "Yayın özeti (abstract) analizi" ||
+          !status.summaryMethod?.includes("tam makale okunmadı") ||
+          !status.factcheckSummary?.includes("0 destekleniyor · 0 çelişiyor"))) {
+        throw new Error("Abstract kapsamı ve bağımsız doğrulama sınırı arayüzde açıklanmadı.");
       }
       console.log(JSON.stringify({ smoke: "packaged-artifacts", ...status }));
       await pencere.webContents.executeJavaScript(`document.getElementById('izleyici-kapat').click()`);

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 from ytcore.content.llm import FakeLLM
-from ytcore.content.ozet import ozetle, semantic_chunk
+from ytcore.content.ozet import abstract_cumleleri, ozetle, semantic_chunk
 from ytcore.infra.embedding import FakeEmbedding
 
 
@@ -59,3 +59,36 @@ def test_ozetle_orta_kisa_bos_detaydan_turetir():
     assert sonuc["detay"].strip()
     assert sonuc["orta"].strip()  # detay'dan türedi (boş kalmadı)
     assert sonuc["kisa"].strip()  # orta ilk cümlesinden türedi
+
+
+@pytest.mark.parametrize("abbreviation", ["Dr.", "Prof.", "e.g.", "U.S."])
+def test_abstract_ambiguous_abbreviation_keeps_whole_text(abbreviation):
+    text = (
+        "Eski modeller tekrarlayan ağ kullanır. Yeni Transformer yalnız dikkat kullanır. "
+        f"{abbreviation} Smith sonraki modeli sundu. "
+        "Model 28.4 BLEU ve 41.8 BLEU elde etti. Eğitim 3.5 gün sürdü."
+    )
+    selected = abstract_cumleleri(text)
+    assert selected["kisa"] == text
+    assert selected["orta"] == text
+
+
+@pytest.mark.parametrize(
+    "clause",
+    [
+        (
+            'Yazarlar "Dikkat mekanizması başarılıdır. '
+            'Sonuçlar tekrarlanmalıdır." ifadesini kullanmıştır.'
+        ),
+        "Yazarlar “Dikkat başarılıdır. Sonuç tekrarlanmalıdır.” ifadesini kullanmıştır.",
+        "Değerlendirme 1. Transformer sonuçları ve 2. Çözümleme üzerinden yapılmıştır.",
+        "Dikkat mekanizması (İlk model. Son model.) ile değerlendirilmiştir.",
+        "İlk sonuç açıklanmıştır... Yeni açıklama üçüncü değerlendirmeyi tamamlamıştır.",
+    ],
+)
+def test_abstract_quotes_numbered_sections_or_brackets_keep_whole_text(clause):
+    text = (
+        "İlk sonuç açıklanmıştır. İkinci sonuç doğrulanmıştır. "
+        f"{clause} Dördüncü sonuç paylaşılmıştır."
+    )
+    assert abstract_cumleleri(text) == {"kisa": text, "orta": text}

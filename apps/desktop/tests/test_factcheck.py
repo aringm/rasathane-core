@@ -54,11 +54,10 @@ def test_cloud_verdict_kullanilir():
             return CloudYanit("DESTEKLİYOR", 50, 3)
 
     cloud = SahteCloud()
-    sonuc, durum = fact_check(
-        "Enflasyon yüzde 40 arttı.", FakeLLM(), FakeWebSearch(), cloud=cloud
-    )
+    sonuc, durum = fact_check("Enflasyon yüzde 40 arttı.", FakeLLM(), FakeWebSearch(), cloud=cloud)
     assert cloud.cagri_sayisi >= 1  # verdict cloud'dan geldi
-    assert any(i["karar"] == "DESTEKLİYOR" for i in sonuc)
+    assert all(i["karar"] == "BELİRSİZ" for i in sonuc)
+    assert any(i["aday_karar"] == "DESTEKLİYOR" for i in sonuc)
     assert any("cloud" in (i.get("gerekce") or "").lower() for i in sonuc)  # dürüst kaynak izi
 
 
@@ -77,9 +76,7 @@ def test_cloud_verdict_hatasi_local_fallbacka_duser():
     sonuc, durum = fact_check(
         "Enflasyon yüzde 40 arttı.", FakeLLM(), FakeWebSearch(), cloud=PatlayanCloud()
     )
-    assert sonuc and all(
-        i["karar"] in ("DESTEKLİYOR", "ÇELİŞİYOR", "BELİRSİZ") for i in sonuc
-    )
+    assert sonuc and all(i["karar"] in ("DESTEKLİYOR", "ÇELİŞİYOR", "BELİRSİZ") for i in sonuc)
 
 
 class _KucukHarfVerdictLLM:
@@ -99,7 +96,8 @@ def test_verdict_kucuk_harf_tr_katlama():
         _KucukHarfVerdictLLM(),
         FakeWebSearch(),
     )
-    assert any(i["karar"] == "DESTEKLİYOR" for i in sonuc)
+    assert all(i["karar"] == "BELİRSİZ" for i in sonuc)
+    assert any(i["aday_karar"] == "DESTEKLİYOR" for i in sonuc)
 
 
 def test_cloud_verdict_kod_hatasi_gorunur_coker():
@@ -112,9 +110,7 @@ def test_cloud_verdict_kod_hatasi_gorunur_coker():
     import pytest
 
     with pytest.raises(AttributeError):
-        fact_check(
-            "Enflasyon yuzde 40 artti.", FakeLLM(), FakeWebSearch(), cloud=BozukCloud()
-        )
+        fact_check("Enflasyon yuzde 40 artti.", FakeLLM(), FakeWebSearch(), cloud=BozukCloud())
 
 
 def test_karar_bul_konum_bazli_ilk_eslesme():

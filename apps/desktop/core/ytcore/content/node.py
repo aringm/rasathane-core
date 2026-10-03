@@ -152,6 +152,10 @@ def ozet_node(state: GState) -> GState:
             }
         llm = llm_al(cfg.ollama_reduce_model)
         embed = embedding_al()
+        abstract_only = (
+            state.get("kaynak_turu") == "arxiv"
+            and (state.get("kaynak_ozel") or {}).get("text_scope") == "abstract_only"
+        )
         try:
             sonuc = ozetle(
                 metin,
@@ -159,6 +163,7 @@ def ozet_node(state: GState) -> GState:
                 embed,
                 map_model=cfg.ollama_map_model,
                 reduce_model=cfg.ollama_reduce_model,
+                kaynak_cumleleri=abstract_only,
             )
         except _KOD_HATALARI:
             raise
@@ -182,6 +187,7 @@ def ozet_node(state: GState) -> GState:
                     embed,
                     map_model=cfg.ollama_map_model,
                     reduce_model=cfg.ollama_reduce_model,
+                    kaynak_cumleleri=abstract_only,
                 )
                 skor2, durum2 = faithfulness(
                     sonuc2["detay"], metin, judge, model=cfg.ollama_judge_model, embed=embed

@@ -195,6 +195,7 @@ const ETIKET = {
   yeniden_uretildi: "Yeniden üretildi",
   ozet_yok: "Özet yok",
   kaynak_alintisi: "Birincil kaynak alıntısı",
+  aday_inceleme: "Arama incelemesi",
   atlandi_resmi_kaynak: "Birincil metin kullanıldı",
   // kurulum/servis eksiklikleri — ham snake_case kullanıcıya sızmasın
   piper_kurulu_degil: "Piper kurulu değil",
@@ -506,7 +507,14 @@ function paragrafYaz(hedef, metin) {
 function renderOzet(d) {
   const bolum = $("ozet-bolum");
   const kaynakAlintisi = d.analysis_mode === "source_extracts";
-  $("ozet-baslik").textContent = kaynakAlintisi ? "Birincil metinden okuma özeti" : "Özet";
+  const abstractOnly =
+    (d.kaynak_turu || d.index?.kaynak_turu) === "arxiv" &&
+    d.quality_provenance?.source?.text_scope === "abstract_only";
+  $("ozet-baslik").textContent = kaynakAlintisi
+    ? "Birincil metinden okuma özeti"
+    : abstractOnly
+      ? "Yayın özeti (abstract) analizi"
+      : "Özet";
   const kisa = (d.ozet_kisa || "").trim();
   const detay = (d.ozet_detay || d.ozet_orta || "").trim();
   if (!kisa && !detay) {
@@ -518,8 +526,13 @@ function renderOzet(d) {
   paragrafYaz($("ozet-detay"), detay || kisa);
   $("ozet-model-not").textContent = kaynakAlintisi
     ? "Madde ve fıkralar birincil metinden alınmıştır. Modelin yeniden yazdığı hukuki hükümler veya doğruluk puanı kullanılmaz."
-    : "Model destek tahmini, detay özet ile analiz metnini karşılaştırır; doğruluk onayı değildir.";
-  $("ozet-model-not").classList.toggle("gizli", !kaynakAlintisi && d.ozet_faithfulness == null);
+    : abstractOnly
+      ? "Yalnız yayın özeti (abstract) incelendi; tam makale okunmadı. Kısa/orta katmanlar Türkçe model çevirisinden seçilmiş tam cümlelerdir. Detay katmanı yerel model özetidir. Model destek tahmini doğruluk onayı değildir."
+      : "Model destek tahmini, detay özet ile analiz metnini karşılaştırır; doğruluk onayı değildir.";
+  $("ozet-model-not").classList.toggle(
+    "gizli",
+    !kaynakAlintisi && !abstractOnly && d.ozet_faithfulness == null,
+  );
 }
 
 function renderKaynakSinyalleri(d) {
@@ -557,7 +570,8 @@ function renderKaynakSinyalleri(d) {
 
 function renderKisisel(d) {
   const bolum = $("kisisel-bolum");
-  $("kisisel-baslik").textContent = d.analysis_mode === "source_extracts" ? "Okuma notları" : "Kişisel analiz";
+  $("kisisel-baslik").textContent =
+    d.analysis_mode === "source_extracts" ? "Okuma notları" : "Kişisel analiz";
   const metin = (d.kisisel_analiz || "").trim();
   if (!metin) {
     bolum.classList.add("gizli");
@@ -579,7 +593,16 @@ const FC_KARAR = {
 };
 function fcKart(it) {
   const k =
-    FC_KARAR[(it.karar || "").toLocaleUpperCase("tr")] || FC_KARAR["BELİRSİZ"];
+    it.bagimsiz_dogrulama === true
+      ? FC_KARAR[(it.karar || "").toLocaleUpperCase("tr")] ||
+        FC_KARAR["BELİRSİZ"]
+      : FC_KARAR["BELİRSİZ"];
+  const legacyDecision =
+    it.bagimsiz_dogrulama !== true &&
+    (!it.kanit_turu || it.kanit_turu === "bilinmiyor") &&
+    ["DESTEKLİYOR", "ÇELİŞİYOR"].includes(
+      (it.karar || "").toLocaleUpperCase("tr"),
+    );
   const kaynaklar = (it.kaynaklar || [])
     .map((u) => {
       try {
@@ -598,7 +621,22 @@ function fcKart(it) {
       el("span", { class: "fc-iddia" }, it.iddia || "—"),
       rozetEl(k.renk, k.etiket),
     ),
-    it.gerekce ? el("div", { class: "fc-gerekce" }, it.gerekce) : null,
+    legacyDecision
+      ? el(
+          "div",
+          { class: "fc-gerekce" },
+          "Önceki kayıtta model kararı bulunuyor; bu kaydın kaynak kanıtı doğrulanmış değil.",
+        )
+      : it.gerekce
+        ? el("div", { class: "fc-gerekce" }, it.gerekce)
+        : null,
+    it.bagimsiz_dogrulama !== true
+      ? el(
+          "p",
+          { class: "field-note" },
+          "Tam kaynak metnine dayanan bağımsız doğrulama kayıtlı değil; arama sonucu ve model değerlendirmesi doğruluk onayı değildir.",
+        )
+      : null,
     kaynaklar.length
       ? el(
           "div",
@@ -615,7 +653,9 @@ function renderFactcheck(d) {
     if (d.factcheck_reason) {
       bolum.classList.remove("gizli");
       $("factcheck-ozet").textContent = "birincil kaynak";
-      $("factcheck-liste").replaceChildren(el("p", { class: "kart field-note" }, d.factcheck_reason));
+      $("factcheck-liste").replaceChildren(
+        el("p", { class: "kart field-note" }, d.factcheck_reason),
+      );
       return;
     }
     bolum.classList.add("gizli");
@@ -624,7 +664,10 @@ function renderFactcheck(d) {
   bolum.classList.remove("gizli");
   const say = { destekliyor: 0, celisiyor: 0, belirsiz: 0 };
   for (const it of iddialar) {
-    const k = FC_KARAR[(it.karar || "").toLocaleUpperCase("tr")];
+    const k =
+      it.bagimsiz_dogrulama === true
+        ? FC_KARAR[(it.karar || "").toLocaleUpperCase("tr")]
+        : FC_KARAR["BELİRSİZ"];
     if (k) say[k.token]++;
   }
   $("factcheck-ozet").textContent =
@@ -878,6 +921,11 @@ function renderStepper(d) {
   const kaynakDurumu = d.kaynak_durumu || d.transkript_durumu;
   const tur = d.kaynak_turu || (d.index && d.index.kaynak_turu) || "youtube";
   const kaynakAdi = (KAYNAKLAR[tur] || {}).ad;
+  const candidateOnly =
+    d.factcheck_durum === "uretildi" &&
+    !(d.factcheck_iddialar || []).some(
+      (item) => item.bagimsiz_dogrulama === true,
+    );
   const asamalar = [
     {
       ad: "İçerik",
@@ -910,10 +958,12 @@ function renderStepper(d) {
           : "",
     },
     {
-      ad: "Fact-Check",
-      renk: renkBul(RENK.factcheck, d.factcheck_durum),
-      durum: d.factcheck_durum,
-      alt: `${d.factcheck_iddia_sayisi || 0} iddia`,
+      ad: "İddia",
+      renk: candidateOnly
+        ? "uyari"
+        : renkBul(RENK.factcheck, d.factcheck_durum),
+      durum: candidateOnly ? "aday_inceleme" : d.factcheck_durum,
+      alt: `${d.factcheck_iddia_sayisi || 0} iddia${candidateOnly ? " · kesin doğrulama yok" : ""}`,
       hata: d.factcheck_hata,
     },
     {
@@ -1033,7 +1083,7 @@ function renderCikti(d) {
     [
       "İnceleme",
       [
-        ["06", "Fact-check", null],
+        ["06", "İddia incelemesi", null],
         ["07", "Kişisel analiz", null],
         ["08", "Değerleme", null],
       ],

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 from ytcore.content.llm import LLMClient
-from ytcore.intel.memory import MemoryStore
+from ytcore.intel.memory import Ani, MemoryStore
 
 _LENS_SISTEM = (
     "Sen bir hukuk uzmanısın (avukat perspektifi). Verilen içeriği şu açılardan "
@@ -44,6 +46,51 @@ def _oku(yol: Path) -> str:
         return ""
 
 
+def _gecmis_bolumu(anilar: list[Ani]) -> str:
+    """Retrieval geçmiş kaydıdır; ana modelin güncel kaynak bağlamına katılmaz."""
+    if not anilar:
+        return ""
+    lines = [
+        "## Geçmiş Analiz Kayıtları",
+        "Bu kayıtlar benzerlik aramasıyla getirilmiştir; güncel kaynağın kanıtı değildir. "
+        "Önceki model yorumları kaynak metni veya doğrulama sonucu sayılmaz.",
+    ]
+    for index, ani in enumerate(anilar, 1):
+        identifier = ani.meta.get("video_id") or "bilinmiyor"
+        kind = ani.meta.get("kaynak_turu") or identifier.partition(":")[0]
+        if kind not in _KAYNAK_YONERGESI:
+            kind = "bilinmiyor"
+        url = ani.meta.get("kaynak_url") or ani.meta.get("video_url") or ""
+        if not url:
+            match = re.search(
+                r"(?:^|\n)\s*>?\s*(?:Kaynak|Resmî kaynak|Kanonik URL):\s*(https?://[^\s<>]+)",
+                ani.metin,
+                re.I,
+            )
+            url = match[1] if match else ""
+        parsed = urlparse(url)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or any(char.isspace() or char in "<>" for char in url)
+        ):
+            url = ""
+        lines.extend(
+            [
+                f"\n### Geçmiş kayıt {index}",
+                f"Kaynak türü: {kind} · Kayıt kimliği: {identifier}",
+                f"Kaynak: {url}" if url else "Kaynak bağlantısı bu eski kayıtta yok.",
+                "\nÖnceki analiz kaydından önizleme:",
+                "\n".join("> " + line for line in ani.metin[:1000].splitlines()),
+            ]
+        )
+        if len(ani.metin) > 1000:
+            lines.append("\nÖnizleme kısaltılmıştır; eski kaydın tam metni değildir.")
+    return "\n\n".join(lines)
+
+
 def kisisel_analiz(
     govde: str,
     llm: LLMClient,
@@ -53,7 +100,7 @@ def kisisel_analiz(
     model: str | None = None,
     kaynak_turu: str | None = None,
 ) -> tuple[str, str]:
-    """3-katman kişiselleştirme: user.md (persona) + bellek retrieval + memory.md → avukat lens.
+    """Persona/kurallar ve güncel kaynak → avukat lens; geçmiş retrieval ayrı kayıt bölümü.
 
     durum: 'uretildi' | 'icerik_yok' (govde boş) | 'model_bos' (içerik var, model boş döndü).
     Persona/memory yoksa graceful (jenerik lens).
@@ -64,7 +111,6 @@ def kisisel_analiz(
     persona = _oku(kullanici_base / "user.md") if kullanici_base else ""
     kurallar = _oku(kullanici_base / "memory.md") if kullanici_base else ""
     gecmis = bellek.ara(govde[:500], k=3)
-    gecmis_metin = "\n".join(f"- {a.metin}" for a in gecmis)
 
     sistem = _LENS_SISTEM
     if kaynak_turu and (yonerge := _KAYNAK_YONERGESI.get(kaynak_turu)):
@@ -75,15 +121,13 @@ def kisisel_analiz(
         sistem += f"\n\nKURALLAR: {kurallar[:1000]}"
 
     kullanici = f"İÇERİK:\n{govde[:_BAGLAM_LIMIT]}"
-    if gecmis_metin:
-        kullanici += f"\n\nGEÇMİŞ İLGİLİ ANALİZLER (bağlantı kur):\n{gecmis_metin}"
 
     analiz = llm.uret(sistem, kullanici, model=model).strip()
     if not analiz:
         # govde DOLU ama model boş döndü (timeout/refuse) → 'model_bos' (review MED): içerik
         # VAR; bunu 'icerik_yok' (govde boş) ile karıştırma — model başarısızlığını maskeleme.
         return "", "model_bos"
-    # Bellek bağlantısı LLM yanıtında yoksa şeffaf bir bölüm olarak ekle (retrieval görünür).
-    if gecmis_metin and "geçmiş" not in analiz.lower():
-        analiz += f"\n\n## Geçmiş Analizlerle Bağlantı\n{gecmis_metin}"
+    # Geçmiş belge gövdeleri modele verilmez; eski kayıtlar deterministik olarak ayrılır.
+    if gecmis_bolumu := _gecmis_bolumu(gecmis):
+        analiz += f"\n\n{gecmis_bolumu}"
     return analiz, "uretildi"

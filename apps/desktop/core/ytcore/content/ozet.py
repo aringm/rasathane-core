@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from ytcore.content.llm import LLMClient
 from ytcore.content.segment import cumlelere_bol, semantic_chunk
 from ytcore.infra.embedding import EmbeddingProvider
@@ -21,6 +23,21 @@ _REDUCE_ORTA = (
 _REDUCE_KISA = "Bu metni tek cümlelik Türkçe TL;DR özetine indir. Yalnız o cümleyi döndür."
 
 
+def abstract_cumleleri(metin: str) -> dict[str, str]:
+    """İlk üç tam cümle; belirsiz kısaltma sınırında bütün abstract/çeviri korunur."""
+    boundaries = list(re.finditer(r"(?<=[.!?])\s+(?=[A-ZÇĞİÖŞÜ])", metin))
+    ambiguous = any(char in metin for char in '"“”()[]{}<>') or any(
+        re.search(
+            r"(?:^|\s)(?:[A-Za-zÇĞİÖŞÜçğıöşü]{1,4}|(?:[A-Za-z]\.)+[A-Za-z])\.$"
+            r"|\d\.$|[.!?]{2,}$",
+            metin[: boundary.start()],
+        )
+        for boundary in boundaries
+    )
+    kisa = metin[: boundaries[2].start()] if len(boundaries) >= 3 and not ambiguous else metin
+    return {"kisa": kisa.strip(), "orta": metin.strip()}
+
+
 def ozetle(
     metin: str,
     llm: LLMClient,
@@ -29,6 +46,7 @@ def ozetle(
     map_model: str | None = None,
     reduce_model: str | None = None,
     hedef_kar: int = 4000,
+    kaynak_cumleleri: bool = False,
 ) -> dict[str, str]:
     """Semantic-chunk map-reduce özet. Çıktı: kisa(TL;DR)/orta(paragraf)/detay.
 
@@ -50,6 +68,8 @@ def ozetle(
     detay = llm.uret(_REDUCE_DETAY, birlesik, model=reduce_model).strip()
     if not detay:
         raise ValueError("Özet reduce (detay) boş döndü (boş≠başarı)")
+    if kaynak_cumleleri:
+        return {**abstract_cumleleri(metin), "detay": detay}
     # orta/kısa boş dönerse detay'dan TÜRET (boş katman + 'gecti' çelişkisi olmasın — review
     # MED: 3 özet katmanından 2'si sessizce boş kalip faithfulness 'gecti' ile çelişmesin).
     orta = llm.uret(_REDUCE_ORTA, detay, model=reduce_model).strip() or detay

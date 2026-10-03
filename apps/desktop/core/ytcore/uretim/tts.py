@@ -318,7 +318,7 @@ class WindowsTTS:
     def seslendir(self, metin: str, hedef_yol: Path) -> SesSonuc:
         if not metin.strip():
             return SesSonuc("icerik_yok", "windows")
-        if os.name != "nt":
+        if sys.platform != "win32":
             return SesSonuc("ses_modeli_yok", "windows")
         script = Path(__file__).with_name("windows-tts.ps1")
         executable = (

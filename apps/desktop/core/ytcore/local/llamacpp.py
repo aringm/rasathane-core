@@ -25,6 +25,7 @@ import atexit
 import os
 import socket
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
@@ -306,7 +307,9 @@ def sunucu_baslat_gerekirse(tur: str) -> str:
                 komut.append("--embeddings")
             if profil == "ram8":
                 komut += ["--parallel", "1", "--n-gpu-layers", "0"]
-            olusturma_bayraklari = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+            olusturma_bayraklari = 0
+            if sys.platform == "win32":
+                olusturma_bayraklari = subprocess.CREATE_NO_WINDOW
             log_yolu = _sunucu_log_yolu(tur)
             log_handle = open(log_yolu, "ab") if log_yolu is not None else None  # noqa: SIM115
             try:

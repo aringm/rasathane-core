@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import ctypes
-import os
+import sys
 from pathlib import Path
 
 
 def available_bytes() -> int | None:
-    if os.name == "nt":
+    if sys.platform == "win32":
 
         class MemoryStatus(ctypes.Structure):
             _fields_ = [

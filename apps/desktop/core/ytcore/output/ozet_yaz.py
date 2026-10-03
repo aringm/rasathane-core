@@ -33,10 +33,18 @@ def ozet_yaz(
             "Skor, resmî kaynak doğruluğu veya hukuki doğruluk onayı değildir. "
             "Kaynak başka dilden çevrilmişse karşılaştırılan metin çeviridir.\n\n"
         )
+    kapsam = ""
+    if kayit.kaynak_turu == "arxiv" and kayit.kaynak_ozel.get("text_scope") == "abstract_only":
+        kapsam = (
+            "> Kapsam: Yalnız yayın özeti (abstract); tam makale incelenmedi.\n"
+            "> Kısa/orta: Türkçe model çevirisinden doğrudan cümleler. "
+            "Detay: yerel model özeti. Orijinal metin 01_kaynak-icerigi.md dosyasındadır.\n\n"
+        )
     icerik = (
         f"# {kayit.baslik} — Özet\n\n"
         f"> Kaynak: {kayit.kaynak_url or kayit.video_url} · Dil: {kayit.anadil or '?'} · "
         f"Analiz: {kayit.analiz_tarihi}\n\n"
+        f"{kapsam}"
         f"## TL;DR\n\n{ozet.get('kisa', '').strip() or '_üretilemedi_'}\n\n"
         f"## Özet\n\n{ozet.get('orta', '').strip() or '_üretilemedi_'}\n\n"
         f"## Detaylı Özet\n\n{ozet.get('detay', '').strip() or '_üretilemedi_'}\n\n"

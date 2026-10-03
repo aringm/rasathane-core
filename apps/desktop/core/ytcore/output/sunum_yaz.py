@@ -52,6 +52,12 @@ def _typ_kaynak(
             "Skor, resmî kaynak doğruluğu veya hukuki doğruluk onayı değildir. "
             "Çeviri varsa karşılaştırma çeviri metniyle yapılır."
         )
+        if kayit.kaynak_turu == "arxiv" and kayit.kaynak_ozel.get("text_scope") == "abstract_only":
+            kapsam_notu += (
+                " Yalnız yayın özeti (abstract) incelendi, tam makale edinilmedi. "
+                "Kısa/orta: Türkçe model çevirisinden doğrudan cümleler; "
+                "detay: yerel model özeti. Orijinal abstract kaynak dosyasında korunur."
+            )
     tablo = (
         _fakt_satir("Novelty (yenilik)", 0.35, fakt.novelty)
         + _fakt_satir("Rarity (nadirlik)", 0.25, fakt.rarity)

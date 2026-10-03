@@ -181,7 +181,7 @@ def fetch_yargitay_public(limit: int = 20, days_back: int = 60) -> list[dict[str
                 "url": portal_url,
                 "summary": f"Karar tarihi: {display_date}. "
                 "Resmî karar künyesi; kararın tam metni değil.",
-                "published_at": decision_date,
+                "published_at": None,
                 "provenance": {
                     "connector": "yargitay_public",
                     "text_scope": "official_metadata",
@@ -191,6 +191,7 @@ def fetch_yargitay_public(limit: int = 20, days_back: int = 60) -> list[dict[str
                     "court": court,
                     "authority": "Yargıtay",
                     "decision_date": decision_date,
+                    "date_kind": "decision" if decision_date else "unknown",
                     "date_semantics": "decision_date_not_publication_date",
                     "portal_url": portal_url,
                     "source_endpoint": endpoint,
@@ -231,17 +232,44 @@ def fetch_muhakeme(kind: str) -> list[dict[str, Any]]:
     for row in rows[:100]:
         if not isinstance(row, dict):
             continue
+        published_at = row.get("published_at")
+        decision_date = row.get("decision_date")
+        date_kind = row.get("date_kind", "unknown")
+        if date_kind not in {"decision", "publication", "unknown"}:
+            date_kind = "unknown"
+        if date_kind == "decision":
+            # v2 karar tarihi ayrı taşınır; cache edinim/yükleme zamanı yayım değildir.
+            published_at = None
+        summary = row.get("summary") or ""
+        summary_kind = row.get("summary_kind", "unknown")
+        if summary_kind not in {"ai_generated", "source_excerpt", "none", "unknown"}:
+            summary_kind = "unknown"
         results.append(
             {
                 "title": row.get("title") or row.get("baslik") or "Resmî kaynak",
                 "url": validate_public_url(row.get("url", "")),
-                "summary": row.get("summary") or "",
-                "published_at": row.get("published_at"),
+                "summary": summary,
+                "published_at": published_at,
                 "provenance": {
                     "connector": "muhakeme_api_v1",
                     "kind": kind,
+                    "item_kind": row.get("kind")
+                    or ("case" if kind == "yargitay" else "legislation"),
                     "case_id": row.get("case_id"),
                     "authority": row.get("authority"),
+                    "schema_version": payload.get("schema_version", "1.0"),
+                    "source_kind": payload.get("source_kind"),
+                    "source_fetched_at": payload.get("source_fetched_at"),
+                    "decision_date": decision_date,
+                    "date_kind": date_kind,
+                    "date_semantics": "decision_date_not_publication_date"
+                    if date_kind == "decision"
+                    else "publication_date"
+                    if date_kind == "publication"
+                    else "upstream_date_unverified",
+                    "summary_kind": summary_kind,
+                    "text_scope": "managed_summary" if summary else "official_metadata",
+                    "analysis_supported": False,
                 },
             }
         )

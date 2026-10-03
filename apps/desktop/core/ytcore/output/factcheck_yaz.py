@@ -16,23 +16,32 @@ def factcheck_yaz(
     *,
     reason: str = "",
 ) -> Path:
-    """06_fact-check.md — iddia-bazlı doğrulama tablosu + web-durumu notu + imza."""
+    """06_fact-check.md — iddia incelemesi + kanıt kapsamı + web-durumu notu + imza."""
     web = {
         "web_yok": "devre-dışı (anahtar yok)",
         "web_hata": "yapılamadı (servis hatası — geçici)",  # anahtar-yok'tan AYRI (review HIGH)
+        "hepsi_atlandi": "atlandı (kişisel veri koruması)",
+        "icerik_yok": "yapılmadı (iddia yok)",
         "atlandi_resmi_kaynak": "atlandı (resmî normatif kaynak)",
     }.get(durum, "aktif")
-    satirlar = [f"# {kayit.baslik} — Fact-check", f"> Web doğrulama: {web}", ""]
+    satirlar = [f"# {kayit.baslik} — İddia incelemesi", f"> Web araması: {web}", ""]
     if durum == "atlandi_resmi_kaynak":
         satirlar += [reason, "", f"Resmî kaynak: {kayit.kaynak_url or kayit.video_url}", ""]
     for i, it in enumerate(iddialar, 1):
         kaynaklar = ", ".join(it.get("kaynaklar") or []) or "(web doğrulaması yapılamadı)"
-        guven = float(it.get("guven", 0.0))
+        bagimsiz = it.get("bagimsiz_dogrulama") is True
+        karar = it["karar"] if bagimsiz else "BELİRSİZ"
         satirlar += [
             f"## İddia {i}: {it['iddia']}",
-            f"- **Karar:** {it['karar']} · **Güven:** {guven:.2f}",
+            f"- **Karar:** {karar}",
+            "- **Kanıt kapsamı:** "
+            + (
+                "Bağımsız doğrulama kayıtlı."
+                if bagimsiz
+                else "Bağımsız doğrulama kayıtlı değil; doğruluk olasılığı hesaplanmadı."
+            ),
             f"- **Gerekçe:** {it.get('gerekce', '')}",
-            f"- **Kaynaklar:** {kaynaklar}",
+            f"- **Arama sonuçları:** {kaynaklar}",
             "",
         ]
     satirlar += ["---", f"_{IMZA}_", ""]

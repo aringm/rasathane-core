@@ -531,6 +531,7 @@ def _arxiv_edin(url: str, client: httpx.Client) -> KaynakBelgesi:
         if link.attrib.get("title") == "pdf":
             pdf_url = link.attrib.get("href")
     varsayilan_url = f"https://arxiv.org/abs/{quote(kimlik, safe='/')}"
+    abstract = _xml_metin(entry, "atom:summary", ns) or ""
     return KaynakBelgesi(
         tur=KaynakTuru.arxiv,
         kimlik=kimlik,
@@ -540,7 +541,7 @@ def _arxiv_edin(url: str, client: httpx.Client) -> KaynakBelgesi:
         yayin_tarihi=_xml_metin(entry, "atom:published", ns),
         guncelleme_tarihi=_xml_metin(entry, "atom:updated", ns),
         dil="en",
-        metin=_xml_metin(entry, "atom:summary", ns) or "",
+        metin=abstract,
         etiketler=kategoriler,
         metrikler={"yazar_sayisi": len(yazarlar), "kategori_sayisi": len(kategoriler)},
         ozel={
@@ -549,6 +550,10 @@ def _arxiv_edin(url: str, client: httpx.Client) -> KaynakBelgesi:
             "doi": _xml_metin(entry, "arxiv:doi", ns),
             "yorum": _xml_metin(entry, "arxiv:comment", ns),
             "dergi_referansi": _xml_metin(entry, "arxiv:journal_ref", ns),
+            "text_scope": "abstract_only",
+            "full_text_fetched": False,
+            "source_bytes_sha256": hashlib.sha256(yanit.icerik).hexdigest(),
+            "original_text_sha256": hashlib.sha256(abstract.encode("utf-8")).hexdigest(),
         },
         sinyaller=[
             KaynakSinyali(
@@ -556,9 +561,17 @@ def _arxiv_edin(url: str, client: httpx.Client) -> KaynakBelgesi:
                 deger=kimlik.rsplit("v", 1)[-1] if re.search(r"v\d+$", kimlik) else 1,
                 aciklama="arXiv yayın sürümü.",
                 durum="bilgi",
-            )
+            ),
+            KaynakSinyali(
+                etiket="metin_kapsami",
+                deger="abstract_only",
+                aciklama=(
+                    "Yalnız yayın özeti (abstract) ve metadata edinildi; tam makale incelenmedi."
+                ),
+                durum="uyari",
+            ),
         ],
-        edinim_durumu="tam",
+        edinim_durumu="kismi",
     )
 
 

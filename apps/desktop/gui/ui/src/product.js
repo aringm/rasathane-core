@@ -1,4 +1,6 @@
 // Birleşik ürünün gerçek kayıtları. Dış metinler yalnız güvenli DOM helper'ıyla yazılır.
+import { recordDate } from "./record-provenance.js";
+
 export function createProductUI({
   $,
   el,
@@ -367,34 +369,44 @@ export function createProductUI({
   }
   function record(item, { full = false, action = null } = {}) {
     const body = item.summary || item.excerpt || item.body || "";
+    const provenance = item.provenance || {};
     const sourceType = state?.sources?.find(
       (source) => source.id === item.source_id,
     )?.kind;
-    const officialMetadata =
-      item.provenance?.text_scope === "official_metadata";
+    const officialMetadata = provenance.text_scope === "official_metadata";
+    const managedSummary = provenance.text_scope === "managed_summary";
+    const shownDate = recordDate(item, sourceType);
+    const summaryLabel =
+      provenance.summary_kind === "ai_generated"
+        ? "AI tarafından oluşturulmuş özet"
+        : provenance.summary_kind === "source_excerpt"
+          ? "Kaynak alıntısı"
+          : null;
     return el(
       "article",
       { class: "record" },
       el(
         "div",
         { class: "record-meta" },
-        officialMetadata
-          ? "Karar künyesi"
-          : sourceType === "resmi_gazete"
-            ? "Resmî Gazete"
-            : kindLabels[item.kind] || "Kaynak",
+        managedSummary
+          ? "Muhakeme · Karar özeti"
+          : officialMetadata
+            ? "Karar künyesi"
+            : sourceType === "resmi_gazete"
+              ? "Resmî Gazete"
+              : kindLabels[item.kind] || "Kaynak",
         el(
           "span",
           {},
-          `${officialMetadata ? "Karar tarihi: " : ""}${date(
-            item.published_at || item.created_at,
+          `${shownDate.label}${date(
+            shownDate.value,
             "Tarih kaydı yok",
-            !!item.published_at &&
-              (officialMetadata || sourceType === "resmi_gazete"),
+            shownDate.dayOnly,
           )}`,
         ),
       ),
       el("h3", {}, item.title || "Başlıksız kayıt"),
+      summaryLabel ? el("p", { class: "field-note" }, summaryLabel) : null,
       body
         ? el(
             "p",
@@ -415,6 +427,13 @@ export function createProductUI({
             "p",
             { class: "field-note" },
             "Resmî karar künyesi gösteriliyor. Kararın tam metni bu kayıtta bulunmaz.",
+          )
+        : null,
+      managedSummary
+        ? el(
+            "p",
+            { class: "field-note" },
+            "Özet gösteriliyor. Kararın tam metni bu kayıtta bulunmaz; özeti kaynak kararı açarak kontrol edin.",
           )
         : null,
       el(
@@ -452,7 +471,10 @@ export function createProductUI({
               action:
                 safeURL(item.url) &&
                 item.analysis_supported !== false &&
-                item.provenance?.text_scope !== "official_metadata"
+                item.provenance?.analysis_supported !== false &&
+                !["official_metadata", "managed_summary"].includes(
+                  item.provenance?.text_scope,
+                )
                   ? el(
                       "button",
                       {

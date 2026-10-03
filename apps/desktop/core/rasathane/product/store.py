@@ -487,7 +487,9 @@ class ProductStore:
 
     def list_articles(self, limit: int = 100) -> list[dict[str, Any]]:
         return self.rows(
-            "SELECT * FROM articles ORDER BY COALESCE(published_at,created_at) DESC LIMIT ?",
+            "SELECT * FROM articles ORDER BY "
+            "COALESCE(json_extract(provenance,'$.decision_date'),published_at,created_at) DESC "
+            "LIMIT ?",
             (limit,),
         )
 

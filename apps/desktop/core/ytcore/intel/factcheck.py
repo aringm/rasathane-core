@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import unicodedata
+from decimal import Decimal
 from typing import Any
 
 from ytcore.content.llm import LLMClient
@@ -16,10 +18,60 @@ _CLAIM_SISTEM = (
     "Her satır tek iddia. (iddia listesi)"
 )
 _VERDICT_SISTEM = (
-    "Sen bir doğruluk denetçisisin. İDDİA verilen KANIT'larca doğrulanıyor mu? "
+    "Yalnız arama özetleri arasında aday ilişkiyi değerlendir. Tam kaynak okunmuş veya "
+    "bağımsız doğrulama yapılmış gibi davranma. İDDİA arama özetleriyle ilişkili mi? "
     "Yalnız tek kelime yanıtla: DESTEKLİYOR, ÇELİŞİYOR veya BELİRSİZ. (verdict)"
 )
 _BAGLAM_LIMIT = 6000
+_GENEL_SOZCUKLER = frozenset(
+    "ve veya ile bir bu su icin gibi gore daha en olan olarak olup ise de da ki "
+    "the and or for from with this that these those is are was were of to in on "
+    "model models modeli modeller modelleri yil yilinda yuzde elde etti".split()
+)
+
+
+def _katla(metin: str) -> str:
+    return "".join(
+        c
+        for c in unicodedata.normalize("NFKD", metin.lower().replace("ı", "i"))
+        if not unicodedata.combining(c)
+    )
+
+
+def _konu_sozcukleri(metin: str) -> set[str]:
+    return {w for w in re.findall(r"[^\W\d_]{3,}", _katla(metin)) if w not in _GENEL_SOZCUKLER}
+
+
+def _sayilar(metin: str) -> set[Decimal]:
+    # Ondalık virgül/nokta aynı değerdir; farklı snippet'lerin sayıları birleştirilmez.
+    return {
+        Decimal(s.replace(",", ".")) for s in re.findall(r"(?<!\w)\d+(?:[.,]\d+)?(?!\w)", metin)
+    }
+
+
+def _ilgili_kanit(iddia: str, kanit: list[AramaSonuc]) -> tuple[list[AramaSonuc], str]:
+    """Metin ilişkisi aday elemesidir; doğruluk puanı veya kaynak doğrulaması değildir.
+
+    Başlık/URL (arama sorgusunu yineleyebilir) kanıt sayılmaz. Sayısal iddiada bütün sayılar
+    aynı ilişkili snippet'te görünmelidir; farklı/eksik sayı kesin çelişki üretmez.
+    """
+    kavramlar = _konu_sozcukleri(iddia)
+    sayilar = _sayilar(iddia)
+    ilgili: list[AramaSonuc] = []
+    sayisal_eksik = False
+    for k in kanit:
+        ortak = kavramlar & _konu_sozcukleri(k.ozet)
+        if len(ortak) < 2 or len(ortak) / max(1, len(kavramlar)) < 0.35:
+            continue
+        if sayilar and not sayilar.issubset(_sayilar(k.ozet)):
+            sayisal_eksik = True
+            continue
+        ilgili.append(k)
+    if ilgili:
+        return ilgili, ""
+    if sayisal_eksik:
+        return [], "İlgili arama özetleri iddiadaki sayısal bilgilerin tümünü içermiyor."
+    return [], "Arama özetlerinde iddiayla yeterince ilişkili bir kanıt bölümü bulunamadı."
 
 
 def _karar_bul(yanit: str) -> str | None:
@@ -71,16 +123,28 @@ def _verdict(
     llm: LLMClient,
     model: str | None,
     cloud: Any | None = None,
-) -> tuple[str, str]:
-    """Evidence→claim NLI. Kanıt yoksa BELİRSİZ (LLM-as-judge tek başına KARAR VERMEZ).
+) -> tuple[str, str, str | None, list[str]]:
+    """Arama özetlerinden yalnız aday NLI değerlendirmesi; kesin karar daima BELİRSİZ.
+
+    AramaSonuc kaynak tam metninin edinildiğini veya doğrulanmış bir alıntıyı kanıtlamaz.
+    İlgili snippet ve modelin aynı sonuca varması bağımsız doğrulama değildir; güven puanı
+    üretilemez. Gerçek kaynak alıntısı sağlayan ayrı bir yol kurulmadan bu sınır korunur.
 
     Faz 5 Mod B: `cloud` verilirse verdict önce cloud'dan denenir (anonim iddia + web-kanıt;
     CloudClient.cagir KVKK guard'ı İÇERİDE). Cloud reddi/hatası analizi ÇÖKERTMEZ → local
     qwen'e graceful düşer (anahtarsız davranış Faz 3 ile birebir).
     """
     if not kanit:
-        return "BELİRSİZ", "Web doğrulaması yapılamadı (kaynak yok)."
-    kanit_metin = "\n".join(f"- {k.ozet}" for k in kanit)
+        return "BELİRSİZ", "Web doğrulaması yapılamadı (kaynak yok).", None, []
+    ilgili, neden = _ilgili_kanit(iddia, kanit)
+    sinir = (
+        "Kaynak tam metni okunmadı; yalnız arama özetleri incelendi. "
+        "Bu değerlendirme bağımsız doğrulama değildir."
+    )
+    if not ilgili:
+        return "BELİRSİZ", f"{neden} {sinir}", None, []
+    ilgili_url = [k.url for k in ilgili]
+    kanit_metin = "\n".join(f"- {k.ozet}" for k in ilgili)
     if cloud is not None:
         try:
             # Kanıt da anonimleştirilir (review tur-1: iddia ile simetri — web snippet'i
@@ -92,7 +156,12 @@ def _verdict(
             )
             karar_cloud = _karar_bul(y.metin)
             if karar_cloud is not None:
-                return karar_cloud, f"Kanıtlara göre: {karar_cloud.lower()} (cloud verdict)."
+                return (
+                    "BELİRSİZ",
+                    f"Cloud modelinin aday değerlendirmesi: {karar_cloud}. {sinir}",
+                    karar_cloud,
+                    ilgili_url,
+                )
         except _KOD_HATALARI:
             raise  # gerçek kod hatası (mock-drift/typo) görünür çök — Faz 1/2/3 dersi
         except Exception:  # noqa: BLE001 — KVKK reddi/ağ hatası → local fallback (çökme YOK)
@@ -100,8 +169,13 @@ def _verdict(
     soru = f"İDDİA: {iddia}\n\nKANIT:\n{kanit_metin[:_BAGLAM_LIMIT]}"
     karar = _karar_bul(llm.uret(_VERDICT_SISTEM, soru, model=model))
     if karar is not None:
-        return karar, f"Kanıtlara göre: {karar.lower()}."
-    return "BELİRSİZ", "Verdict belirlenemedi (kanıt yetersiz/çelişkili)."
+        return (
+            "BELİRSİZ",
+            f"Yerel modelin aday değerlendirmesi: {karar}. {sinir}",
+            karar,
+            ilgili_url,
+        )
+    return "BELİRSİZ", f"Modelin aday değerlendirmesi belirlenemedi. {sinir}", None, ilgili_url
 
 
 def fact_check(
@@ -118,7 +192,8 @@ def fact_check(
 
     durum: 'uretildi' (web aktif/fixture) | 'web_yok' (anahtar yok) | 'web_hata' (ağ/429/500
     — anahtar-yok'tan AYRI, yeniden-denenebilir) | 'icerik_yok'. LLM-as-judge tek başına KARAR
-    VERMEZ — kanıt yoksa BELİRSİZ (dürüst). KVKK fail-closed: anonimleştirme sonrası hâlâ PII
+    VERMEZ — yalnız arama özetleriyle kesin doğrulama/çelişki üretilmez. KVKK fail-closed:
+    anonimleştirme sonrası hâlâ PII
     içeren sorgu web'e GÖNDERİLMEZ (pii_var_mi backstop — anonim'in kaçırdığı adres/kimlik/ayraçlı).
 
     Faz 5 `ner`: çıplak ad-soyad pattern-gate'i ATLATIR (GÜNCELLEME 5/6 bloker) — kişi adı
@@ -181,14 +256,18 @@ def fact_check(
             # SearXNG kurulabilir/düzeltilebilir durumlar: 'web_hata' (yeniden-denenebilir),
             # 'web_yok' (hiç servis yok) ile AYRI yüzeylenir (GUI'de farklı mesaj).
             web_hata = True
-        karar, gerekce = _verdict(iddia, kanit, llm, model, cloud)
+        karar, gerekce, aday, ilgili_url = _verdict(iddia, kanit, llm, model, cloud)
         sonuc.append(
             {
                 "iddia": iddia,
                 "karar": karar,
-                "guven": 0.6 if kanit else 0.0,
+                "guven": 0.0,  # Snippet/LLM uyumundan kalibre edilmiş doğruluk olasılığı çıkmaz.
                 "gerekce": gerekce,
                 "kaynaklar": [k.url for k in kanit],
+                "ilgili_kaynaklar": ilgili_url,
+                "aday_karar": aday,
+                "kanit_turu": "arama_ozeti" if kanit else "yok",
+                "bagimsiz_dogrulama": False,
             }
         )
     if web_aktif:

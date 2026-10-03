@@ -185,7 +185,7 @@ def _tts_python_bul() -> str:
 def fiziksel_ram_gb() -> float:
     """Fiziksel RAM (GB) — model profili seçimi için. Windows: GlobalMemoryStatusEx;
     POSIX: sysconf. Okunamazsa muhafazakâr 8.0 döner (küçük profil seçilir)."""
-    if os.name == "nt":
+    if sys.platform == "win32":
         try:
             import ctypes
 
@@ -209,11 +209,13 @@ def fiziksel_ram_gb() -> float:
         except (OSError, AttributeError, ValueError):
             pass
         return 8.0
-    try:
-        sayfa_bayti = os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")  # type: ignore[attr-defined]
-        return float(sayfa_bayti) / (1024**3)
-    except (OSError, ValueError, AttributeError):
-        return 8.0
+    if sys.platform != "win32":
+        try:
+            sayfa_bayti = os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
+            return float(sayfa_bayti) / (1024**3)
+        except (OSError, ValueError, AttributeError):
+            pass
+    return 8.0
 
 
 def llamacpp_motor_kok() -> Path | None:

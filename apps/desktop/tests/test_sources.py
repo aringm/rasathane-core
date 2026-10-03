@@ -291,6 +291,9 @@ def test_arxiv_atom_metadata_ve_ozet_edinir(genel_ip: None) -> None:
     assert belge.metin == "Birinci satır. İkinci satır."
     assert belge.etiketler == ["cs.AI", "cs.CL"]
     assert belge.ozel["doi"] == "10.1000/example"
+    assert belge.ozel["text_scope"] == "abstract_only"
+    assert belge.ozel["full_text_fetched"] is False
+    assert any(s.deger == "abstract_only" for s in belge.sinyaller)
 
 
 @pytest.mark.parametrize(

@@ -38,6 +38,9 @@ def compile_pdf(source: Path, target: Path) -> Path:
     )
     os.close(descriptor)
     temporary = Path(name)
+    creationflags = 0
+    if sys.platform == "win32":
+        creationflags = subprocess.CREATE_NO_WINDOW
     try:
         try:
             subprocess.run(
@@ -54,7 +57,7 @@ def compile_pdf(source: Path, target: Path) -> Path:
                 text=True,
                 stdin=subprocess.DEVNULL,
                 timeout=180,
-                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+                creationflags=creationflags,
             )
         except subprocess.TimeoutExpired as exc:
             raise RuntimeError("PDF üretimi zaman aşımına uğradı.") from exc
