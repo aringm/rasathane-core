@@ -80,7 +80,7 @@ class ProductService:
                 )
 
     def submit(self, kind: str, request: dict[str, Any]) -> dict[str, Any]:
-        if kind not in {"analysis", "research", "feed_refresh", "agenda"}:
+        if kind not in {"analysis", "research", "feed_refresh", "agenda", "article_summary"}:
             raise ValueError("Desteklenmeyen iş türü.")
         frozen = {**request, "settings": self.store.settings()}
         if kind == "analysis":
@@ -165,6 +165,75 @@ class ProductService:
                 self.submit("feed_refresh", {"source_id": feed["id"], "automatic": True})
         # Gündem, bu turda vadesi gelen kaynakların tamamı sonuçlandıktan sonra çalışır.
         self._schedule_agenda()
+        self._schedule_summaries()
+
+    def request_article_summary(
+        self, article_id: str, *, automatic: bool = False
+    ) -> dict[str, Any]:
+        from rasathane.product.news import article_input_hash, summarize_article
+
+        result = summarize_article(self.store, article_id)
+        if result["status"] == "ready" or result["text_scope"] == "official_metadata":
+            return result
+        article = self.store.rows("SELECT * FROM articles WHERE id=?", (article_id,))[0]
+        job = self.submit(
+            "article_summary",
+            {
+                "article_id": article_id,
+                "input_hash": article_input_hash(article),
+                "automatic": automatic,
+            },
+        )
+        return {
+            **result,
+            "status": "pending",
+            "method": "pending",
+            "summary": "",
+            "job_id": job["id"],
+            "label": "Türkçe özet hazırlanıyor",
+            "notice": "Türkçe özet kaynak metninden hazırlanıyor.",
+        }
+
+    def _schedule_summaries(self) -> None:
+        from rasathane.product.news import display_summary
+
+        # İlk ekranın güncel haberlerini hazırla; 17 bin kayıtlık arşivi LLM kuyruğuna dökme.
+        attempts = self.store.rows(
+            "SELECT COUNT(*) AS n FROM jobs WHERE kind='article_summary' "
+            "AND json_extract(request,'$.automatic')=1 "
+            "AND julianday(created_at)>=julianday('now','-1 hour')"
+        )[0]["n"]
+        if attempts >= 8:
+            return
+        pending = self.store.rows(
+            "SELECT COUNT(*) AS n FROM jobs WHERE kind='article_summary' "
+            "AND status IN ('queued','running','cancel_requested')"
+        )[0]["n"]
+        if pending >= 2:
+            return
+        articles = self.store.rows(
+            "SELECT a.* FROM articles a JOIN feeds f ON a.source_id=f.id WHERE f.enabled=1 "
+            "AND f.kind!='yargitay_public' "
+            "AND julianday(COALESCE(NULLIF(a.published_at,''),a.created_at)) "
+            ">=julianday('now','-3 days') "
+            "ORDER BY COALESCE(NULLIF(a.published_at,''),a.created_at) DESC LIMIT 8"
+        )
+        for article in articles:
+            try:
+                result = display_summary(self.store, article)
+            except ValueError:
+                continue
+            if (
+                result["status"] == "ready"
+                or result["text_scope"] == "official_metadata"
+                or result.get("job_id")
+            ):
+                continue
+            self.request_article_summary(article["id"], automatic=True)
+            pending += 1
+            attempts += 1
+            if pending >= 2 or attempts >= 8:
+                break
 
     def _schedule_agenda(self) -> None:
         if not self._session_ready():
@@ -198,6 +267,7 @@ class ProductService:
 
     def agenda_status(self) -> dict[str, Any]:
         from rasathane.product.agenda import context
+        from rasathane.product.bulletins import present_bulletin
         from rasathane.product.store import digest, json_text
 
         profile, state = self.store.agenda_profile(), self.store.agenda_state()
@@ -207,7 +277,9 @@ class ProductService:
         )
         job = jobs[0] if jobs else None
         feeds = self.store.list_feeds()
-        latest = self.store.get_bulletin(state["bulletin_id"]) if state.get("bulletin_id") else None
+        latest = (
+            present_bulletin(self.store, state["bulletin_id"]) if state.get("bulletin_id") else None
+        )
         latest_is_stale = bool(
             latest and latest.get("context_hash") != digest(json_text(context(self.store)))
         )
@@ -316,6 +388,11 @@ class ProductService:
                 return True
             elif job["kind"] == "feed_refresh":
                 result = self._feed_refresh(request, check, progress)
+            elif job["kind"] == "article_summary":
+                from rasathane.product.article_enrichment import enrich_article
+
+                progress("article_summary")
+                result = enrich_article(self.store, request["article_id"], check, self.fetch)
             else:
                 raise ValueError("Desteklenmeyen iş türü.")
             check()

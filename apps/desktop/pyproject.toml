@@ -1,6 +1,6 @@
 [project]
 name = "ytanaliz"
-version = "0.8.0"
+version = "0.8.1"
 license = "AGPL-3.0-or-later"
 authors = [{ name = "Av. Mehmet Arın Gülüm" }]
 description = "Rasathane — yerel-öncelikli çok kaynaklı içerik gözlemevi"
@@ -16,6 +16,7 @@ dependencies = [
   "opentelemetry-sdk>=1.27",
   "httpx>=0.27",
   "yt-dlp>=2026.3.17",
+  "pypdf[fonts]==6.19.0",
 ]
 
 [dependency-groups]

@@ -21,13 +21,13 @@ export function recentBulletins(items = []) {
   return [...items].sort((a, b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0));
 }
 
-export function createNewsBulletin({ el, api, request, sourceLink, beforePlay }) {
+export function createNewsBulletin({ el, api, request, sourceLink, beforePlay, articleControls }) {
   let items = [], current = null, saved = [], epoch = 0, audioEpoch = 0, audioURL = null, busy = false, speechBusy = false;
   const formatDate = (value) => {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? "Tarih belirtilmemiş" : date.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
   };
-  const title = el("input", { type: "text", id: "bulten-baslik", maxlength: 120, value: "Gündem bülteni" });
+  const title = el("input", { type: "text", id: "bulten-baslik", maxlength: 120, value: "Bülten" });
   const period = el("select", { id: "bulten-donem" },
     el("option", { value: "1" }, "Son 24 saat"),
     el("option", { value: "7" }, "Son 7 gün"),
@@ -52,8 +52,8 @@ export function createNewsBulletin({ el, api, request, sourceLink, beforePlay })
   const speak = el("button", { type: "button", class: "btn btn-ikincil", id: "bulten-seslendir", disabled: true }, "Dinle");
   const read = el("button", { type: "button", class: "btn btn-ikincil", id: "bulten-oku", hidden: true, "aria-expanded": "false", "aria-controls": "bulten-sonuc" }, "Bülteni oku");
   const dateHeading = el("p", { class: "bulletin-date" }, formatDate(Date.now()));
-  const heading = el("h2", { id: "bulten-heading" }, "Gündem bülteni");
-  const introduction = el("p", { class: "field-note bulletin-intro" }, "Günün haberlerini bir arada okuyun veya dinleyin.");
+  const heading = el("h2", { id: "bulten-heading" }, "Bülten");
+  const introduction = el("p", { class: "field-note bulletin-intro" }, "Haberlerden hazırladığınız derlemeyi okuyun veya dinleyin.");
   const empty = el("p", { class: "bulletin-empty" }, "Henüz bülten yok. Akıştaki haberlerden ilk bülteninizi oluşturun.");
   const summary = el("p", { class: "bulletin-lead", hidden: true });
   const form = el("form", { class: "bulletin-form", id: "bulten-form" },
@@ -95,32 +95,48 @@ export function createNewsBulletin({ el, api, request, sourceLink, beforePlay })
     update();
   }
   function showReading(show) {
-    result.hidden = !show;
+    result.hidden = !current;
+    result.classList.toggle("bulletin-reading-full", show);
+    for (const [index, item] of [...result.querySelectorAll(".bulletin-items > li")].entries()) item.hidden = !show && index > 0;
     read.setAttribute("aria-expanded", String(show));
-    read.textContent = show ? "Metni daralt" : "Bülteni oku";
+    const total = current?.article_count || 0;
+    read.textContent = show ? "Okuma görünümünü daralt" : `Tümünü oku (${total} haber)`;
   }
   function render(data, expanded = false) {
     stopAudio(); current = data; empty.hidden = true; read.hidden = false;
-    heading.textContent = data.title || "Gündem bülteni";
+    heading.textContent = data.agenda ? "Gündem" : data.title || "Bülten";
     dateHeading.textContent = formatDate(data.created_at);
-    introduction.textContent = `${data.article_count} haber · ${data.agenda ? "İlgi alanlarıma ve projelerime göre gündem" : "Kaynaklardan derleme"}`;
+    introduction.textContent = `${data.article_count} haber · ${data.agenda ? "İlgi alanlarınız ve projeleriniz için seçki" : "Kaynaklardan derlenmiş haberler"}`;
     const first = (data.items || []).find((item) => item.summary);
     summary.textContent = first?.summary || data.notice || "Kaynakların başlıklarını ve açıklamalarını bir arada inceleyin.";
     summary.hidden = false;
     const groups = bulletinSourceGroups(data.items);
+    const viewEpoch = epoch;
+    function digestItem(item) {
+      const headline = el("h4", {}, item.title);
+      const body = el("p", {}, item.summary || item.notice || "Bu kaynakta özetlenecek haber metni bulunmuyor.");
+      const noticeText = el("p", { class: "field-note" }, item.notice || "");
+      const notice = el("details", { class: "bulletin-item-notice", hidden: !(item.summary && item.notice) }, el("summary", {}, "Özetin kaynağı"), noticeText);
+      const row = el("li", {}, el("p", { class: "bulletin-item-source" }, item.source_name || "Kaynak"), headline, body, notice,
+        item.relevance_reason ? el("details", { class: "agenda-evaluation" }, el("summary", {}, "Benim için anlamı"),
+          el("p", { class: "agenda-method" }, `${{high: "Yüksek öncelik", medium: "Orta öncelik", low: "Düşük öncelik"}[item.importance] || "İncelenecek haber"} · ${item.evaluation_method === "local_model" ? "Yerel model değerlendirmesi" : "Konu eşleşmesi · model değerlendirmesi yapılmadı"}`),
+          el("dl", { class: "agenda-explanation" }, el("dt", {}, "Benim için neden önemli?"), el("dd", {}, item.relevance_reason),
+            item.project_impact ? [el("dt", {}, "Projeye etkisi"), el("dd", {}, item.project_impact)] : null,
+            item.suggested_action ? [el("dt", {}, "Sonraki adım"), el("dd", {}, item.suggested_action)] : null),
+          item.evidence_quote ? el("details", {}, el("summary", {}, "Değerlendirmenin dayandığı kaynak metni"), el("blockquote", { class: "agenda-evidence" }, item.evidence_quote)) : null) : null);
+      const onSummary = updated => {
+        if (viewEpoch !== epoch || current?.id !== data.id || updated.status !== "ready" || updated.language !== "tr" || !updated.summary?.trim()) return false;
+        headline.textContent = updated.title || item.title; body.textContent = updated.summary;
+        row.classList.toggle("bulletin-summary-expanded", true);
+        noticeText.textContent = updated.notice || ""; notice.hidden = !updated.notice;
+        return true;
+      };
+      row.append(articleControls ? articleControls(item, onSummary) : sourceLink(item.url, "Kaynağı aç"));
+      return row;
+    }
     result.replaceChildren(...[
-      data.notice ? el("p", { class: "field-note bulletin-notice" }, data.notice) : null,
-      el("ol", { class: "bulletin-items" }, ...(data.items || []).map((item) =>
-        el("li", {}, el("p", { class: "bulletin-item-source" }, item.source_name || "Kaynak"), el("h4", {}, item.title),
-          el("p", {}, item.summary || item.notice || "Bu kaynakta özetlenecek haber metni bulunmuyor."),
-          item.summary && item.notice ? el("p", { class: "field-note" }, item.notice) : null,
-          item.relevance_reason ? el("div", { class: "agenda-evaluation" },
-            el("p", { class: "agenda-method" }, `${{high: "Yüksek öncelik", medium: "Orta öncelik", low: "Düşük öncelik"}[item.importance] || "İncelenecek haber"} · ${item.evaluation_method === "local_model" ? "Yerel model değerlendirmesi" : "Konu eşleşmesi · model değerlendirmesi yapılmadı"}`),
-            el("dl", { class: "agenda-explanation" }, el("dt", {}, "Benim için neden önemli?"), el("dd", {}, item.relevance_reason),
-              item.project_impact ? [el("dt", {}, "Projeye etkisi"), el("dd", {}, item.project_impact)] : null,
-              item.suggested_action ? [el("dt", {}, "Sonraki adım"), el("dd", {}, item.suggested_action)] : null),
-            item.evidence_quote ? el("details", {}, el("summary", {}, "Değerlendirmenin dayandığı kaynak metni"), el("blockquote", { class: "agenda-evidence" }, item.evidence_quote)) : null) : null,
-          sourceLink(item.url, "Haberi aç")))),
+      data.notice ? el("details", { class: "bulletin-notice" }, el("summary", {}, "Derlemenin kapsamı"), el("p", { class: "field-note" }, data.notice)) : null,
+      el("ol", { class: "bulletin-items" }, ...(data.items || []).map(digestItem)),
       el("details", { class: "bulletin-sources" },
         el("summary", {}, `Kullanılan kaynaklar · ${groups.length} kaynak · ${data.article_count} haber`),
         ...groups.map((group) => el("section", {}, el("h4", {}, `${group.name} (${group.entries.length})`),
@@ -134,7 +150,7 @@ export function createNewsBulletin({ el, api, request, sourceLink, beforePlay })
     historySection.hidden = !saved.length;
     historyList.replaceChildren(...saved.filter((item) => item.id !== current?.id).slice(0, 3).map((item) =>
       el("button", { type: "button", class: "bulletin-history-item", onclick: () => openBulletin(item.id), disabled: busy },
-        el("span", {}, formatDate(item.created_at)), el("strong", {}, item.title || "Gündem bülteni"),
+        el("span", {}, formatDate(item.created_at)), el("strong", {}, item.title || "Bülten"),
         el("span", { class: "field-note" }, `${item.article_count || 0} haber`))));
   }
   async function openBulletin(id, expanded = true) {
@@ -166,7 +182,7 @@ export function createNewsBulletin({ el, api, request, sourceLink, beforePlay })
     const generation = ++epoch; busy = true; stopAudio(); update(); create.textContent = "Bülten hazırlanıyor…";
     status.textContent = "Kaynaklardan bülten hazırlanıyor…";
     try {
-      const data = await api("/bulletins", { method: "POST", body: { title: title.value.trim() || "Gündem bülteni", article_ids: candidates().map((item) => item.id) } });
+      const data = await api("/bulletins", { method: "POST", body: { title: title.value.trim() || "Bülten", article_ids: candidates().map((item) => item.id) } });
       if (generation !== epoch) return;
       render(data, true); content.hidden = true; toggle.setAttribute("aria-expanded", "false");
       status.textContent = "Bülten kaydedildi. Okuyabilir veya Dinle düğmesiyle seslendirebilirsiniz.";
@@ -175,7 +191,7 @@ export function createNewsBulletin({ el, api, request, sourceLink, beforePlay })
     finally { if (generation === epoch) { busy = false; update(); } }
   });
   toggle.addEventListener("click", () => { content.hidden = !content.hidden; toggle.setAttribute("aria-expanded", String(!content.hidden)); });
-  read.addEventListener("click", () => showReading(result.hidden));
+  read.addEventListener("click", () => showReading(!result.classList.contains("bulletin-reading-full")));
   history.addEventListener("change", () => openBulletin(history.value));
   speed.addEventListener("change", () => { audio.playbackRate = Number(speed.value); });
   speak.addEventListener("click", async () => {
@@ -207,9 +223,9 @@ export function createNewsBulletin({ el, api, request, sourceLink, beforePlay })
     reset() {
       epoch++; busy = false; current = null; items = []; saved = []; stopAudio();
       result.replaceChildren(); result.hidden = true; content.hidden = true;
-      heading.textContent = "Gündem bülteni"; dateHeading.textContent = formatDate(Date.now());
-      introduction.textContent = "Günün haberlerini bir arada okuyun veya dinleyin.";
-      title.value = "Gündem bülteni"; period.value = "1"; limit.value = "5"; speed.value = "1";
+      heading.textContent = "Bülten"; dateHeading.textContent = formatDate(Date.now());
+      introduction.textContent = "Haberlerden hazırladığınız derlemeyi okuyun veya dinleyin.";
+      title.value = "Bülten"; period.value = "1"; limit.value = "5"; speed.value = "1";
       summary.textContent = ""; summary.hidden = true; empty.hidden = false; read.hidden = true; showReading(false);
       toggle.setAttribute("aria-expanded", "false"); history.replaceChildren(el("option", { value: "" }, "Önceki bültenler"));
       historyList.replaceChildren(); historySection.hidden = true; status.textContent = ""; update();

@@ -22,6 +22,13 @@ def kaynak_icerigi_yaz(
     kapsam = ""
     if kayit.kaynak_turu == "arxiv" and kayit.kaynak_ozel.get("text_scope") == "abstract_only":
         kapsam = "> Kapsam: Orijinal yayın özeti (abstract); tam makale edinilmedi.\n"
+    if kayit.kaynak_ozel.get("source_format") == "pdf":
+        metadata = kayit.kaynak_ozel
+        kapsam += (
+            f"> PDF: {metadata.get('text_page_count', '?')}/{metadata.get('page_count', '?')} "
+            "sayfada metin katmanı okundu.\n"
+            f"> Kapsam: {metadata.get('notice', 'PDF metin katmanı; OCR yapılmadı.')}\n\n"
+        )
     icerik = (
         f"# {kayit.baslik} — Kaynak İçeriği\n\n"
         f"> Kaynak türü: {kayit.kaynak_turu}\n"

@@ -27,6 +27,7 @@ import httpx
 from pydantic import BaseModel, Field
 
 _MAKSIMUM_YANIT_BYTE = 2_000_000
+_MAKSIMUM_PDF_BYTE = 20_000_000
 _ISTEK_ZAMAN_ASIMI_SN = 20.0
 _KULLANICI_ARACISI = "Rasathane/0.1 (+yerel kaynak analizi)"
 _GITHUB_PARCA = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -303,6 +304,7 @@ def _istek(
     *,
     basliklar: Mapping[str, str] | None = None,
     izinli_durumlar: set[int] | None = None,
+    pdf_izin: bool = False,
 ) -> _Yanit:
     parcalar = _url_ayristir(url)
     _dns_guvenli(parcalar)
@@ -337,21 +339,33 @@ def _istek(
                     mesaj = f"Kaynak sunucusu HTTP {durum} yanıtı verdi."
                 raise KaynakHatasi(kod, mesaj)
             uzunluk = response.headers.get("content-length")
+            bildirilen_boyut = None
             if uzunluk:
                 try:
-                    if int(uzunluk) > _MAKSIMUM_YANIT_BYTE:
+                    bildirilen_boyut = int(uzunluk)
+                except ValueError:
+                    pass
+            # Büyük bütçe yalnız web adapterındaki gerçek PDF byte imzasına aittir.
+            # MIME veya dosya uzantısı HTML/binary için sınırı yükseltmez.
+            if not pdf_izin and bildirilen_boyut and bildirilen_boyut > _MAKSIMUM_YANIT_BYTE:
+                raise KaynakHatasi("yanit_cok_buyuk", "Kaynak yanıtı izin verilen boyutu aşıyor.")
+            icerik = bytearray()
+            butce = _MAKSIMUM_YANIT_BYTE
+            ilk_parca = True
+            for parca in response.iter_bytes(chunk_size=65_536):
+                if ilk_parca:
+                    ilk_parca = False
+                    if pdf_izin and parca.lstrip().startswith(b"%PDF-"):
+                        butce = _MAKSIMUM_PDF_BYTE
+                    if bildirilen_boyut and bildirilen_boyut > butce:
                         raise KaynakHatasi(
                             "yanit_cok_buyuk", "Kaynak yanıtı izin verilen boyutu aşıyor."
                         )
-                except ValueError:
-                    pass
-            icerik = bytearray()
-            for parca in response.iter_bytes():
-                icerik.extend(parca)
-                if len(icerik) > _MAKSIMUM_YANIT_BYTE:
+                if len(icerik) + len(parca) > butce:
                     raise KaynakHatasi(
                         "yanit_cok_buyuk", "Kaynak yanıtı izin verilen boyutu aşıyor."
                     )
+                icerik.extend(parca)
             return _Yanit(durum, dict(response.headers), bytes(icerik))
     except KaynakHatasi:
         raise
@@ -886,16 +900,24 @@ def _web_edin(url: str, client: httpx.Client) -> KaynakBelgesi:
     yanit = _istek(
         client,
         url,
-        basliklar={"accept": "text/html, application/xhtml+xml;q=0.9"},
+        basliklar={"accept": "text/html, application/pdf, application/xhtml+xml;q=0.9"},
+        pdf_izin=True,
     )
     content_type = yanit.basliklar.get("content-type", "").lower()
+    if (
+        yanit.icerik.lstrip().startswith(b"%PDF-")
+        or content_type.split(";", 1)[0].strip() == "application/pdf"
+    ):
+        from rasathane.pdf_source import pdf_belgesi
+
+        return pdf_belgesi(url, yanit.icerik, content_type)
     if (
         content_type
         and "text/html" not in content_type
         and "application/xhtml+xml" not in content_type
     ):
         raise KaynakHatasi(
-            "desteklenmeyen_icerik", "Genel web adapterı yalnız HTML sayfalarını işler."
+            "desteklenmeyen_icerik", "Kaynak HTML sayfası veya metin içeren PDF olmalı."
         )
     ayristirici = _HTMLIcerikAyristirici()
     try:

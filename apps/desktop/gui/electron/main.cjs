@@ -6,12 +6,13 @@ const { pathToFileURL } = require("node:url");
 const { spawn, spawnSync } = require("node:child_process");
 const nodeNet = require("node:net");
 const crypto = require("node:crypto");
-const { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell, safeStorage } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain, net, protocol, session, shell, safeStorage } = require("electron");
 const { validateRequest, trustedSender, publicSourceURL } = require("./ipc-policy.cjs");
 const { createModelSetup } = require("./model-setup.cjs");
 const { createAccount } = require("./account.cjs");
 const { createAuthGate } = require("./auth-gate.cjs");
 const { conservativeSearchClaims } = require("./smoke-evidence.cjs");
+const { resolveOutputDirectory } = require("./output-directory.cjs");
 
 const SCHEME = "rasathane";
 const APP_ORIGIN = `${SCHEME}://app`;
@@ -284,9 +285,9 @@ function sidecarBaslat(port) {
       RASATHANE_SESSION_TOKEN: sessionToken,
       RASATHANE_DATA_DIR: path.join(app.getPath("userData"), "data"),
       YT_CHECKPOINT_DIR: path.join(app.getPath("userData"), "data"),
-      // Windows Documents OneDrive'a yönlendirilmiş olabilir; varsayılan analiz
-      // çalışma alanı uygulama verisinde kalır. Kullanıcının açık klasör seçimi korunur.
-      YT_OUTPUT_BASE: userSettings().workspace || path.join(app.getPath("userData"), "workspace"),
+      // Yeni çıktı kökü Belgeler/Rasathane; eski veriler açık migration'a kadar korunur.
+      YT_OUTPUT_BASE: resolveOutputDirectory({ configured: userSettings().workspace,
+        documents: app.getPath("documents"), desktop: app.getPath("desktop"), userData: app.getPath("userData") }),
       RASATHANE_LOG_DIR: app.getPath("logs"),
       RASATHANE_WORKER_EXE: path.join(app.isPackaged ? process.resourcesPath : path.resolve(__dirname, "../../infra/dist"), "worker", "rasathane-worker.exe"),
       RASATHANE_NER_MODEL: path.join(packagedModels(), "ner"),
@@ -350,6 +351,7 @@ async function pencereOlustur(port) {
     minWidth: 720,
     minHeight: 600,
     show: false,
+    autoHideMenuBar: true,
     // styles.css --zemin ile aynı. Krem bir değer, renderer yüklenene kadar açılışta
     // beyaz flash veriyordu (arayüz koyu: html{color-scheme:dark}).
     backgroundColor: "#0b1712",
@@ -364,6 +366,7 @@ async function pencereOlustur(port) {
     },
   });
   anaPencere = pencere;
+  pencere.setMenu(null);
 
   pencere.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   pencere.webContents.on("will-attach-webview", (event) => event.preventDefault());
@@ -384,6 +387,10 @@ async function pencereOlustur(port) {
 }
 
 async function smokeDogrula(pencere) {
+  if (Menu.getApplicationMenu() !== null || pencere.isMenuBarVisible()) {
+    throw new Error("Ürün penceresinde geliştirme menüsü görünür.");
+  }
+  console.log(JSON.stringify({ smoke: "product-window", applicationMenuAbsent: true, menuBarVisible: false }));
   const initialAccount = await account.checkSession();
   if ((SMOKE_ANALYSIS || SMOKE_PRODUCT) && initialAccount.state !== "signed_in") throw new Error("Ürün/analiz smoke testi için doğrulanmış Muhakeme girişi gerekli; test modu giriş zorunluluğunu kaldırmaz.");
   const son = Date.now() + 90_000;
@@ -546,6 +553,7 @@ if (!tekOrnek) {
   app.whenReady()
     .then(async () => {
       bootIz("app ready");
+      Menu.setApplicationMenu(null);
       prepareMotor();
       account = createAccount({ userData: app.getPath("userData"), safeStorage, openExternal: url => shell.openExternal(url) });
       authGate = createAuthGate(account);

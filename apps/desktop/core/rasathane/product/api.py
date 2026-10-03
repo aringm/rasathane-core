@@ -261,11 +261,12 @@ def register_routes(mcp: FastMCP) -> None:
                     audio, media_type="audio/wav", headers={"Cache-Control": "no-store"}
                 )
             if resource == "articles" and action in {"summary", "speech"}:
-                from rasathane.product.news import speak_article, summarize_article
+                from rasathane.product.news import speak_article
 
                 if action == "summary":
+                    result = await run_in_threadpool(service.request_article_summary, item_id)
                     return JSONResponse(
-                        await run_in_threadpool(summarize_article, service.store, item_id)
+                        result, status_code=202 if result["status"] == "pending" else 200
                     )
                 audio = await run_in_threadpool(speak_article, service.store, item_id)
                 return Response(
@@ -294,12 +295,14 @@ def register_routes(mcp: FastMCP) -> None:
 
     @mcp.custom_route("/api/rasathane/bulletins/{item_id}", methods=["GET", "OPTIONS"])
     async def product_bulletin(request: Request) -> Response:
+        from rasathane.product.bulletins import present_bulletin
+
         if request.method == "OPTIONS":
             return Response(status_code=204)
         try:
             return JSONResponse(
                 await run_in_threadpool(
-                    get_service().store.get_bulletin, request.path_params["item_id"]
+                    present_bulletin, get_service().store, request.path_params["item_id"]
                 )
             )
         except ValueError as exc:

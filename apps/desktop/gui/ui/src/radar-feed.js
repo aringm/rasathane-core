@@ -1,7 +1,7 @@
 import { categoryLabel } from "./source-manager.js";
 
 export function createRadarFeed({ $, el, api, news, bulletin, renderRecord, onSources }) {
-  let sources = [], offset = 0, total = 0, epoch = 0, timer, selectedCategory = "", locked = false;
+  let sources = [], offset = 0, total = 0, epoch = 0, timer, summaryTimer, selectedCategory = "", locked = false;
   const pageSize = 25;
   const list = $("akis-liste");
   const search = el("input", { id: "akis-ara", type: "search", maxlength: 200, placeholder: "Haber başlığı veya özette ara", "aria-label": "Akışta ara" });
@@ -49,24 +49,26 @@ export function createRadarFeed({ $, el, api, news, bulletin, renderRecord, onSo
       news.stopAll();
       if (candidates) bulletin.updateItems(candidates.items || []);
       list.replaceChildren(...(data.items?.length ? data.items.map(item => {
-        const details = el("details", { class: "radar-entry", "data-article-id": item.id });
-        const row = el("summary", {},
+        const details = el("article", { class: "radar-entry", "data-article-id": item.id });
+        const row = el("div", { class: "radar-entry-heading" },
           el("div", { class: "radar-entry-meta" }, el("span", { class: "radar-source-name" }, item.source_name || sources.find(s => s.id === item.source_id)?.name || "Kayıtlı kaynak"),
             el("span", { class: "source-category" }, categoryLabel(item.category)),
             el("time", {}, item.published_at ? new Date(item.published_at).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Yayın tarihi belirtilmemiş")),
-          el("h3", {}, item.title || "Başlıksız içerik"),
-          el("p", { class: "radar-entry-excerpt" }, String(item.summary || item.excerpt || "Kaydı açarak kaynak bilgilerini inceleyin.").slice(0, 220)),
-          el("span", { class: "radar-expand-label" }, "Özet, ses ve analiz"));
+          el("h3", {}, item.summary_display?.title || item.title || "Başlıksız içerik"),
+          el("p", { class: "radar-entry-excerpt" }, articlePreview(item)));
         const body = el("div", { class: "radar-entry-body" });
         details.append(row, body);
-        details.addEventListener("toggle", () => {
-          if (!details.open || body.childElementCount) return;
-          body.append(renderRecord(item));
-        });
+        body.append(renderRecord(item, result => {
+          item.summary_display = result;
+          if (result.url) item.url = result.url;
+          row.querySelector(".radar-entry-excerpt").textContent = articlePreview(item);
+          row.querySelector("h3").textContent = result.title || item.title || "Başlıksız içerik";
+        }));
         return details;
       }) : [el("div", { class: "radar-empty" }, el("h3", {}, "Bu filtrede haber bulunamadı"),
         el("p", {}, "Tüm tarihleri veya başka bir kaynağı seçin. Yeni haber almak için Akışı yenile düğmesini kullanın."),
         el("button", { type: "button", class: "btn btn-ikincil", onclick: () => { search.value = ""; source.value = ""; period.value = "0"; selectedCategory = ""; offset = 0; categories(); void load(); } }, "Filtreleri temizle"))]));
+      scheduleSummaryRefresh(data.items || [], generation);
       status.textContent = total ? `${offset + 1}–${Math.min(offset + pageSize, total)} / ${total.toLocaleString("tr-TR")} haber` : "0 haber";
       previous.disabled = offset === 0; next.disabled = offset + pageSize >= total;
     } catch (error) {
@@ -74,6 +76,24 @@ export function createRadarFeed({ $, el, api, news, bulletin, renderRecord, onSo
       status.textContent = `Akış yüklenemedi: ${error.message}`; status.classList.add("status-error");
       list.replaceChildren(el("button", { type: "button", class: "btn btn-ikincil", onclick: () => void load() }, "Yeniden dene"));
     } finally { if (generation === epoch) list.removeAttribute("aria-busy"); }
+  }
+  function scheduleSummaryRefresh(items, generation) {
+    clearTimeout(summaryTimer);
+    if (locked || !items.some(item => item.summary_display?.status === "pending" && item.summary_display?.job_id)) return;
+    summaryTimer = setTimeout(async () => {
+      if (locked || generation !== epoch) return;
+      try {
+        const data = await api(filters(pageSize, offset));
+        if (locked || generation !== epoch) return;
+        for (const item of data.items || []) {
+          const card = [...list.querySelectorAll(".radar-entry")].find(node => node.dataset.articleId === item.id);
+          if (!card) continue;
+          card.querySelector(".radar-entry-excerpt").textContent = articlePreview(item);
+          card.querySelector("h3").textContent = item.summary_display?.title || item.title || "Başlıksız içerik";
+        }
+        scheduleSummaryRefresh(data.items || [], generation);
+      } catch { if (!locked && generation === epoch) summaryTimer = setTimeout(() => scheduleSummaryRefresh(items, generation), 10000); }
+    }, 2500);
   }
   search.addEventListener("input", () => { clearTimeout(timer); offset = 0; epoch++; bulletin.updateItems([]); timer = setTimeout(() => void load(), 250); });
   for (const filter of [source, period]) filter.addEventListener("change", () => { offset = 0; void load(); });
@@ -90,6 +110,16 @@ export function createRadarFeed({ $, el, api, news, bulletin, renderRecord, onSo
       void load();
     },
     filterSource(id) { source.value = id; selectedCategory = ""; offset = 0; categories(); void load(); },
-    reset() { locked = true; epoch++; clearTimeout(timer); offset = 0; sources = []; news.stopAll(); list.replaceChildren(); status.textContent = sourceOverview.textContent = ""; },
+    reset() { locked = true; epoch++; clearTimeout(timer); clearTimeout(summaryTimer); offset = 0; sources = []; news.stopAll(); list.replaceChildren(); status.textContent = sourceOverview.textContent = ""; },
   };
+}
+
+
+// Eski RSS kayıtlarındaki HN sayaç/link dökümü haber metni değildir.
+export function articlePreview(item) {
+  const display = item.summary_display;
+  if (display?.status === "ready" && display.language === "tr") return String(display.summary || "").trim().slice(0, 600) || "Bu kayıtta özetlenebilecek metin yok.";
+  if (display?.status === "pending" && display.job_id) return "Türkçe haber özeti hazırlanıyor…";
+  if (display?.status === "unavailable") return "Bu kayıtta özetlenebilecek haber metni bulunmuyor.";
+  return "Türkçe özeti hazırlamak için Özetle’ye basın.";
 }

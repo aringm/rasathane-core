@@ -4,7 +4,7 @@ export function createPersonalAgenda({ el, api, bulletin, onChanged }) {
   const statusDetails = el("p", { class: "field-note", id: "gundem-kaynak-durum" });
   const modelNotice = el("details", { class: "agenda-model-notice", hidden: true }, el("summary", {}, "Model değerlendirmesi eksik kaldı; değerlendirilemeyen haberlerde konu eşleşmesi kullanıldı."));
   const modelError = el("p", { class: "field-note" }); modelNotice.append(modelError);
-  const generate = el("button", { type: "button", class: "btn", id: "gundem-yenile", onclick: () => void run() }, "Kaynakları yenile ve gündem hazırla");
+  const generate = el("button", { type: "button", class: "btn", id: "gundem-yenile", onclick: () => void run() }, "Gündemi yenile");
   const latestButton = el("button", { type: "button", class: "agenda-latest-link", id: "gundem-son-ac", hidden: true,
     onclick: () => { if (latest && bulletin.showBulletin(latest, true)) { latestId = latest.id; latestButton.textContent = "Son kişisel gündemi aç"; } } }, "Son kişisel gündemi aç");
   const cancel = el("button", { type: "button", class: "btn btn-ikincil", id: "gundem-iptal", hidden: true, onclick: async () => {
@@ -32,9 +32,10 @@ export function createPersonalAgenda({ el, api, bulletin, onChanged }) {
     el("p", { class: "field-note full-row" }, "İlgi alanlarınız ve proje bağlamınız bu bilgisayardaki modelde işlenir. Model kullanılamazsa konu eşleşmeleri gösterilir; bunun model değerlendirmesi olmadığı belirtilir."),
     el("div", { class: "form-actions full-row" }, save,
       el("button", { type: "button", class: "btn btn-ikincil", onclick: () => { if (profile && !saving) { dirty = false; write(profile); saveStatus.textContent = "Kayıtlı profil geri yüklendi."; } } }, "Değişiklikleri geri al")), saveStatus);
-  const details = el("details", { class: "agenda-profile", id: "gundem-profil" }, el("summary", {}, "İlgi alanlarım ve proje bağlamım"), form);
+  const details = el("details", { class: "agenda-profile", id: "gundem-profil" }, el("summary", {}, "İlgi alanlarım ve projelerim"), form);
   const node = el("section", { class: "personal-agenda", "aria-label": "Kişisel gündem" },
-    el("div", { class: "agenda-controls" }, generate, cancel, latestButton), status, statusDetails, modelNotice, details);
+    el("div", { class: "agenda-controls" }, generate, cancel, latestButton), details,
+    el("details", { class: "agenda-diagnostics" }, el("summary", {}, "Güncelleme durumu"), status, statusDetails, modelNotice));
   function write(value) {
     interests.value = value.interests || ""; projects.value = value.project_context || "";
     enabled.checked = !!value.enabled; model.checked = !!value.use_local_model;
@@ -76,20 +77,20 @@ export function createPersonalAgenda({ el, api, bulletin, onChanged }) {
     if (job && ["failed", "cancelled", "interrupted"].includes(job.status)) openWhenReady = false;
     generate.disabled = busy;
     const stages = { queued: "Sırada", source_refresh: "Kaynaklar yenileniyor", feed_fetch: "Kaynaklar yenileniyor", agenda_select: "İlgili haberler seçiliyor", agenda_evaluate: "Proje bağlamında değerlendiriliyor", agenda_compose: "Gündem hazırlanıyor", agenda_sources: "Kaynaklar yenileniyor", agenda_model: "Yerel model değerlendiriyor" };
-    generate.textContent = busy ? "Gündem hazırlanıyor…" : "Kaynakları yenile ve gündem hazırla";
+    generate.textContent = busy ? "Gündem hazırlanıyor…" : "Gündemi yenile";
     status.textContent = busy ? `${info.source_batch?.active ? `Kaynaklar yenileniyor (${info.source_batch.completed}/${info.source_batch.total})` : stages[job.stage] || "Gündem hazırlanıyor"}. İşlem tamamlanınca sonuç burada görünecek.`
       : info.error || info.last_error || (job?.status === "failed" ? job.error : "") || (profile?.enabled ? "Otomatik gündem açık. Yeni içerikler ilgi ve projelerinize göre değerlendirilecek." : "Otomatik gündem kapalı. İstediğinizde elle güncelleyebilirsiniz.");
     statusDetails.textContent = `${info.source_count || 0} kaynak · ${info.source_error_count || 0} erişim sorunu · Son başarılı kaynak kontrolü: ${timestamp(info.last_source_success_at)} · Son gündem: ${timestamp(info.last_success_at)} · Sonraki kontrol: ${profile?.enabled ? timestamp(info.next_check_at) : "Kapalı"}`;
     if (data.latest) {
       latest = data.latest; latestButton.hidden = false;
-      if (!latestId || (openWhenReady && !busy)) { if (bulletin.showBulletin(latest, true)) { latestId = latest.id; openWhenReady = false; latestButton.textContent = "Son kişisel gündemi aç"; } }
+      if (!latestId || (openWhenReady && !busy)) { if (bulletin.showBulletin(latest, openWhenReady)) { latestId = latest.id; openWhenReady = false; latestButton.textContent = "Son kişisel gündemi aç"; } }
       else if (latestId !== latest.id) { latestId = latest.id; latestButton.textContent = "Yeni kişisel gündem hazır — aç"; }
     } else {
       latest = latestId = null; latestButton.hidden = true;
       if (!busy) openWhenReady = false;
       if (!busy) status.textContent += ` ${info.notice || "Bu profil ve tarih aralığı için henüz kişisel gündem yok."}`;
     }
-    if (profile && !profile.interests && !profile.project_context) details.open = true;
+
     schedule();
   }
   function schedule() { clearTimeout(timer); if (!locked) timer = setTimeout(() => void refresh(), busy ? 1800 : 30000); }

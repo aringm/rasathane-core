@@ -32,8 +32,8 @@
     },
     {
       "path": "AGENTS.md",
-      "source_sha256": "5131adefbae37ee7dc6bc9f24be4a536a4a86837c7233ba97691b56bb8ebf363",
-      "sha256": "0b4edd3681ebbd2a369d081d81b3e0a5ee3418e709b2fad1c7810bb3a8907b80",
+      "source_sha256": "a951510a284411a93d4501c1bd70a3dfb2af0ac0790b8f55df474422162d1a93",
+      "sha256": "3c47ed4b5b9e98f202a672d55bf83652866dc22203ff37c3078a11d336664718",
       "bytes": 3039
     },
     {
@@ -85,6 +85,12 @@
       "bytes": 333
     },
     {
+      "path": "apps/desktop/core/rasathane/pdf_source.py",
+      "source_sha256": "75c20b2b50f16830e41009c92d4374f761da3d73b481638bcbf51f4a9ca6f776",
+      "sha256": "75c20b2b50f16830e41009c92d4374f761da3d73b481638bcbf51f4a9ca6f776",
+      "bytes": 11495
+    },
+    {
       "path": "apps/desktop/core/rasathane/product/__init__.py",
       "source_sha256": "a1179db2f4ce661a031e45fad0ca44e98c2d01ec7403981acc5984f971664e21",
       "sha256": "a1179db2f4ce661a031e45fad0ca44e98c2d01ec7403981acc5984f971664e21",
@@ -92,15 +98,21 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/agenda.py",
-      "source_sha256": "9abe7e6b9a2856196832608f1b040d4d86d5ec600e1e48503958fa5d3b22123f",
-      "sha256": "9abe7e6b9a2856196832608f1b040d4d86d5ec600e1e48503958fa5d3b22123f",
-      "bytes": 22275
+      "source_sha256": "f55bc7a769deecba07d51ea70a1e32a5b8310b59a9d77f7d1acc6c74a3eebeed",
+      "sha256": "f55bc7a769deecba07d51ea70a1e32a5b8310b59a9d77f7d1acc6c74a3eebeed",
+      "bytes": 22408
     },
     {
       "path": "apps/desktop/core/rasathane/product/api.py",
-      "source_sha256": "668b13eb1cbf4f03b5b4a570029f9e177c3b4d865664ea9e3b0fc26b32bff033",
-      "sha256": "668b13eb1cbf4f03b5b4a570029f9e177c3b4d865664ea9e3b0fc26b32bff033",
-      "bytes": 14137
+      "source_sha256": "c49cb911b33fcb4012ede977c5fcc42f9edb47a7bbb66c05bc7781ac4db6e022",
+      "sha256": "c49cb911b33fcb4012ede977c5fcc42f9edb47a7bbb66c05bc7781ac4db6e022",
+      "bytes": 14283
+    },
+    {
+      "path": "apps/desktop/core/rasathane/product/article_enrichment.py",
+      "source_sha256": "007bac067d07e24f578f516a16f49c47299aa6c2cc9e2edb3e9399c403b46b35",
+      "sha256": "007bac067d07e24f578f516a16f49c47299aa6c2cc9e2edb3e9399c403b46b35",
+      "bytes": 8676
     },
     {
       "path": "apps/desktop/core/rasathane/product/artifacts.py",
@@ -110,9 +122,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/bulletins.py",
-      "source_sha256": "dc01c7f395ef6501f5c1b5419b847824e88a12451b3cc09f6c06f9380466eb8e",
-      "sha256": "dc01c7f395ef6501f5c1b5419b847824e88a12451b3cc09f6c06f9380466eb8e",
-      "bytes": 3551
+      "source_sha256": "27f22062715a1c5ccf7a23518ec03d90a497b14ecd4a2be3051f348133b8ac43",
+      "sha256": "27f22062715a1c5ccf7a23518ec03d90a497b14ecd4a2be3051f348133b8ac43",
+      "bytes": 6933
     },
     {
       "path": "apps/desktop/core/rasathane/product/capabilities.py",
@@ -122,9 +134,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/connectors.py",
-      "source_sha256": "b161d927e496d44b1c7e373324e04bc9725561cb35701ed884c73cd2abaabd85",
-      "sha256": "b161d927e496d44b1c7e373324e04bc9725561cb35701ed884c73cd2abaabd85",
-      "bytes": 15997
+      "source_sha256": "39f0c4491b2684351fa5cfb7e2ad3008091a7810d60d4e04a1c1973670f867ae",
+      "sha256": "39f0c4491b2684351fa5cfb7e2ad3008091a7810d60d4e04a1c1973670f867ae",
+      "bytes": 16727
     },
     {
       "path": "apps/desktop/core/rasathane/product/migration.py",
@@ -134,9 +146,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/news.py",
-      "source_sha256": "2d9df87629f7b5583f968b9ba9af978eab0f4174f8bd040b5ffd9af2efd9ea0f",
-      "sha256": "2d9df87629f7b5583f968b9ba9af978eab0f4174f8bd040b5ffd9af2efd9ea0f",
-      "bytes": 6424
+      "source_sha256": "7ee5cbe76ae709a53762d41d1b84dc38e0704cc0f492d435c9849c591e9f572d",
+      "sha256": "7ee5cbe76ae709a53762d41d1b84dc38e0704cc0f492d435c9849c591e9f572d",
+      "bytes": 10562
     },
     {
       "path": "apps/desktop/core/rasathane/product/research_chat.py",
@@ -146,9 +158,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/service.py",
-      "source_sha256": "15a8a954b373f2c4e47d01f4421466f55cbcb533c8c5d29c070b2b61b2d07e97",
-      "sha256": "15a8a954b373f2c4e47d01f4421466f55cbcb533c8c5d29c070b2b61b2d07e97",
-      "bytes": 25423
+      "source_sha256": "2f12a9c27ba111c061b78c4afaf542a63f9f71fe965ec1f572bc97ec79139119",
+      "sha256": "2f12a9c27ba111c061b78c4afaf542a63f9f71fe965ec1f572bc97ec79139119",
+      "bytes": 28542
     },
     {
       "path": "apps/desktop/core/rasathane/product/source_assistant.py",
@@ -164,9 +176,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/store.py",
-      "source_sha256": "b3bff787cabc93f1236d525c4f1b83b684ae03b99383c67e6f57ce5374f1028d",
-      "sha256": "b3bff787cabc93f1236d525c4f1b83b684ae03b99383c67e6f57ce5374f1028d",
-      "bytes": 65358
+      "source_sha256": "7261bb080dcaa03881ea865bf56220b7fb2d68abfc36ade17dd63382835c4639",
+      "sha256": "7261bb080dcaa03881ea865bf56220b7fb2d68abfc36ade17dd63382835c4639",
+      "bytes": 66399
     },
     {
       "path": "apps/desktop/core/rasathane/product/web.py",
@@ -176,9 +188,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/sources.py",
-      "source_sha256": "4a4824c7d35be2ebc34a4ec1ed84826ad8563c02d774cf52b701edd6343c94d7",
-      "sha256": "4a4824c7d35be2ebc34a4ec1ed84826ad8563c02d774cf52b701edd6343c94d7",
-      "bytes": 40957
+      "source_sha256": "99166b2c96f2283e75217647c48020c3f0f1a1539faed8853ac96ed14e1eddff",
+      "sha256": "99166b2c96f2283e75217647c48020c3f0f1a1539faed8853ac96ed14e1eddff",
+      "bytes": 42052
     },
     {
       "path": "apps/desktop/core/ytcore/__init__.py",
@@ -188,9 +200,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/config.py",
-      "source_sha256": "c31e1b94938a9fdadd5862d9d1da4df9b60955bf203c0cf35882d782cf0d1b3c",
-      "sha256": "c31e1b94938a9fdadd5862d9d1da4df9b60955bf203c0cf35882d782cf0d1b3c",
-      "bytes": 19576
+      "source_sha256": "653e3099cad78ed4df77162a805f40439fab096e3e3c57883ef4b7088828db85",
+      "sha256": "653e3099cad78ed4df77162a805f40439fab096e3e3c57883ef4b7088828db85",
+      "bytes": 19518
     },
     {
       "path": "apps/desktop/core/ytcore/content/__init__.py",
@@ -440,9 +452,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/output/kaynak_yaz.py",
-      "source_sha256": "4b685b6290f4419b310f498b21af10319c2bb537831bf30cb86932a751d8f64f",
-      "sha256": "4b685b6290f4419b310f498b21af10319c2bb537831bf30cb86932a751d8f64f",
-      "bytes": 1307
+      "source_sha256": "fd4c7e19fd49cdc755e63ef9a4b8809f5783d27690a8d41e08aed10e8debe797",
+      "sha256": "fd4c7e19fd49cdc755e63ef9a4b8809f5783d27690a8d41e08aed10e8debe797",
+      "bytes": 1667
     },
     {
       "path": "apps/desktop/core/ytcore/output/kisisel_yaz.py",
@@ -458,9 +470,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/output/ozet_yaz.py",
-      "source_sha256": "74904107c9c6efe0bc2126cce4270cedc4f6e79690ac362d8a3ff39b42da9923",
-      "sha256": "74904107c9c6efe0bc2126cce4270cedc4f6e79690ac362d8a3ff39b42da9923",
-      "bytes": 2537
+      "source_sha256": "fe44a79b78c6a837b789c6a4c25a142aed6e07a1ca47a96d91754c50ec40ed4e",
+      "sha256": "fe44a79b78c6a837b789c6a4c25a142aed6e07a1ca47a96d91754c50ec40ed4e",
+      "bytes": 2904
     },
     {
       "path": "apps/desktop/core/ytcore/output/sunum_yaz.py",
@@ -500,9 +512,9 @@
     },
     {
       "path": "apps/desktop/core/ytcore/pipeline/graph.py",
-      "source_sha256": "9c8d1690f995cbdc7bb1a4a300ccd91f10feeeb08248447733f88a7254893db8",
-      "sha256": "9c8d1690f995cbdc7bb1a4a300ccd91f10feeeb08248447733f88a7254893db8",
-      "bytes": 27864
+      "source_sha256": "a61537b0e11ea804316677d1f41b8cc20544c7472ffae6f9d6c297c21938e072",
+      "sha256": "a61537b0e11ea804316677d1f41b8cc20544c7472ffae6f9d6c297c21938e072",
+      "bytes": 28487
     },
     {
       "path": "apps/desktop/core/ytcore/pipeline/state.py",
@@ -806,9 +818,9 @@
     },
     {
       "path": "apps/desktop/gui/electron/main.cjs",
-      "source_sha256": "4cc1f847432083e2d72cf2b5663e9d7f5a070311dc052ac127649d18b5542cf5",
-      "sha256": "4cc1f847432083e2d72cf2b5663e9d7f5a070311dc052ac127649d18b5542cf5",
-      "bytes": 29613
+      "source_sha256": "99506851d658d2a2126ee54322e8ba2214290f1266053fd9aba7c93eb9a9ec31",
+      "sha256": "99506851d658d2a2126ee54322e8ba2214290f1266053fd9aba7c93eb9a9ec31",
+      "bytes": 30058
     },
     {
       "path": "apps/desktop/gui/electron/model-catalog.json",
@@ -841,6 +853,18 @@
       "bytes": 2709
     },
     {
+      "path": "apps/desktop/gui/electron/output-directory.cjs",
+      "source_sha256": "8ce8b785e11abae9452fff755e8c87461825c5f741d17f8b89182f9355863cf6",
+      "sha256": "8ce8b785e11abae9452fff755e8c87461825c5f741d17f8b89182f9355863cf6",
+      "bytes": 1195
+    },
+    {
+      "path": "apps/desktop/gui/electron/output-directory.test.cjs",
+      "source_sha256": "63ab382570f382c4c2b2c56418577bc2a2393dd984de8fc5ce76314fc476f038",
+      "sha256": "63ab382570f382c4c2b2c56418577bc2a2393dd984de8fc5ce76314fc476f038",
+      "bytes": 2442
+    },
+    {
       "path": "apps/desktop/gui/electron/preload.cjs",
       "source_sha256": "3b7133ddea6cecd6222b3fd60931290f7c6f84ade8eb28e1275d2a887d448d28",
       "sha256": "3b7133ddea6cecd6222b3fd60931290f7c6f84ade8eb28e1275d2a887d448d28",
@@ -866,20 +890,20 @@
     },
     {
       "path": "apps/desktop/gui/electron/smoke-evidence.test.cjs",
-      "source_sha256": "1477384f2e3b982535ced0ba86d12449c145f8b388782168a31e7968865db820",
-      "sha256": "1477384f2e3b982535ced0ba86d12449c145f8b388782168a31e7968865db820",
-      "bytes": 1778
+      "source_sha256": "294924c0e347c7a70998d9748f9e18eda0feb03bafd100044868d0dc9be335e9",
+      "sha256": "294924c0e347c7a70998d9748f9e18eda0feb03bafd100044868d0dc9be335e9",
+      "bytes": 4036
     },
     {
       "path": "apps/desktop/gui/electron/smoke-product-ui.cjs",
-      "source_sha256": "39838884940c4a87ef11225e151c42b4cc03b1139e8bf77e7fd8376c2ba001b4",
-      "sha256": "39838884940c4a87ef11225e151c42b4cc03b1139e8bf77e7fd8376c2ba001b4",
-      "bytes": 4309
+      "source_sha256": "bfacc9dc57241b1323c8663124738a8854ebf39ca44a747a1c038b1d6098721c",
+      "sha256": "bfacc9dc57241b1323c8663124738a8854ebf39ca44a747a1c038b1d6098721c",
+      "bytes": 12893
     },
     {
       "path": "apps/desktop/gui/package.json",
-      "source_sha256": "699b4f5bec301710b6a1e37df64e894e4b0941f9cda125de8f06c9cea61876b4",
-      "sha256": "699b4f5bec301710b6a1e37df64e894e4b0941f9cda125de8f06c9cea61876b4",
+      "source_sha256": "1dff08a841c8985c0cd485fdf3197fc9a28056badc29827f6f4cc0e9272018e4",
+      "sha256": "1dff08a841c8985c0cd485fdf3197fc9a28056badc29827f6f4cc0e9272018e4",
       "bytes": 4270
     },
     {
@@ -1064,9 +1088,9 @@
     },
     {
       "path": "apps/desktop/gui/tests/product-flow.cjs",
-      "source_sha256": "67d1d149d31589fd0d5ec1c06665be8c08f54452ce1a65da873425426d9dfa75",
-      "sha256": "67d1d149d31589fd0d5ec1c06665be8c08f54452ce1a65da873425426d9dfa75",
-      "bytes": 42268
+      "source_sha256": "d2f502ff70876d252671010e75588df3a81ff9a4555c5547aaa76b0feddad825",
+      "sha256": "d2f502ff70876d252671010e75588df3a81ff9a4555c5547aaa76b0feddad825",
+      "bytes": 43471
     },
     {
       "path": "apps/desktop/gui/tests/qa-product-server.py",
@@ -1082,9 +1106,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/bulletin.css",
-      "source_sha256": "8c6b256053761454ecf3cf1775b5b56c0eda3001233ba009ccfe2de388cab613",
-      "sha256": "8c6b256053761454ecf3cf1775b5b56c0eda3001233ba009ccfe2de388cab613",
-      "bytes": 5266
+      "source_sha256": "be917b01fdb0244a45025b9381fc4d966eba64ef402afcd683055a9b3a32a057",
+      "sha256": "be917b01fdb0244a45025b9381fc4d966eba64ef402afcd683055a9b3a32a057",
+      "bytes": 7912
     },
     {
       "path": "apps/desktop/gui/ui/fonts/ibm-plex-mono-400-latin-ext.woff2",
@@ -1166,9 +1190,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/index.html",
-      "source_sha256": "24a9cd64d4cb6686183d971d1199c68a7649c21def127af12906d49a5913eee7",
-      "sha256": "24a9cd64d4cb6686183d971d1199c68a7649c21def127af12906d49a5913eee7",
-      "bytes": 38252
+      "source_sha256": "0a844aecaa10a43f441959911616984f10b797eb1d9ad9509a47d4c7cbf84736",
+      "sha256": "0a844aecaa10a43f441959911616984f10b797eb1d9ad9509a47d4c7cbf84736",
+      "bytes": 38318
     },
     {
       "path": "apps/desktop/gui/ui/lib/pdfjs/LICENSE",
@@ -2390,9 +2414,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/radar.css",
-      "source_sha256": "d4fd7c174a1809d7587d4c25493d375ee73554e46dcacb53abf8afe1ca207be2",
-      "sha256": "d4fd7c174a1809d7587d4c25493d375ee73554e46dcacb53abf8afe1ca207be2",
-      "bytes": 8058
+      "source_sha256": "4109891ae65a24484ed5a1f7ef7cea09121d863153158499253bd1a7a4727318",
+      "sha256": "4109891ae65a24484ed5a1f7ef7cea09121d863153158499253bd1a7a4727318",
+      "bytes": 8967
     },
     {
       "path": "apps/desktop/gui/ui/src/artifact-data.js",
@@ -2420,33 +2444,33 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/main.js",
-      "source_sha256": "086a6a9ff161d92a06678727ef4cca4e7a60776a7ea797e8a14021c126473c13",
-      "sha256": "086a6a9ff161d92a06678727ef4cca4e7a60776a7ea797e8a14021c126473c13",
-      "bytes": 60991
+      "source_sha256": "51a07bebca3908b03326f0e19e15e4a34dd5d3ea1b7b63ece73688a550116716",
+      "sha256": "51a07bebca3908b03326f0e19e15e4a34dd5d3ea1b7b63ece73688a550116716",
+      "bytes": 61881
     },
     {
       "path": "apps/desktop/gui/ui/src/news-bulletin.js",
-      "source_sha256": "cea65a149950f80675c74f41ce56b115d43b912a53364bb63d9c2e17f0a18d89",
-      "sha256": "cea65a149950f80675c74f41ce56b115d43b912a53364bb63d9c2e17f0a18d89",
-      "bytes": 15135
+      "source_sha256": "389221bdbe42c0b7ca7a73fc0e702610794826af4db9980c926c3a412d17a63e",
+      "sha256": "389221bdbe42c0b7ca7a73fc0e702610794826af4db9980c926c3a412d17a63e",
+      "bytes": 16411
     },
     {
       "path": "apps/desktop/gui/ui/src/news-summary.js",
-      "source_sha256": "87a23fb4ce03589e2b64eee5259a57dd502709b81339b57f56c8f19eab038771",
-      "sha256": "87a23fb4ce03589e2b64eee5259a57dd502709b81339b57f56c8f19eab038771",
-      "bytes": 3922
+      "source_sha256": "a42f66ef2ea266e1acc2c9605713a505ecc35a3b17ee14f3731442bb32dbde2e",
+      "sha256": "a42f66ef2ea266e1acc2c9605713a505ecc35a3b17ee14f3731442bb32dbde2e",
+      "bytes": 6381
     },
     {
       "path": "apps/desktop/gui/ui/src/personal-agenda.js",
-      "source_sha256": "586f40fd61e7a65839bd8c9ac476b953289bafb169e5138376ece6b21fa30fcf",
-      "sha256": "586f40fd61e7a65839bd8c9ac476b953289bafb169e5138376ece6b21fa30fcf",
-      "bytes": 11021
+      "source_sha256": "9eec3af4137eacfab83f4e8bdee00485c503d98e28ff5a707e83d83690129c91",
+      "sha256": "9eec3af4137eacfab83f4e8bdee00485c503d98e28ff5a707e83d83690129c91",
+      "bytes": 10984
     },
     {
       "path": "apps/desktop/gui/ui/src/product.js",
-      "source_sha256": "49a7b7ee9c81ebf9340a8010609273e5b9d67d8ae4e41901148a8743b5941412",
-      "sha256": "49a7b7ee9c81ebf9340a8010609273e5b9d67d8ae4e41901148a8743b5941412",
-      "bytes": 37724
+      "source_sha256": "5385f85d1d59a74ddad2cf940546a4a352ace972a6de52a595aec5180670eed1",
+      "sha256": "5385f85d1d59a74ddad2cf940546a4a352ace972a6de52a595aec5180670eed1",
+      "bytes": 38533
     },
     {
       "path": "apps/desktop/gui/ui/src/profile-settings.js",
@@ -2456,9 +2480,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/radar-feed.js",
-      "source_sha256": "eb30d687646259d138c55edfa5844ae370146bcaec840fcaad42cce6f3760f9a",
-      "sha256": "eb30d687646259d138c55edfa5844ae370146bcaec840fcaad42cce6f3760f9a",
-      "bytes": 6997
+      "source_sha256": "85ea497a813a6827786726a4fb6e1dcedbdfca51327b7c04ab92848dadf32a97",
+      "sha256": "85ea497a813a6827786726a4fb6e1dcedbdfca51327b7c04ab92848dadf32a97",
+      "bytes": 8832
     },
     {
       "path": "apps/desktop/gui/ui/src/record-provenance.js",
@@ -2483,6 +2507,12 @@
       "source_sha256": "3ed03c2988d2c364e1e6721605d1da89fe97b78fd14bce92203edb7301975c2c",
       "sha256": "3ed03c2988d2c364e1e6721605d1da89fe97b78fd14bce92203edb7301975c2c",
       "bytes": 4821
+    },
+    {
+      "path": "apps/desktop/gui/ui/src/source-format.js",
+      "source_sha256": "2ae5edf899bbc9173d2527071c611b8ee4d64ac0d7329db83a404c780422a568",
+      "sha256": "2ae5edf899bbc9173d2527071c611b8ee4d64ac0d7329db83a404c780422a568",
+      "bytes": 2466
     },
     {
       "path": "apps/desktop/gui/ui/src/source-manager.js",
@@ -2510,15 +2540,21 @@
     },
     {
       "path": "apps/desktop/gui/ui/tests/news-bulletin.test.mjs",
-      "source_sha256": "35c16e0ad650b0beab3794bc0d12bfced69cddc9d38de78c9d248d88083a0414",
-      "sha256": "35c16e0ad650b0beab3794bc0d12bfced69cddc9d38de78c9d248d88083a0414",
-      "bytes": 1839
+      "source_sha256": "25fb8e88176b58b0483ec35a4a9de5d71a24bed2e29396d36c42af9d6727c15e",
+      "sha256": "25fb8e88176b58b0483ec35a4a9de5d71a24bed2e29396d36c42af9d6727c15e",
+      "bytes": 7550
+    },
+    {
+      "path": "apps/desktop/gui/ui/tests/news-summary.test.mjs",
+      "source_sha256": "abd0d6b70b007d9c44f3e31409e064c0ba0ac8148e057f7403c3877c7ba9b3d3",
+      "sha256": "abd0d6b70b007d9c44f3e31409e064c0ba0ac8148e057f7403c3877c7ba9b3d3",
+      "bytes": 6585
     },
     {
       "path": "apps/desktop/gui/ui/tests/personal-agenda.test.mjs",
-      "source_sha256": "e472c1d81bac0be98d2fd835c96e8b5de8618adf8101ed75563bfe94e96cbaa0",
-      "sha256": "e472c1d81bac0be98d2fd835c96e8b5de8618adf8101ed75563bfe94e96cbaa0",
-      "bytes": 8302
+      "source_sha256": "51bcac5111af1bd5ac0f02aa7c5d79cf30a736722d0ad1c9ee049a66ecab81d4",
+      "sha256": "51bcac5111af1bd5ac0f02aa7c5d79cf30a736722d0ad1c9ee049a66ecab81d4",
+      "bytes": 8617
     },
     {
       "path": "apps/desktop/gui/ui/tests/record-provenance.test.mjs",
@@ -2537,6 +2573,12 @@
       "source_sha256": "6d35d93ef8578fe038078e0293eef519574212ce54845b0acea7c961d9db167f",
       "sha256": "6d35d93ef8578fe038078e0293eef519574212ce54845b0acea7c961d9db167f",
       "bytes": 2127
+    },
+    {
+      "path": "apps/desktop/gui/ui/tests/source-format.test.mjs",
+      "source_sha256": "ded640614cdd4a017f6d52a2b5840e49333a6d5786f1e8c9a2b374d566495acc",
+      "sha256": "ded640614cdd4a017f6d52a2b5840e49333a6d5786f1e8c9a2b374d566495acc",
+      "bytes": 2179
     },
     {
       "path": "apps/desktop/gui/ui/tests/source-interactions.test.mjs",
@@ -2582,9 +2624,9 @@
     },
     {
       "path": "apps/desktop/infra/build-sidecar.ps1",
-      "source_sha256": "64c88b969a141ec416292b5b2f302a967c22d972ec9d3e14b12af984ea03ca8a",
-      "sha256": "64c88b969a141ec416292b5b2f302a967c22d972ec9d3e14b12af984ea03ca8a",
-      "bytes": 7231
+      "source_sha256": "b3388a79c9ca1f1f3c9a658ed9e37bdcfc42be0e7395bcb0edffae8051a1349c",
+      "sha256": "b3388a79c9ca1f1f3c9a658ed9e37bdcfc42be0e7395bcb0edffae8051a1349c",
+      "bytes": 7386
     },
     {
       "path": "apps/desktop/infra/build-worker.ps1",
@@ -2600,9 +2642,9 @@
     },
     {
       "path": "apps/desktop/infra/gozlem-koku-goc.py",
-      "source_sha256": "3394b103e87eb45426951d24c7e03c201170ffb0c4162e6bd45431c4bd9c0dde",
-      "sha256": "3394b103e87eb45426951d24c7e03c201170ffb0c4162e6bd45431c4bd9c0dde",
-      "bytes": 2765
+      "source_sha256": "05061c0dee3c8799cbb27cb9d1441a9800ed29a6ebface7b81712fdccadcca9a",
+      "sha256": "05061c0dee3c8799cbb27cb9d1441a9800ed29a6ebface7b81712fdccadcca9a",
+      "bytes": 3714
     },
     {
       "path": "apps/desktop/infra/make_icon.py",
@@ -2690,9 +2732,9 @@
     },
     {
       "path": "apps/desktop/pyproject.toml",
-      "source_sha256": "98c300cf75185c4aa0156cf19f0f8ca809afc563481e4d192dcba06fa3ee1447",
-      "sha256": "98c300cf75185c4aa0156cf19f0f8ca809afc563481e4d192dcba06fa3ee1447",
-      "bytes": 3878
+      "source_sha256": "aaf5b8a7a363a6f1bbb19309155241a0f64a246cd45393378a473686c7135853",
+      "sha256": "aaf5b8a7a363a6f1bbb19309155241a0f64a246cd45393378a473686c7135853",
+      "bytes": 3904
     },
     {
       "path": "apps/desktop/tests/__init__.py",
@@ -2729,6 +2771,12 @@
       "source_sha256": "daf2cac14efe2ee137b86ece53d381bc9dbdc31ad6abad7ce8baefd5fa4fd620",
       "sha256": "daf2cac14efe2ee137b86ece53d381bc9dbdc31ad6abad7ce8baefd5fa4fd620",
       "bytes": 2539
+    },
+    {
+      "path": "apps/desktop/tests/test_article_enrichment.py",
+      "source_sha256": "ef3986a1ebe356b4d07e76b8748233eb235b68fa4a55cd50a4f37bb004cd4c4d",
+      "sha256": "ef3986a1ebe356b4d07e76b8748233eb235b68fa4a55cd50a4f37bb004cd4c4d",
+      "bytes": 14463
     },
     {
       "path": "apps/desktop/tests/test_asr.py",
@@ -2870,9 +2918,9 @@
     },
     {
       "path": "apps/desktop/tests/test_gozlem_koku.py",
-      "source_sha256": "36478d110f51de036dc5b52121237270787d8a28b9f0d24c32bc52fca48e7ed7",
-      "sha256": "36478d110f51de036dc5b52121237270787d8a28b9f0d24c32bc52fca48e7ed7",
-      "bytes": 2651
+      "source_sha256": "c56f5f43ef40908f721966d4391cd3790b24a992a65b8ef5027c1fcb755b99ab",
+      "sha256": "c56f5f43ef40908f721966d4391cd3790b24a992a65b8ef5027c1fcb755b99ab",
+      "bytes": 4593
     },
     {
       "path": "apps/desktop/tests/test_gui_route.py",
@@ -3041,6 +3089,12 @@
       "source_sha256": "1a57716d485338b2990058c3f9b1d75333a462d23a1af3c2b7e1c3345e911c15",
       "sha256": "1a57716d485338b2990058c3f9b1d75333a462d23a1af3c2b7e1c3345e911c15",
       "bytes": 1467
+    },
+    {
+      "path": "apps/desktop/tests/test_pdf_analysis_pipeline.py",
+      "source_sha256": "fd4a28fa3c66180a5156dab915bd9db99f7cc5d35183be80d152b64647114544",
+      "sha256": "fd4a28fa3c66180a5156dab915bd9db99f7cc5d35183be80d152b64647114544",
+      "bytes": 3758
     },
     {
       "path": "apps/desktop/tests/test_pii_gate.py",
@@ -3223,6 +3277,12 @@
       "bytes": 22529
     },
     {
+      "path": "apps/desktop/tests/test_sources_pdf.py",
+      "source_sha256": "55bff8eacbf26f2bc1ab80f54abe297ce98b40a201a0c385a111c58f2cb599c5",
+      "sha256": "55bff8eacbf26f2bc1ab80f54abe297ce98b40a201a0c385a111c58f2cb599c5",
+      "bytes": 10689
+    },
+    {
       "path": "apps/desktop/tests/test_sunum_yaz.py",
       "source_sha256": "fceee9c8beb23c795981bca47b045b59735a592137a8bd014bba65197e1db4b4",
       "sha256": "fceee9c8beb23c795981bca47b045b59735a592137a8bd014bba65197e1db4b4",
@@ -3302,9 +3362,9 @@
     },
     {
       "path": "apps/desktop/uv.lock",
-      "source_sha256": "71ba0cda5754f1ae3ad79bd9eb50597f7827a42e5dbe731486267523894d6d18",
-      "sha256": "71ba0cda5754f1ae3ad79bd9eb50597f7827a42e5dbe731486267523894d6d18",
-      "bytes": 370814
+      "source_sha256": "cc6a1b8de8a08d671c3a317e8405490359cf79c665d07e03b379a8e7be58faeb",
+      "sha256": "cc6a1b8de8a08d671c3a317e8405490359cf79c665d07e03b379a8e7be58faeb",
+      "bytes": 371688
     },
     {
       "path": "apps/radar/.env.example",
@@ -4757,6 +4817,12 @@
       "source_sha256": "e6f69d7319a27b0b687c4e3f8b64795d991bd7c01bd9e14f48b2895a90a29306",
       "sha256": "e6f69d7319a27b0b687c4e3f8b64795d991bd7c01bd9e14f48b2895a90a29306",
       "bytes": 2642
+    },
+    {
+      "path": "docs/urun/AKIS-PDF-0.8.1.md",
+      "source_sha256": "2d5e0db2319c5569c227bb12b0607906b4d0d4c80911c3bacd9dd8af7d831f54",
+      "sha256": "2d5e0db2319c5569c227bb12b0607906b4d0d4c80911c3bacd9dd8af7d831f54",
+      "bytes": 3033
     },
     {
       "path": "docs/urun/BULTEN-ARASTIRMA.md",

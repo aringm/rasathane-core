@@ -8,12 +8,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
 
-# Masaüstü gözlem kökünün adı iki kez değişti. Yeni ad ilk sırada; kalanlar eskiden yeniye
-# doğru legacy zinciri. "Rasathane  Gözlemevi" içindeki ÇİFT boşluk kasıtlıdır (Explorer'da
-# okunaklı iki-satır etiket; muhakeme ailesi konvansiyonu — bkz. muhakeme-ictihat
-# packaging/installer.iss DesktopName "Muhakeme   İçtihat").
-GOZLEM_KOKU_ADI = "Rasathane  Gözlemevi"
-GOZLEM_KOKU_LEGACY_ADLARI = ("Rasathane Gözlemleri", "Youtube Analizleri")
+# Çıktı klasörü kaynak reposuyla karışmamalı: Desktop/Rasathane kaynak kökü
+# olabileceğinden yeni kurulumların çıktıları Documents/Rasathane altında yaşar.
+GOZLEM_KOKU_ADI = "Rasathane"
+GOZLEM_KOKU_LEGACY_ADLARI = (
+    "Rasathane  Gözlemevi",
+    "Rasathane Gözlemevi",
+    "RasathaneGözlemevi",
+    "Rasathane Gözlemleri",
+    "Youtube Analizleri",
+)
 
 
 def _dolu_dizin_mi(p: Path) -> bool:
@@ -25,20 +29,21 @@ def _dolu_dizin_mi(p: Path) -> bool:
 
 
 def _default_output_base() -> Path:
-    """Yeni kurulum `Rasathane  Gözlemevi` ile başlar; mevcut kurulum kendi klasöründe kalır.
+    """Yeni çıktı kökü Documents/Rasathane; eski kayıtlar taşınana kadar görünür kalır.
 
-    Mevcut kullanıcı verisini görünmez biçimde iki köke bölme (#regresyon): karar VARLIĞA değil
-    DOLULUĞA bakar. Yeni kök boşken (ör. elle açılmış) dolu bir legacy varsa, o legacy veri
-    görünmez kalmasın diye legacy kök seçilir. Yeni kök doluysa legacy yok sayılır (göç bitti).
-    Hiçbiri dolu değilse temiz kurulum → yeni ad. Tek köke sadeleştirme: `infra/gozlem-koku-goc.py`.
+    Desktop/Rasathane kaynak reposu hiçbir zaman çıktı olarak seçilmez. Yeni
+    klasör boşsa dolu legacy çıktı tercih edilir; açık YT_OUTPUT_BASE seçimi
+    get_config içinde önceliklidir. Göç yalnız açık migration helper ile yapılır.
     """
     masaustu = Path.home() / "Desktop"
-    yeni = masaustu / GOZLEM_KOKU_ADI
+    yeni = Path.home() / "Documents" / GOZLEM_KOKU_ADI
+    if (yeni / ".git").exists():
+        raise ValueError("Rasathane çıktı konumu bir kaynak repo; farklı çıktı klasörü seçin.")
     if _dolu_dizin_mi(yeni):
         return yeni
     for eski in GOZLEM_KOKU_LEGACY_ADLARI:
         aday = masaustu / eski
-        if _dolu_dizin_mi(aday):
+        if _dolu_dizin_mi(aday) and not (aday / ".git").exists():
             return aday
     return yeni
 

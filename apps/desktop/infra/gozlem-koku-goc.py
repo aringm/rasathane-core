@@ -1,14 +1,15 @@
-"""Masaüstü gözlem kökünü yeni marka adına taşır: `Rasathane  Gözlemevi` (çift boşluk).
+"""Legacy masaüstü çıktı klasörünü Documents/Rasathane konumuna taşır.
 
-Legacy zinciri (eskiden yeniye): `Youtube Analizleri` → `Rasathane Gözlemleri` → yeni ad.
-`core.ytcore.config._default_output_base()` yeni ad yoksa legacy kökü kullanmaya devam eder;
-bu betik olmadan da veri kaybolmaz. Betik yalnız tek köke sadeleştirir.
+Kaynak kodu Desktop/Rasathane klasörüne dokunulmaz. Varsayılan kuru çalışmadır.
+Tek legacy kaynak, boş/eksik hedef ve symlink/junction olmayan kökler gerekir.
+Klasörler birleştirilmez, dosya üzerine yazılmaz. Taşınan kaynak dizinin adı
+makbuzda gösterilir; aynı güvenli koşullarda ters rename ile geri alınabilir.
 
-    uv run python infra/gozlem-koku-goc.py            # kuru çalışma, hiçbir şey taşınmaz
-    uv run python infra/gozlem-koku-goc.py --uygula   # taşı
+    uv run python infra/gozlem-koku-goc.py
+    uv run python infra/gozlem-koku-goc.py --uygula
 
-`YT_OUTPUT_BASE` tanımlıysa varsayılan kök devre dışıdır; betik bunu söyleyip çıkar.
-Hedef zaten varsa birleştirme YAPILMAZ (sessiz üzerine yazma riski) — elle çözülmelidir.
+YT_OUTPUT_BASE açık seçimse otomatik göç yapılmaz. Electron'un özel çıktı ayarı
+bu helper'ın kapsamına girmez; paket güncellemesinde ayrıca doğrulanır.
 """
 
 from __future__ import annotations
@@ -23,56 +24,70 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "core"))
 from ytcore.config import GOZLEM_KOKU_ADI, GOZLEM_KOKU_LEGACY_ADLARI  # noqa: E402
 
 
-def _dolu_mu(p: Path) -> bool:
-    return any(p.iterdir())
+def _guvenli_kok(path: Path, home: Path) -> None:
+    if path.is_symlink() or path.is_junction():
+        raise ValueError("Symlink veya junction kökü taşınamaz.")
+    if not path.resolve().is_relative_to(home.resolve()):
+        raise ValueError("Göç yolu kullanıcı klasörü sınırının dışında.")
+    if (path / ".git").exists():
+        raise ValueError("Kaynak repo çıktı klasörü olarak taşınamaz.")
+    if path.exists() and not path.is_dir():
+        raise ValueError("Göç yolu bir dizin olmalı.")
+
+
+def migration_plan(home: Path) -> tuple[Path | None, Path]:
+    target = home / "Documents" / GOZLEM_KOKU_ADI
+    _guvenli_kok(target, home)
+    sources = [
+        home / "Desktop" / name
+        for name in GOZLEM_KOKU_LEGACY_ADLARI
+        if (home / "Desktop" / name).exists()
+    ]
+    for source in sources:
+        _guvenli_kok(source, home)
+    if not sources:
+        return None, target
+    if len(sources) != 1:
+        raise ValueError("Birden çok legacy kök var; otomatik birleştirme yapılmaz.")
+    if target.exists() and any(target.iterdir()):
+        raise ValueError("Hedef klasör dolu; birleştirme veya üzerine yazma yapılmaz.")
+    return sources[0], target
+
+
+def migrate(home: Path, *, apply: bool = False) -> tuple[Path | None, Path]:
+    source, target = migration_plan(home)
+    if not apply or source is None:
+        return source, target
+    # Mutation öncesi planı tekrar doğrula; kaynak repo ile isim benzerliği
+    # bu whitelist sınırlarını genişletmez.
+    current_source, current_target = migration_plan(home)
+    if current_source != source or current_target != target:
+        raise ValueError("Göç planı değişti.")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        target.rmdir()  # Yalnız doğrulanan boş hedef; recursive silme yok.
+    source.rename(target)
+    return source, target
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument(
-        "--uygula", action="store_true", help="gerçekten taşı (varsayılan: kuru çalışma)"
-    )
-    args = ap.parse_args()
-
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--uygula", action="store_true", help="varsayılan kuru planı uygula")
+    args = parser.parse_args()
     if os.environ.get("YT_OUTPUT_BASE", "").strip():
-        print("YT_OUTPUT_BASE tanımlı — çıktı kökü zaten elle yönetiliyor. Göç gereksiz.")
+        print("YT_OUTPUT_BASE tanımlı; açık çıktı seçimi korunur. Göç yapılmadı.")
         return 0
-
-    masaustu = Path.home() / "Desktop"
-    hedef = masaustu / GOZLEM_KOKU_ADI
-    kaynaklar = [masaustu / ad for ad in GOZLEM_KOKU_LEGACY_ADLARI if (masaustu / ad).is_dir()]
-
-    print(f"hedef : {hedef}")
-    for k in kaynaklar:
-        print(f"legacy: {k}")
-
-    if not kaynaklar:
-        print("\nTaşınacak legacy klasör yok. Yapılacak bir şey yok.")
-        return 0
-
-    if hedef.exists():
-        if _dolu_mu(hedef):
-            print(f"\nHEDEF ZATEN DOLU: {hedef}")
-            print("İki kökü birleştirmek sessizce dosya ezebilir. Elle birleştirin.")
-            return 1
-        print("\nHedef var ama boş; kaldırılıp legacy klasör onun yerine taşınacak.")
-
-    if len(kaynaklar) > 1:
-        print(f"\nBİRDEN ÇOK legacy kök var ({len(kaynaklar)}). Otomatik göç yapılmaz.")
-        print("Hangisinin canlı veri olduğuna karar verip elle birleştirin.")
+    try:
+        source, target = migrate(Path.home(), apply=args.uygula)
+    except (OSError, ValueError) as exc:
+        print(f"Göç uygulanmadı: {exc}")
         return 1
-
-    kaynak = kaynaklar[0]
-    print(f"\nPLAN: {kaynak.name}  ->  {hedef.name}")
-
-    if not args.uygula:
-        print("\n(kuru çalışma — hiçbir şey değişmedi. Uygulamak için: --uygula)")
-        return 0
-
-    if hedef.exists():
-        hedef.rmdir()  # yalnız boşsa buraya gelinir
-    kaynak.rename(hedef)
-    print(f"\nTaşındı: {hedef}")
+    print(f"Hedef: {target}")
+    if source is None:
+        print("Legacy çıktı klasörü bulunamadı.")
+    else:
+        print(f"Kaynak: {source}")
+        print("Taşındı." if args.uygula else "Kuru çalışma; hiçbir dosya değişmedi.")
     return 0
 
 

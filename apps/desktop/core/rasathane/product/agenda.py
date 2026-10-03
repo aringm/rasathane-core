@@ -120,6 +120,11 @@ def _context_terms(ctx: dict[str, Any]) -> set[str]:
     return set(_words(" ".join(values)))
 
 
+def _assessment_text(item: dict[str, Any]) -> str:
+    # Türkçe model özeti yeniden özgün kaynak alıntısı diye gösterilmez.
+    return str(item.get("source_excerpt") or (item["title"] + ". " + item["summary"]))[:300]
+
+
 def _grounded_quote(quote: str, source: str) -> str | None:
     """Tipografik eşdeğerlik sonrası kesintisiz ORİJİNAL kaynak aralığını döndür."""
     punctuation = str.maketrans({"’": "'", "‘": "'", "“": '"', "”": '"', "…": "..."})
@@ -386,10 +391,7 @@ def build_agenda(
         payload = {
             "analysis_profile": store.settings()["analysis_profile"],
             "context": context_text,
-            "items": [
-                {"id": i["article_id"], "text": (i["title"] + ". " + i["summary"])[:300]}
-                for i in items[:8]
-            ],
+            "items": [{"id": i["article_id"], "text": _assessment_text(i)} for i in items[:8]],
         }
         try:
             if progress:
@@ -422,7 +424,7 @@ def build_agenda(
                     continue
                 quote = _grounded_quote(
                     assessment["evidence_quote"],
-                    (assessed["title"] + ". " + assessed["summary"])[:300],
+                    _assessment_text(assessed),
                 )
                 if quote is None:
                     continue

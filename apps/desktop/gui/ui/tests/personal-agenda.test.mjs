@@ -176,3 +176,10 @@ test("legacy agenda context fields are not submitted after workspace and topic r
   assert.equal(Object.hasOwn(requests[0], "include_topics"), false);
   assert.equal(f.$("gundem-konular"), undefined);
 });
+
+test("first agenda load keeps interest settings collapsed instead of opening a configuration wall", t => {
+  const f = fixture(t);
+  f.ui.update({ ...state(), profile: { ...profile, interests: "", project_context: "" } });
+  assert.notEqual(f.$("gundem-profil").open, true);
+  assert.equal(f.shown.length, 1);
+});

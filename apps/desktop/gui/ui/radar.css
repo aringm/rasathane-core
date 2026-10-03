@@ -23,24 +23,31 @@
 .category-pill[aria-pressed=true] { background: var(--metin); color: var(--zemin); border-color: var(--metin); }
 .category-pill:hover { border-color: var(--accent-belirgin); }
 .radar-entry { padding: 18px 2px; border-top: 1px solid var(--cizgi); }
-.radar-entry > summary { display: block; cursor: pointer; list-style: none; }
-.radar-entry > summary::-webkit-details-marker { display: none; }
-.radar-entry > summary:focus-visible { outline: 2px solid var(--accent-belirgin); outline-offset: 5px; border-radius: 4px; }
 .radar-entry-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 12px; color: var(--metin-soluk); margin-bottom: 7px; }
 .radar-source-name { color: var(--metin); font-weight: 600; }
 .source-category { display: inline-block; width: fit-content; color: var(--accent-belirgin); font-size: 12px; }
 .radar-entry h3 { margin: 0; font: 600 18px/1.45 var(--font-body); letter-spacing: -.015em; max-width: 90ch; }
 .radar-entry-excerpt { font: 14px/1.6 var(--font-body); margin: 7px 0 0; color: var(--metin-ikincil); max-width: 90ch; }
-.radar-expand-label { display: block; font-size: 12px; color: var(--accent-belirgin); margin-top: 8px; }
-.radar-entry[open] { background: var(--yuzey-1); padding: 20px; border: 1px solid var(--cizgi-belirgin); border-radius: 9px; margin-bottom: 10px; }
-.radar-entry[open] .radar-expand-label { display: none; }
-.radar-entry-body .record { border: 0; padding: 14px 0 0; }
-.radar-entry-body .record > h3, .radar-entry-body .record > .record-meta, .radar-entry-body .record > .record-excerpt { display: none; }
-.radar-entry-body .record-actions { display: flex; align-items: start; flex-wrap: wrap; gap: 16px; }
-.radar-entry-body .news-actions { flex: 1; min-width: min(260px, 100%); }
-.radar-entry-body .news-summary { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--cizgi); max-width: 85ch; }
-.radar-entry-body audio { display: block; margin-top: 12px; width: min(420px, 100%); }
-.radar-entry-body audio[hidden] { display: none; }
+/* Haber kartı eylemleri her zaman görünür; içerik açmak için ikinci menü yoktur. */
+.radar-entry-heading { min-width: 0; }
+.radar-entry-body { margin-top: 16px; }
+.radar-entry .news-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0; }
+.radar-entry .news-actions .record-link { display: inline-flex; align-items: center; min-height: 34px; padding: 7px 12px; border: 1px solid var(--cizgi-belirgin); border-radius: 7px; font-size: 13px; text-decoration: none; }
+.radar-entry .news-summary { margin-top: 16px; padding: 18px 20px; background: var(--yuzey-1); border: 1px solid var(--cizgi); border-radius: 10px; max-width: 85ch; line-height: 1.8; }
+.radar-entry .news-summary[hidden] { display: none; }
+.radar-entry .news-summary p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.radar-entry .news-summary audio { display: block; margin-top: 12px; width: min(460px, 100%); }
+.radar-entry .news-summary audio[hidden] { display: none; }
+.radar-entry .news-summary .field-note:empty { display: none; }
+.personal-agenda { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 0 20px; margin-bottom: 20px; }
+.personal-agenda .agenda-controls { padding: 0; }
+.personal-agenda .agenda-profile { border: 0; background: transparent; padding: 10px 0; margin: 0; }
+.personal-agenda .agenda-profile > summary { font-size: 14px; color: var(--metin-ikincil); }
+.personal-agenda .agenda-profile[open] { padding: 18px 22px; grid-column: 1 / -1; border: 1px solid var(--cizgi); border-radius: 10px; margin-top: 12px; }
+.agenda-diagnostics { grid-column: 1 / -1; font-size: 12px; color: var(--metin-soluk); margin-top: 12px; }
+.agenda-diagnostics > summary { cursor: pointer; }
+.agenda-diagnostics[open] { padding: 14px 18px; background: var(--yuzey-1); border-radius: 8px; }
+#gorunum-akis #urun-durum { color: var(--metin-soluk); }
 .radar-pagination { border-top: 1px solid var(--cizgi); padding-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .radar-feed-status { font-size: 13px; color: var(--metin-ikincil); }
 .radar-empty { text-align: center; padding: 40px 20px; border-block: 1px solid var(--cizgi); }
@@ -87,8 +94,12 @@
 }
 @media (max-width: 760px) {
   .app-main { padding: 20px 16px 32px; }
-  .radar-entry[open] { padding: 16px 12px; }
+  .personal-agenda { grid-template-columns: 1fr; gap: 10px; }
+  .radar-entry .news-actions .btn { flex: 1 1 auto; }
   .radar-pagination { flex-wrap: wrap; }
   .source-toolbar { grid-template-columns: 1fr; }
   .source-form-columns { grid-template-columns: 1fr; }
 }
+
+/* Motor ve arama tanıları Ayarlar'da kalır; header yalnız hazır olma durumunu gösterir. */
+.topbar #arama-cip, .topbar #ner-cip { display: none !important; }

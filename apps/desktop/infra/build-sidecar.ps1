@@ -17,6 +17,9 @@ $hidden = @(
   "--hidden-import", "ytcore.pipeline.api",
   # Rasathane ortak kaynak adapter'ları (graph içinde lazy import).
   "--collect-submodules", "rasathane",
+  # PDF metin katmanı ve embedded CFF/TrueType font çözümlemesi (torch'suz).
+  "--collect-submodules", "pypdf",
+  "--collect-submodules", "fontTools",
   "--hidden-import", "ytmcp.server",
   # Gömülü llama.cpp backend'i — llm_al/embedding_al backend seçimini fonksiyon-içi
   # (lazy) importla yapar; PyInstaller statik analizi kaçırır -> collect zorunlu.

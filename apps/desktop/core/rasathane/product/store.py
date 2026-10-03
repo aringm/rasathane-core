@@ -115,6 +115,9 @@ class ProductStore:
                 CREATE INDEX IF NOT EXISTS jobs_status_created ON jobs(status,created_at);
                 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS agenda_config(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS article_summaries(
+                    article_id TEXT PRIMARY KEY REFERENCES articles(id),input_hash TEXT NOT NULL,
+                    payload TEXT NOT NULL,updated_at TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS migration_ledger(
                     fingerprint TEXT PRIMARY KEY,imported_at TEXT NOT NULL,source TEXT NOT NULL,
                     counts TEXT NOT NULL);
@@ -800,6 +803,11 @@ class ProductStore:
                 [*params, limit, offset],
             )
             items = [item for row in rows if (item := self.decoded(row)) is not None]
+        from rasathane.product.news import display_summary
+
+        for item in items:
+            item["summary_display"] = display_summary(self, item)
+            item["url"] = item["summary_display"]["url"]
         return {"items": items, "total": total, "limit": limit, "offset": offset}
 
     def enqueue(self, kind: str, request: dict[str, Any]) -> dict[str, Any]:
@@ -818,6 +826,18 @@ class ProductStore:
             "cancel_requested": 0,
         }
         with self.connection() as conn:
+            if kind == "article_summary":
+                conn.execute("BEGIN IMMEDIATE")
+                pending = conn.execute(
+                    "SELECT * FROM jobs WHERE kind='article_summary' AND status IN "
+                    "('queued','running','cancel_requested') "
+                    "AND json_extract(request,'$.article_id')=? LIMIT 1",
+                    (request.get("article_id"),),
+                ).fetchone()
+                if pending is not None:
+                    result = self.decoded(pending)
+                    assert result is not None
+                    return result
             if kind == "feed_refresh" and request.get("automatic"):
                 conn.execute("BEGIN IMMEDIATE")
                 pending = conn.execute(

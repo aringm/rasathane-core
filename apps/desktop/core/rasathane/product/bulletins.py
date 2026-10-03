@@ -3,9 +3,16 @@
 from __future__ import annotations
 
 import uuid
+from copy import deepcopy
 from typing import Any
 
-from rasathane.product.news import _extract, _plain_text, speak_text, summarize_article
+from rasathane.product.news import (
+    _extract,
+    _plain_text,
+    looks_turkish,
+    speak_text,
+    summarize_article,
+)
 from rasathane.product.store import ProductStore, digest, json_text, now
 
 MAX_ARTICLES = 20
@@ -15,6 +22,75 @@ NOTICE = (
     "Bu bülten kayıtlı kaynak metinlerinden cümle seçilerek oluşturuldu. "
     "Tam metinler okunmadı; kaynakları açarak doğrulayın."
 )
+
+
+def present_bulletin(store: ProductStore, bulletin_id: str) -> dict[str, Any]:
+    """Eski yabancı/teknik özetleri gösterim için yeniler; kayıtlı tarihçeyi değiştirmez."""
+    saved = store.get_bulletin(bulletin_id)
+    projected = deepcopy(saved)
+    changed = False
+    for item in projected["items"]:
+        summary = str(item.get("summary") or "")
+        if (not summary and item.get("status") not in {"pending", "not_prepared"}) or (
+            summary and looks_turkish(summary) and "Article URL:" not in summary
+        ):
+            continue
+        try:
+            current = summarize_article(store, item["article_id"])
+        except ValueError:
+            current = {
+                "summary": "",
+                "status": "unavailable",
+                "method": "pending",
+                "notice": "Türkçe özet bulunmuyor. Kaynak kaydını açarak doğrulayın.",
+            }
+        for key in (
+            "summary",
+            "status",
+            "method",
+            "notice",
+            "title",
+            "url",
+            "text_scope",
+            "source_hash",
+            "source_excerpt",
+            "evidence_quote",
+            "job_id",
+        ):
+            if key in current:
+                if projected.get("agenda") and key in {
+                    "evidence_quote",
+                    "source_excerpt",
+                    "source_hash",
+                }:
+                    item["summary_" + key] = current[key]
+                    continue
+                item[key] = current[key]
+        item["summary"] = _extract(item["summary"], item["title"], MAX_ITEM_CHARS)
+        item["summary_chars"] = len(item["summary"])
+        changed = True
+    if not changed:
+        return saved
+    methods = {i["method"] for i in projected["items"] if i["status"] == "ready"}
+    summary_method = "mixed" if len(methods) > 1 else next(iter(methods), "pending")
+    if projected.get("agenda"):
+        projected["summary_method"] = summary_method
+    else:
+        projected["method"] = summary_method
+    projected["notice"] = (
+        "Bu görünüm kayıtlı bültenin Türkçe haber özetlerini gösterir. "
+        "Hazırlanmayan özetler açıkça belirtilir; kaynakları açarak doğrulayın."
+    )
+    projected["ready_count"] = sum(i["status"] == "ready" for i in projected["items"])
+    projected["summary"] = "\n\n".join(
+        [projected["title"], projected["notice"]]
+        + [f"{i['title']}\n{i['summary'] or i['notice']}\n{i['url']}" for i in projected["items"]]
+    )
+    projected["source_content_hash"] = saved["content_hash"]
+    projected["content_hash"] = digest(
+        json_text({k: v for k, v in projected.items() if k != "content_hash"})
+    )
+    return projected
 
 
 def create_bulletin(
@@ -44,6 +120,18 @@ def create_bulletin(
         result["published_at"] = metadata["published_at"]
         items.append(result)
     paragraphs = [title, NOTICE]
+    methods = {item["method"] for item in items if item["status"] == "ready"}
+    method = "mixed" if len(methods) > 1 else next(iter(methods), "extractive")
+    notice = (
+        NOTICE
+        if method == "extractive"
+        else (
+            "Bu bülten Türkçe haber özetlerinden oluşturuldu. Modelle hazırlanan özetler "
+            "ve kayıtlı metinden alınan özetler her haberin yönteminde ayrıca belirtilir. "
+            "Kaynakları açarak doğrulayın."
+        )
+    )
+    paragraphs[1] = notice
     for number, item in enumerate(items, 1):
         paragraphs.append(
             f"{number}. {item['title']}\n{item['summary'] or item['notice']}\n"
@@ -56,10 +144,10 @@ def create_bulletin(
         "created_at": now(),
         "items": items,
         "summary": "\n\n".join(paragraphs),
-        "notice": NOTICE,
+        "notice": notice,
         "article_count": len(items),
         "ready_count": sum(item["status"] == "ready" for item in items),
-        "method": "extractive",
+        "method": method,
     }
     snapshot["content_hash"] = digest(json_text(snapshot))
     return store.save_bulletin(snapshot)
@@ -67,7 +155,7 @@ def create_bulletin(
 
 def speak_bulletin(store: ProductStore, bulletin_id: str) -> bytes:
     """Kaynaklar sonradan değişse de ekranda açılan kayıtlı bülteni okur."""
-    bulletin = store.get_bulletin(bulletin_id)
+    bulletin = present_bulletin(store, bulletin_id)
     paragraphs = [bulletin["title"], bulletin["notice"]]
     for number, item in enumerate(bulletin["items"], 1):
         paragraphs.append(f"{number}. {item['title']}. {item['summary'] or item['notice']}")
@@ -78,6 +166,6 @@ def speak_bulletin(store: ProductStore, bulletin_id: str) -> bytes:
             )
         if item["status"] == "ready" and item["text_scope"] == "managed_summary":
             paragraphs.append(item["notice"])
-        elif "AI tarafından" in item["notice"]:
+        elif "AI tarafından" in item["notice"] or item["method"] == "local_model":
             paragraphs.append(item["notice"])
     return speak_text("\n\n".join(paragraphs), max_audio_bytes=MAX_AUDIO_BYTES)

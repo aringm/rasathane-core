@@ -14,7 +14,8 @@ from typing import Any
 
 from ytcore.uretim.tts import WindowsTTS
 
-from rasathane.product.store import ProductStore, fold
+from rasathane.product.store import ProductStore, digest, fold, json_text
+from rasathane.product.web import validate_public_url
 
 MAX_SUMMARY_CHARS = 900
 MAX_AUDIO_BYTES = 8 * 1024 * 1024
@@ -22,6 +23,97 @@ _speech_lock = threading.Lock()
 _STOP_WORDS = frozenset(
     "bir bu ve ile için olan olarak da de ise veya gibi daha en kadar sonra önce".split()
 )
+_TURKISH_WORDS = frozenset(
+    (
+        "bir ve ile için olarak yayımlandı haber haberi kaynak yeni kaynağın kaynaklar veri "
+        "kişisel araştırma yapılan edildi yapıldı değil henüz kabul itiraz yönetmelik başvuru "
+        "süresi açıklama sonucu inceleme bu doğrulama modelin gündür çalışıyor çalışır"
+    ).split()
+)
+
+
+def looks_turkish(text: str) -> bool:
+    words = set(re.findall(r"\w+", text.lower()))
+    matched = len(words & _TURKISH_WORDS)
+    return matched >= 2 or (matched >= 1 and bool(re.search(r"[ğĞşŞıİçÇöÖüÜ]", text)))
+
+
+def restricted_source(text: str) -> bool:
+    folded = fold(text)
+    if any(
+        marker in folded[:200]
+        for marker in (
+            "verify you are human",
+            "checking your browser",
+            "just a moment",
+            "insan oldugunuzu dogrulayin",
+            "erisim engellendi",
+        )
+    ):
+        return True
+    if len(text) > 1500:
+        return False
+    return any(
+        marker in folded
+        for marker in (
+            "verify you are human",
+            "enable javascript",
+            "access denied",
+            "checking your browser",
+            "subscribe to continue",
+            "sign in to continue",
+            "subscription required",
+            "insan oldugunuzu dogrulayin",
+            "erisim engellendi",
+            "okumaya devam etmek icin abone",
+            "cerezleri kabul edin",
+            "accept all cookies",
+        )
+    )
+
+
+def article_target(article: dict[str, Any]) -> str:
+    text = _plain_text(str(article.get("summary") or ""))
+    target = re.search(r"Article URL:\s*(https?://[^\s<>]+)", text)
+    if target and "Comments URL:" in text:
+        return validate_public_url(target.group(1))
+    return validate_public_url(article["url"])
+
+
+def article_input_hash(article: dict[str, Any]) -> str:
+    return digest(json_text({k: article.get(k) for k in ("title", "url", "summary", "provenance")}))
+
+
+def display_summary(store: ProductStore, article: dict[str, Any]) -> dict[str, Any]:
+    signature = article_input_hash(article)
+    cached = store.rows(
+        "SELECT payload FROM article_summaries WHERE article_id=? AND input_hash=?",
+        (article["id"], signature),
+    )
+    if cached:
+        return dict(cached[0]["payload"])
+    result = _saved_summary(article)
+    if result["status"] == "ready" or result["text_scope"] == "official_metadata":
+        return result
+    jobs = store.rows(
+        "SELECT id,status,error FROM jobs WHERE kind='article_summary' "
+        "AND json_extract(request,'$.article_id')=? AND json_extract(request,'$.input_hash')=? "
+        "ORDER BY created_at DESC LIMIT 1",
+        (article["id"], signature),
+    )
+    if jobs:
+        job = jobs[0]
+        result["job_id"] = job["id"]
+        if job["status"] in {"queued", "running", "cancel_requested"}:
+            result.update(status="pending", label="Türkçe özet hazırlanıyor")
+        if job["status"] in {"failed", "interrupted", "cancelled"}:
+            result.update(
+                status="failed",
+                error=job["error"],
+                label="Türkçe özet hazırlanamadı",
+                notice="Türkçe özet hazırlanamadı. Yeniden denemek için Özetle düğmesini kullanın.",
+            )
+    return result
 
 
 class _PlainText(HTMLParser):
@@ -92,13 +184,25 @@ def summarize_article(store: ProductStore, article_id: str) -> dict[str, Any]:
     rows = store.rows("SELECT * FROM articles WHERE id=?", (article_id,))
     if not rows:
         raise ValueError("Haber bulunamadı.")
-    article = rows[0]
+    return display_summary(store, rows[0])
+
+
+def _saved_summary(article: dict[str, Any]) -> dict[str, Any]:
     provenance = article.get("provenance") or {}
     scope = provenance.get("text_scope", "feed_excerpt")
     text = _plain_text(str(article.get("summary") or ""))
     title = _plain_text(str(article["title"]))
-    unavailable = scope == "official_metadata" or not text or fold(text) == fold(title)
-    summary = "" if unavailable else _extract(text, title)
+    boilerplate = "Article URL:" in text and "Comments URL:" in text
+    usable = bool(
+        text and fold(text) != fold(title) and not boilerplate and scope != "link_metadata"
+    )
+    unavailable = (
+        scope == "official_metadata"
+        or restricted_source(text)
+        or (not usable and not boilerplate and scope != "link_metadata")
+    )
+    turkish = usable and looks_turkish(text)
+    summary = _extract(text, title) if turkish and not unavailable else ""
     notice = (
         "Bu kayıtta özetlenebilecek haber metni bulunmuyor. Tam metin için kaynağı açın."
         if unavailable
@@ -111,18 +215,23 @@ def summarize_article(store: ProductStore, article_id: str) -> dict[str, Any]:
     if provenance.get("summary_kind") == "ai_generated" and not unavailable:
         notice += " Kaynak metin AI tarafından oluşturulmuş bir özettir."
     return {
-        "article_id": article_id,
+        "article_id": article["id"],
         "title": title,
-        "url": article["url"],
-        "status": "unavailable" if unavailable else "ready",
+        "url": article_target(article),
+        "status": "unavailable" if unavailable else ("ready" if turkish else "not_prepared"),
         "summary": summary,
-        "method": "extractive",
-        "label": "Kaynak metninden kısa özet",
+        "method": "extractive" if turkish else "pending",
+        "label": "Kaynak metninden Türkçe kısa özet"
+        if turkish
+        else "Türkçe özet henüz hazırlanmadı",
+        "language": "tr",
         "text_scope": scope,
         "source_chars": len(text),
         "summary_chars": len(summary),
         "source_hash": hashlib.sha256(text.encode("utf-8")).hexdigest(),
-        "notice": notice,
+        "notice": notice
+        if unavailable or turkish
+        else "Türkçe özet henüz hazırlanmadı. Kaynak metni edinilerek yerel modelle hazırlanacak.",
     }
 
 

@@ -170,8 +170,8 @@
       >
         <div class="page-heading">
           <div>
-            <h1>Gündem</h1>
-            <p>Günlük bülteniniz ve takip ettiğiniz kaynaklardan haberler.</p>
+            <h1>Akış</h1>
+            <p>Güncel haberler, sizin için öne çıkanlar.</p>
           </div>
           <div class="form-actions"><button class="btn btn-ikincil" id="akis-yenile" type="button">Kayıtları yenile</button><button class="btn" id="kaynak-kontrol-btn" type="button">Akışı yenile</button></div>
         </div>
@@ -185,7 +185,7 @@
         </div>
         <div class="feed-layout">
           <section class="feed-main" aria-labelledby="akis-icerik-baslik">
-            <div class="radar-stream-heading"><h2 id="akis-icerik-baslik">Canlı akış</h2><button class="source-feed-link" id="akis-kaynaklar-git" type="button"><span id="akis-kaynak-ozet">Takip kaynakları</span></button></div>
+            <div class="radar-stream-heading"><h2 id="akis-icerik-baslik">Son haberler</h2><button class="source-feed-link" id="akis-kaynaklar-git" type="button"><span id="akis-kaynak-ozet">Takip kaynakları</span></button></div>
             <div id="akis-liste" class="record-list"></div>
           </section>
 
@@ -260,7 +260,7 @@
             </li>
             <li data-kaynak="web">
               <span class="kaynak-kodu" aria-hidden="true">WB</span
-              ><span>Web</span>
+              ><span>Web / PDF</span>
             </li>
           </ul>
         </section>
@@ -272,7 +272,7 @@
               <input
                 type="url"
                 id="url"
-                placeholder="YouTube, GitHub, arXiv, Reddit, Hugging Face veya web…"
+                placeholder="YouTube, GitHub, arXiv, Reddit, Hugging Face, web veya PDF…"
                 aria-required="true"
                 aria-describedby="kaynak-algilama-aciklama"
                 autocomplete="off"
@@ -418,6 +418,7 @@
               <h2 id="baslik">—</h2>
               <div class="satir-meta" id="kunye-meta"></div>
               <div class="alt-satir" id="kunye-alt"></div>
+              <p class="field-note gizli" id="kaynak-icerik-kapsami"></p>
               <div
                 class="kaynak-metrikleri"
                 id="kaynak-metrikleri"

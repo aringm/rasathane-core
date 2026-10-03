@@ -2,6 +2,7 @@ import { createLoginGate } from "./login-gate.js";
 let loginGate;
 import { createProductUI } from "./product.js";
 import { createProfileSettings } from "./profile-settings.js";
+import { sourceFormatDetails } from "./source-format.js";
 import {
   renderArtifact,
   clearArtifact,
@@ -309,7 +310,7 @@ const KAYNAKLAR = {
   web: {
     ad: "Web",
     kod: "WB",
-    aciklama: "Tek public sayfanın ana içeriği güvenli biçimde çıkarılır.",
+    aciklama: "Public HTML sayfasının ana içeriği veya PDF’nin metin katmanı güvenli biçimde çıkarılır.",
   },
 };
 
@@ -802,13 +803,21 @@ function metrikDegeri(v) {
 function renderKunye(d, idx) {
   const tur = idx.kaynak_turu || d.kaynak_turu || "youtube";
   const kaynak = KAYNAKLAR[tur] || KAYNAKLAR.web;
+  const format = sourceFormatDetails(d, idx);
   const sahip = idx.kaynak_sahibi || idx.kanal || "";
   const tarihHam = idx.kaynak_tarihi || idx.yayin_tarihi || "";
   const tarih = String(tarihHam).slice(0, 10);
   const kimlik = idx.kaynak_id || idx.video_id || "";
   const kanonikUrl = idx.kaynak_url || idx.video_url || "";
   $("kaynak-hero-etiket").textContent =
-    `${kaynak.kod} · ${kaynak.ad} kaynak analizi`;
+    `${kaynak.kod} · ${format ? "PDF metin" : kaynak.ad + " kaynak"} analizi`;
+  const scope = $("kaynak-icerik-kapsami");
+  scope.textContent = format?.description || "";
+  scope.classList.toggle("gizli", !format);
+  scope.dataset.format = format?.format || "";
+  scope.dataset.pages = format?.pages ?? "";
+  scope.dataset.textPages = format?.textPages ?? "";
+  scope.dataset.sha256 = format?.bytesSha256 || "";
   $("baslik").textContent = idx.baslik || "Başlık yok";
 
   const parcalar = [];
@@ -825,7 +834,7 @@ function renderKunye(d, idx) {
   $("kunye-meta").replaceChildren(...meta);
 
   const alt = [
-    el("span", { class: "kaynak-rozeti" }, kaynak.ad),
+    el("span", { class: "kaynak-rozeti" }, format?.label || kaynak.ad),
     el("span", { class: "pill konu" }, idx.konu || "genel"),
   ];
   if (idx.anadil)
@@ -1191,6 +1200,12 @@ function renderTeknik(d) {
       (d.cloud_girdi_token || 0) === 0 ? "soluk" : "",
     ],
   ];
+  const format = sourceFormatDetails(d);
+  if (format) kpi.push(
+    ["Kaynak biçimi", "PDF metin katmanı", ""],
+    ["Metin alınan sayfa", `${format.textPages ?? "—"} / ${format.pages ?? "—"}`, format.partial ? "uyari" : ""],
+    ["Edinim kapsamı", format.partial ? "Kısmi metin · kaynak sınırları var" : "Metin katmanı · görseller incelenmedi", ""],
+  );
   $("kpi-izgara").replaceChildren(
     ...kpi.map(([k, v, s]) =>
       el(

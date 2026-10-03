@@ -505,6 +505,21 @@ def _output_node(state: GState) -> GState:
                     "text_scope": kayit.kaynak_ozel.get("text_scope"),
                     "full_text_fetched": kayit.kaynak_ozel.get("full_text_fetched"),
                     "original_text_sha256": kayit.kaynak_ozel.get("original_text_sha256"),
+                    **{
+                        key: kayit.kaynak_ozel[key]
+                        for key in (
+                            "source_format",
+                            "page_count",
+                            "text_page_count",
+                            "text_pages",
+                            "extraction_method",
+                            "notice",
+                            "full_text_extracted",
+                            "ocr_performed",
+                            "truncation_reasons",
+                        )
+                        if key in kayit.kaynak_ozel
+                    },
                 },
                 "factcheck": {
                     "confidence_scope": "not_evaluated_normative_source"

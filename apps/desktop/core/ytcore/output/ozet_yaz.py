@@ -40,6 +40,13 @@ def ozet_yaz(
             "> Kısa/orta: Türkçe model çevirisinden doğrudan cümleler. "
             "Detay: yerel model özeti. Orijinal metin 01_kaynak-icerigi.md dosyasındadır.\n\n"
         )
+    if kayit.kaynak_ozel.get("source_format") == "pdf":
+        metadata = kayit.kaynak_ozel
+        kapsam += (
+            f"> PDF: {metadata.get('text_page_count', '?')}/{metadata.get('page_count', '?')} "
+            "sayfada metin katmanı okundu.\n"
+            f"> Kapsam: {metadata.get('notice', 'PDF metin katmanı; OCR yapılmadı.')}\n\n"
+        )
     icerik = (
         f"# {kayit.baslik} — Özet\n\n"
         f"> Kaynak: {kayit.kaynak_url or kayit.video_url} · Dil: {kayit.anadil or '?'} · "

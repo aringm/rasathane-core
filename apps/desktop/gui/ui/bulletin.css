@@ -55,3 +55,31 @@
 .bulletin-history-item:disabled { cursor: wait; opacity: .65; }
 @media (max-width: 1100px) { .bulletin-heading { flex-wrap: wrap; } .bulletin-actions { justify-content: flex-start; padding-top: 0; } }
 @media (max-width: 780px) { .news-bulletin { padding: 18px 16px 12px; } .bulletin-options { grid-template-columns: 1fr; gap: 10px; } .bulletin-history-list { grid-template-columns: 1fr; gap: 0; } .bulletin-player { flex-wrap: wrap; } #bulten-ses { flex-basis: 100%; } .bulletin-history-heading { align-items: flex-start; flex-direction: column; gap: 10px; } #bulten-gecmis { max-width: 100%; width: 100%; } }
+
+.bulletin-items h4 { font-size: clamp(18px, 1.3vw, 23px); line-height: 1.5; max-width: 65ch; }
+.bulletin-items > li > p:not(.field-note):not(.bulletin-item-source) { font-size: clamp(15px, 1vw, 20px); line-height: 1.8; max-width: 75ch; }
+.bulletin-items .agenda-evaluation { font-size: inherit; }
+.news-bulletin .bulletin-options-row { margin-top: 18px; }
+.news-bulletin .bulletin-lead { display: none; }
+
+/* Seçki önce okunur; ayrıntılı açıklamalar kullanıcı açtığında görünür. */
+.news-bulletin { padding: 20px 24px; border-color: var(--cizgi); box-shadow: none; }
+.bulletin-items > li[hidden] { display: none !important; }
+#bulten-sonuc:not(.bulletin-reading-full) .bulletin-items > li:first-child { grid-column: 1 / -1; border: 0; padding-bottom: 4px; }
+#bulten-sonuc:not(.bulletin-reading-full) .bulletin-items > li > p:not(.field-note):not(.bulletin-item-source) { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.bulletin-notice, .bulletin-item-notice { color: var(--metin-soluk); font-size: 12px; padding: 6px 0; }
+.bulletin-notice > summary, .bulletin-item-notice > summary { cursor: pointer; }
+.bulletin-items .agenda-evaluation { background: transparent; border: 0; padding: 8px 0; margin: 4px 0; font-size: 13px; }
+.bulletin-items .agenda-evaluation > summary { cursor: pointer; color: var(--metin-ikincil); font-weight: 500; }
+.bulletin-items .agenda-evaluation[open] { margin: 12px 0; padding: 16px 18px; border-radius: 8px; background: var(--yuzey-2); }
+.bulletin-items .news-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 14px 0 0; }
+.bulletin-items .news-actions .record-link { display: inline-flex; min-height: 34px; align-items: center; padding: 7px 12px; border: 1px solid var(--cizgi-belirgin); border-radius: 7px; font-size: 13px; text-decoration: none; }
+.bulletin-items .news-summary { max-width: 75ch; padding: 16px 18px; margin-top: 14px; background: var(--yuzey-2); border-radius: 8px; line-height: 1.8; }
+.bulletin-items .news-summary[hidden] { display: none; }
+.bulletin-items .news-summary audio { width: min(460px, 100%); margin-top: 12px; }
+.bulletin-items .news-summary audio[hidden] { display: none; }
+.bulletin-items .news-summary .field-note:empty { display: none; }
+@media (max-width: 760px) { .news-bulletin { padding: 16px; } .bulletin-items .news-actions .btn { flex: 1 1 auto; } }
+
+#bulten-sonuc:not(.bulletin-reading-full) .bulletin-items > li.bulletin-summary-expanded > p:not(.field-note):not(.bulletin-item-source) { display: block; overflow: visible; }
+.bulletin-item-notice[hidden] { display: none; }

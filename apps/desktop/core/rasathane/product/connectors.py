@@ -90,16 +90,30 @@ def fetch_rss(url: str) -> list[dict[str, Any]]:
             )
             or ""
         )
+        plain_summary = _plain(summary)
+        aggregator = urlparse(url).hostname in {"hnrss.org", "news.ycombinator.com"}
+        article_link = re.search(r"Article URL:\s*(https?://[^\s<>]+)", plain_summary)
+        comments_link = link
+        if aggregator and article_link:
+            try:
+                link = validate_public_url(article_link.group(1))
+            except ValueError:
+                # İç ağ adresi veya bozuk article link tartışma metni diye özetlenmez.
+                continue
+            plain_summary = ""
         articles.append(
             {
                 "title": _plain(title),
                 "url": link,
-                "summary": _plain(summary)[:1500],
+                "summary": plain_summary[:1500],
                 "published_at": published,
                 "provenance": {
                     "feed_url": url,
                     "connector": "rss",
-                    "text_scope": "publisher_feed_excerpt",
+                    "text_scope": "link_metadata"
+                    if aggregator and article_link
+                    else "publisher_feed_excerpt",
+                    **({"comments_url": comments_link} if aggregator and article_link else {}),
                 },
             }
         )

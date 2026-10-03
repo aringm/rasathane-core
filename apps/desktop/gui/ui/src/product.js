@@ -475,7 +475,7 @@ export function createProductUI({
         const counts = state.counts || {};
         message(
           loadStatus,
-          `${count(counts.articles)} içerik · Son okuma: ${date(lastSuccess)}`,
+          `${count(counts.articles)} haber`,
         );
         try {
           if (
@@ -577,16 +577,28 @@ export function createProductUI({
   }
   const research = createResearchChat({ $, el, api, waitJob, sourceLink });
   const news = createNewsSummary({ el, api, request });
-  const bulletin = createNewsBulletin({ el, api, request, sourceLink, beforePlay: () => news.pauseAll() });
+  const bulletin = createNewsBulletin({ el, api, request, sourceLink, articleControls: (item, onSummary) => articleControl({ ...item, id: item.article_id || item.id }, onSummary), beforePlay: () => news.pauseAll() });
   const agenda = createPersonalAgenda({ el, api, bulletin, onChanged: () => load() });
   const sourcesUI = createSourceManager({ $, el, api, sourceLink, date, onChange: async () => { if (!await load()) throw new Error("Kaynak kaydedildi ancak liste yenilenemedi. Listeyi yenile düğmesini kullanın."); }, onRefresh: refreshFeeds,
     onFilter: id => { setView("akis"); dashboard.filterSource(id); } });
   const sourceChat = createSourceChat({ el, api, sourceLink, onChanged: async () => { if (!await load()) throw new Error("Yapılandırma uygulandı; liste henüz yenilenemedi. Listeyi yenile düğmesine basın."); } });
   $("kaynak-yonetimi").before(sourceChat.node);
-  const dashboard = createRadarFeed({ $, el, api, news, bulletin, onSources: () => setView("kaynaklar"),
-    renderRecord: item => record(item, { action: el("div", { class: "news-actions" }, news.control(item),
-      safeURL(item.url) && item.analysis_supported !== false && item.provenance?.analysis_supported !== false && !["official_metadata", "managed_summary"].includes(item.provenance?.text_scope)
-        ? el("button", { type: "button", class: "btn btn-ikincil mini", onclick: () => { $("url").value = item.url; $("url").dispatchEvent(new Event("input")); setView("analiz"); $("url").focus(); } }, "Derinlemesine analiz") : null) }) });
+  async function analyzeNews(item) {
+    const button = $("analiz-btn"), strip = $("calisma-serit"), generation = authEpoch;
+    if (button.disabled) { setView("analiz"); return; }
+    $("url").value = item.url; $("url").dispatchEvent(new Event("input")); setView("analiz");
+    button.disabled = true; button.setAttribute("aria-disabled", "true");
+    strip.classList.remove("gizli"); $("hata-bant").classList.add("gizli");
+    try { await analyze({ url: item.url, konu: $("konu").value, asr_izin: false }); }
+    catch (error) { if (unlocked && generation === authEpoch) { $("hata-metin").textContent = errorMessage(error); $("hata-bant").classList.remove("gizli"); } }
+    finally { button.disabled = false; button.setAttribute("aria-disabled", "false"); strip.classList.add("gizli"); }
+  }
+  function articleControl(item, onSummary) {
+    return news.control(item, { onSummary, source: sourceLink(item.provenance?.portal_url || item.url, "Kaynağı aç"),
+      analysisSupported: !!safeURL(item.url) && item.analysis_supported !== false && item.provenance?.analysis_supported !== false && !["official_metadata", "managed_summary"].includes(item.text_scope || item.provenance?.text_scope),
+      onAnalyze: () => analyzeNews(item) });
+  }
+  const dashboard = createRadarFeed({ $, el, api, news, bulletin, onSources: () => setView("kaynaklar"), renderRecord: articleControl });
   const draft = createSettingsDraft({
     read: () => ({ theme: $("urun-tema").value, analysis_profile: $("urun-profil").value, search_provider: $("urun-arama-saglayici").value, web_enabled: $("urun-web").checked }),
     write: value => { $("urun-tema").value = value.theme; $("urun-profil").value = value.analysis_profile; $("urun-arama-saglayici").value = value.search_provider; $("urun-web").checked = value.web_enabled; },
