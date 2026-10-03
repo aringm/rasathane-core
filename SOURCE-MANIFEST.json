@@ -1052,9 +1052,9 @@
     },
     {
       "path": "apps/desktop/gui/tests/qa-product-server.py",
-      "source_sha256": "162d11268f7a5a1cd56e3409f197023db51dfc3064045321c33da3759e051166",
-      "sha256": "162d11268f7a5a1cd56e3409f197023db51dfc3064045321c33da3759e051166",
-      "bytes": 3622
+      "source_sha256": "a0a68df104347c374faeb1b49d4345d10d3b1280abbe3e620346a2c78e089d9d",
+      "sha256": "a0a68df104347c374faeb1b49d4345d10d3b1280abbe3e620346a2c78e089d9d",
+      "bytes": 3617
     },
     {
       "path": "apps/desktop/gui/ui/brand/rasathane-mark.svg",

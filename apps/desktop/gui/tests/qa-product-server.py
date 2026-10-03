@@ -75,7 +75,7 @@ if "--seed-only" in sys.argv[2:]:
     # Disable web through the normal persisted product setting, not a runtime bypass.
     store.save_settings({"web_enabled": False})
     for feed in store.list_feeds():
-        store.update_feed(feed["id"], {"enabled": False})
+        store.update_feed(feed["id"], enabled=False)
     (run / "seed.json").write_text(json.dumps({"workspace": space["id"]}))
     sys.exit(0)
 
