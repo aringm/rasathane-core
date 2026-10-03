@@ -1,6 +1,6 @@
 # Bülten, araştırma ve çalışma alanları
 
-Sahip: **Av. Mehmet Arın Gülüm**. Rasathane 0.5.3.
+Sahip: **Av. Mehmet Arın Gülüm**. Rasathane 0.5.4.
 
 ## Akıştan bülten
 

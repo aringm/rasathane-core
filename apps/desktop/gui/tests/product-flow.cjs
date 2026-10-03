@@ -93,6 +93,8 @@ app.whenReady().then(async()=>{
   await wait(()=>js(`document.querySelector('#akis-liste').textContent.includes('Sentetik QA haberi')`));
   await js(`for(const d of document.querySelectorAll('dialog[open]')) d.close();document.querySelector('[data-gorunum="akis"]').click()`);
   check('native OTP login unlocks real feed and clears code',await js(`!document.body.classList.contains('session-locked') && !document.querySelector('#giris-kod').value`));
+  await wait(()=>receipt.requests.includes('/api/rasathane/bulletins') && receipt.requests.includes('/api/rasathane/conversations'));
+  check('history loads only after product state is ready',receipt.requests.indexOf('/api/rasathane/state') < receipt.requests.indexOf('/api/rasathane/bulletins') && receipt.requests.indexOf('/api/rasathane/state') < receipt.requests.indexOf('/api/rasathane/conversations'));
   await sleep(500);
   await js(`document.querySelector('.news-summary-control button').click()`);
   await wait(()=>js(`document.querySelector('.news-summary').textContent.includes('Başvuru süresi otuz gündür')`)); await snap('02-summary');

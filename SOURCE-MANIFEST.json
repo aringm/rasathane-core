@@ -32,8 +32,8 @@
     },
     {
       "path": "AGENTS.md",
-      "source_sha256": "4622da8d337d18870a3215b5913a4d2b6143b6de9ef2e1dddbc0d773ae15bf36",
-      "sha256": "2ef0ce52dfca302a448cd0def077fd13681f02a5d194e7bb4764fa8c840891ff",
+      "source_sha256": "b60ae12b3ec7b70ddbfe7b68037f67c2f7a7e4de05f7d361161add6409cbbb19",
+      "sha256": "d017a1e548ca93cfe12709af87358852353fdcb29d11e11619a117c8f73c424e",
       "bytes": 3017
     },
     {
@@ -854,8 +854,8 @@
     },
     {
       "path": "apps/desktop/gui/package.json",
-      "source_sha256": "5dcf7da8b853db98585c8711c4475a2c16ccb48231a9505a3f7673b4290e0972",
-      "sha256": "5dcf7da8b853db98585c8711c4475a2c16ccb48231a9505a3f7673b4290e0972",
+      "source_sha256": "51e5a9e23ee711eb233d905bcf325fe874ac1111f2a1d1685f5726234e68876e",
+      "sha256": "51e5a9e23ee711eb233d905bcf325fe874ac1111f2a1d1685f5726234e68876e",
       "bytes": 4242
     },
     {
@@ -1040,9 +1040,9 @@
     },
     {
       "path": "apps/desktop/gui/tests/product-flow.cjs",
-      "source_sha256": "69a6423401ebd31668cbf3918f58067d3a36445c7886f4f18a21ee28d33944b2",
-      "sha256": "69a6423401ebd31668cbf3918f58067d3a36445c7886f4f18a21ee28d33944b2",
-      "bytes": 20214
+      "source_sha256": "9f3d503c60fe3c240168846ca672a6c241388411b56eda7db2524e080f6647e8",
+      "sha256": "9f3d503c60fe3c240168846ca672a6c241388411b56eda7db2524e080f6647e8",
+      "bytes": 20623
     },
     {
       "path": "apps/desktop/gui/tests/qa-product-server.py",
@@ -2408,9 +2408,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/product.js",
-      "source_sha256": "af1c5a6c2e9c080c0c109b558add42c4e6fb206a54d22fe597157b404c52d2e7",
-      "sha256": "af1c5a6c2e9c080c0c109b558add42c4e6fb206a54d22fe597157b404c52d2e7",
-      "bytes": 57817
+      "source_sha256": "6a9cf1b88eef2f607e640f73d091beb60c396ff785fc1c86fb69ef6c287d1445",
+      "sha256": "6a9cf1b88eef2f607e640f73d091beb60c396ff785fc1c86fb69ef6c287d1445",
+      "bytes": 57899
     },
     {
       "path": "apps/desktop/gui/ui/src/profile-settings.js",
@@ -2612,8 +2612,8 @@
     },
     {
       "path": "apps/desktop/pyproject.toml",
-      "source_sha256": "11121efeced5a2b28bd04fe4e8a4b44bf9d8fc43e20ce44dc0f85e2c8c9ea7e7",
-      "sha256": "11121efeced5a2b28bd04fe4e8a4b44bf9d8fc43e20ce44dc0f85e2c8c9ea7e7",
+      "source_sha256": "59e867ac121b3875d92a904eb536963b79431504ca022908a8bc4609ebfe182a",
+      "sha256": "59e867ac121b3875d92a904eb536963b79431504ca022908a8bc4609ebfe182a",
       "bytes": 3878
     },
     {
@@ -3206,8 +3206,8 @@
     },
     {
       "path": "apps/desktop/uv.lock",
-      "source_sha256": "2be0ddcdf63e2e5d60ae9515f9d501c2e26c124b6a082e1107a6a7aaa3c5f35e",
-      "sha256": "2be0ddcdf63e2e5d60ae9515f9d501c2e26c124b6a082e1107a6a7aaa3c5f35e",
+      "source_sha256": "d7663c551d90bdd966ed938514b57e7b586f2e7d52010e92e361777dab3ac901",
+      "sha256": "d7663c551d90bdd966ed938514b57e7b586f2e7d52010e92e361777dab3ac901",
       "bytes": 370814
     },
     {
@@ -4664,8 +4664,8 @@
     },
     {
       "path": "docs/urun/BULTEN-ARASTIRMA.md",
-      "source_sha256": "f37e8704a894c43334ca177488893914a657e0e86080e0ca39d62198fea4cc88",
-      "sha256": "f37e8704a894c43334ca177488893914a657e0e86080e0ca39d62198fea4cc88",
+      "source_sha256": "0a5815d5d9025893c325c95f26329db536147d1bad2d804f183ea84d4452c495",
+      "sha256": "0a5815d5d9025893c325c95f26329db536147d1bad2d804f183ea84d4452c495",
       "bytes": 3848
     },
     {

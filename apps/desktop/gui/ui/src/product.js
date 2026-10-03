@@ -953,6 +953,9 @@ export function createProductUI({
         renderWorkspaces();
         renderSettings();
         renderJobs();
+        // İlk açılışta motor hazır olmadan geçmiş isteği gönderme.
+        research.refreshHistory();
+        bulletin.refreshHistory();
         const counts = state.counts || {};
         message(
           $("urun-durum"),
@@ -1646,8 +1649,6 @@ export function createProductUI({
     unlock() {
       unlocked = true;
       modelStatus();
-      research.refreshHistory();
-      bulletin.refreshHistory();
     },
     lock() {
       unlocked = false;
