@@ -180,7 +180,6 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
       conversation = data.id;
       $("arastir-baslik").textContent = data.title || "Araştırma konuşması";
       closeHistory();
-      $("arastir-alan").value = data.workspace_id || "";
       controls();
       messages.replaceChildren();
       for (const message of data.messages || []) bubble(message);
@@ -196,10 +195,6 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
   function controls() {
     $("arastir-btn").disabled = busy;
     $("arastir-yeni").disabled = busy;
-    $("arastir-alan").disabled = busy || !!conversation;
-    $("arastir-alan-not").textContent = conversation
-      ? "Bu konuşmanın çalışma alanı sabittir. Başka bir alan için yeni konuşma açın."
-      : "Çalışma alanı konuşma boyunca aynı kalır.";
     for (const button of history.querySelectorAll("button"))
       button.disabled = busy;
   }
@@ -223,7 +218,7 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
     reset();
     refreshHistory();
     input.focus();
-    status.textContent = "Yeni konuşma. Çalışma alanını seçip sorunuzu yazın.";
+    status.textContent = "Yeni konuşma. Sorunuzu yazın.";
   });
   input.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
@@ -247,7 +242,6 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
         method: "POST",
         body: {
           query,
-          workspace_id: $("arastir-alan").value || null,
           web: $("arastir-web").checked,
           ...(conversation ? { conversation_id: conversation } : {}),
         },

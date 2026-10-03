@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createSettingsDraft } from "../src/settings-controller.js";
 
-const defaults = { theme: "system", analysis_profile: "ram8", search_provider: "auto", topic_refresh_minutes: 180, web_enabled: true };
+const defaults = { theme: "system", analysis_profile: "ram8", search_provider: "auto", web_enabled: true };
 function fixture() {
   let value = { ...defaults };
   let state;
@@ -13,12 +13,12 @@ function fixture() {
 test("background refresh preserves unsaved settings and reset uses latest persisted state", () => {
   const f = fixture();
   f.edit({ theme: "dark" });
-  f.draft.receive({ ...defaults, topic_refresh_minutes: 240 });
+  f.draft.receive({ ...defaults, search_provider: "duckduckgo" });
   assert.equal(f.value().theme, "dark");
   assert.equal(f.state().dirty, true);
   f.draft.reset();
   assert.equal(f.value().theme, "system");
-  assert.equal(f.value().topic_refresh_minutes, 240);
+  assert.equal(f.value().search_provider, "duckduckgo");
   assert.equal(f.state().dirty, false);
 });
 test("save verifies returned settings and preserves draft on mismatched response", () => {

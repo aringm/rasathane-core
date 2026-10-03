@@ -5,7 +5,7 @@ import threading
 from typing import Annotated, Any, Literal
 
 from fastmcp import FastMCP
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -40,13 +40,8 @@ class Analysis(Input):
 
 class Research(Input):
     query: str = Field(min_length=1, max_length=500)
-    workspace_id: str | None = Field(default=None, max_length=64)
     conversation_id: str | None = Field(default=None, min_length=1, max_length=64)
     web: StrictBool = True
-
-
-class Workspace(Input):
-    name: str = Field(min_length=1, max_length=120)
 
 
 class Bulletin(Input):
@@ -54,22 +49,10 @@ class Bulletin(Input):
         min_length=1, max_length=20
     )
     title: str = Field(default="Akış bülteni", min_length=1, max_length=120)
-    workspace_id: str | None = Field(default=None, min_length=1, max_length=64)
 
 
 class Agenda(Input):
     refresh_sources: StrictBool = False
-
-
-class Note(Input):
-    workspace_id: str = Field(min_length=1, max_length=64)
-    title: str = Field(min_length=1, max_length=240)
-    body: str = Field(max_length=100_000)
-
-
-class Topic(Input):
-    name: str = Field(min_length=1, max_length=120)
-    query: str = Field(min_length=1, max_length=500)
 
 
 class Source(Input):
@@ -123,7 +106,6 @@ class Settings(Input):
     web_enabled: StrictBool | None = None
     search_provider: Literal["auto", "duckduckgo", "configured"] | None = None
     analysis_profile: Literal["ram8", "ram16", "auto"] | None = None
-    topic_refresh_minutes: StrictInt | None = Field(default=None, ge=0, le=10080)
 
 
 class ServiceSession(Input):
@@ -184,32 +166,21 @@ def register_routes(mcp: FastMCP) -> None:
                     )
                 lists = {
                     "jobs": lambda: store.list_jobs(brief=True),
-                    "workspaces": store.list_workspaces,
-                    "topics": store.list_topics,
                     "library": lambda: store.library(brief=True),
                     "sources": store.list_feeds,
                     "bulletins": store.list_bulletins,
-                    "conversations": lambda: store.list_conversations(
-                        request.query_params.get("workspace_id")
-                    ),
+                    "conversations": store.list_conversations,
                 }
+                if resource == "conversations" and request.query_params:
+                    raise ValueError("Konuşma filtreleri desteklenmiyor.")
                 if resource in lists:
                     return JSONResponse({"items": await run_in_threadpool(lists[resource])})
-                if resource == "notes":
-                    return JSONResponse(
-                        {
-                            "items": await run_in_threadpool(
-                                store.list_notes, request.query_params.get("workspace_id")
-                            )
-                        }
-                    )
                 if resource == "settings":
                     return JSONResponse(await run_in_threadpool(store.settings))
                 if resource == "export":
-                    workspace_id = request.query_params.get("workspace_id")
-                    if workspace_id is not None and len(workspace_id) > 64:
-                        raise ValueError("Çalışma alanı kimliği geçersiz.")
-                    snapshot = await run_in_threadpool(store.export, workspace_id)
+                    if request.query_params:
+                        raise ValueError("Dışa aktarma filtreleri desteklenmiyor.")
+                    snapshot = await run_in_threadpool(store.export)
                     return JSONResponse(
                         snapshot,
                         headers={
@@ -220,9 +191,6 @@ def register_routes(mcp: FastMCP) -> None:
             models: dict[str, type[BaseModel]] = {
                 "analysis": Analysis,
                 "research": Research,
-                "workspaces": Workspace,
-                "notes": Note,
-                "topics": Topic,
                 "sources": Source,
                 "settings": Settings,
                 "bulletins": Bulletin,
@@ -242,14 +210,6 @@ def register_routes(mcp: FastMCP) -> None:
                 from rasathane.product.bulletins import create_bulletin
 
                 result = await run_in_threadpool(create_bulletin, store, **body)
-            elif resource == "workspaces":
-                result = await run_in_threadpool(store.create_workspace, body["name"].strip())
-            elif resource == "notes":
-                result = await run_in_threadpool(store.save_note, **body)
-            elif resource == "topics":
-                result = await run_in_threadpool(
-                    store.create_topic, body["name"].strip(), body["query"].strip()
-                )
             elif resource == "sources":
                 body["url"] = validate_public_url(body["url"])
                 result = await run_in_threadpool(store.upsert_feed, **body)
@@ -313,13 +273,6 @@ def register_routes(mcp: FastMCP) -> None:
                 )
             if resource == "jobs" and action == "cancel":
                 return JSONResponse(await run_in_threadpool(service.store.cancel, item_id))
-            if resource == "topics" and action == "refresh":
-                if not any(row["id"] == item_id for row in service.store.list_topics()):
-                    raise ValueError("Konu takibi bulunamadı.")
-                return JSONResponse(
-                    await run_in_threadpool(service.submit, "refresh", {"topic_id": item_id}),
-                    status_code=202,
-                )
             if resource == "sources" and action == "refresh":
                 if item_id != "all" and not any(
                     row["id"] == item_id for row in service.store.list_feeds()
@@ -338,19 +291,6 @@ def register_routes(mcp: FastMCP) -> None:
             return JSONResponse({"error": "Kaynak bilgileri geçersiz."}, status_code=422)
         except ValueError as exc:
             return JSONResponse({"error": str(exc)[:300]}, status_code=400)
-
-    @mcp.custom_route("/api/rasathane/topics/{item_id}", methods=["GET", "OPTIONS"])
-    async def product_topic(request: Request) -> Response:
-        if request.method == "OPTIONS":
-            return Response(status_code=204)
-        try:
-            return JSONResponse(
-                await run_in_threadpool(
-                    get_service().store.get_topic, request.path_params["item_id"]
-                )
-            )
-        except ValueError as exc:
-            return JSONResponse({"error": str(exc)}, status_code=404)
 
     @mcp.custom_route("/api/rasathane/bulletins/{item_id}", methods=["GET", "OPTIONS"])
     async def product_bulletin(request: Request) -> Response:

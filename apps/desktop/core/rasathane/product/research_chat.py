@@ -118,28 +118,24 @@ def contextual_query(query: str) -> bool:
     )
 
 
-def local_results(
-    store: ProductStore, query: str, workspace_id: str | None
-) -> list[dict[str, Any]]:
-    exact = store.search(query, workspace_id)
+def local_results(store: ProductStore, query: str) -> list[dict[str, Any]]:
+    exact = store.search(query)
     if exact:
         return exact
     terms = query_terms(query)
     if not terms:
         return []
-    reduced = store.search(" ".join(terms), workspace_id)
+    reduced = store.search(" ".join(terms))
     if reduced:
         return reduced
     roots = list(dict.fromkeys(lexical_root(term) for term in terms))
-    normalized = store.search(" ".join(roots), workspace_id)
+    normalized = store.search(" ".join(roots))
     if normalized:
         return normalized
     # Bounded OR candidate collection with a coverage floor. Generic action words
     # do not pull unrelated documents into a "how" question. One shared word in
     # a long, unrelated query is insufficient evidence of relevance.
-    candidates = {
-        row["id"]: row for root in roots[:12] for row in store.search(root, workspace_id, limit=10)
-    }
+    candidates = {row["id"]: row for root in roots[:12] for row in store.search(root, limit=10)}
     ranked = []
     for row in candidates.values():
         tokens = re.findall(r"\w+", fold(row["title"] + " " + row["body"]))

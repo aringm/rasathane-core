@@ -36,7 +36,6 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "web_enabled": True,
     "search_provider": "auto",
     "analysis_profile": "ram8",
-    "topic_refresh_minutes": 180,
 }
 
 SUPPORTED_FEED_KINDS = frozenset(
@@ -132,6 +131,14 @@ class ProductStore:
                 self._rebuild_index(conn)
                 conn.execute("PRAGMA user_version=2")
             self._restore_source_categories(conn)
+            # Eski tamamlanmış işler ve tablolar arşivde korunur. Emekli topic
+            # işleri yeniden başlatılamaz ve hiçbir ağ çağrısı yapamaz.
+            conn.execute(
+                "UPDATE jobs SET status='cancelled',stage='cancelled',cancel_requested=1,"
+                "error=?,updated_at=? WHERE kind='refresh' AND status IN "
+                "('queued','running','cancel_requested')",
+                ("Konu takibi özelliği kaldırıldığı için iş durduruldu.", now()),
+            )
 
     @staticmethod
     def _restore_source_categories(conn: sqlite3.Connection) -> None:
@@ -796,6 +803,8 @@ class ProductStore:
         return {"items": items, "total": total, "limit": limit, "offset": offset}
 
     def enqueue(self, kind: str, request: dict[str, Any]) -> dict[str, Any]:
+        if kind == "refresh" or "workspace_id" in request or "topic_id" in request:
+            raise ValueError("Çalışma alanı ve konu takibi artık desteklenmiyor.")
         item: dict[str, Any] = {
             "id": uuid.uuid4().hex,
             "kind": kind,
@@ -834,9 +843,6 @@ class ProductStore:
                     ).fetchone()
                     if conversation is None:
                         raise ValueError("Konuşma bulunamadı.")
-                    if request.get("workspace_id") not in (None, conversation["workspace_id"]):
-                        raise ValueError("Konuşmanın çalışma alanı değiştirilemez.")
-                    request["workspace_id"] = conversation["workspace_id"]
                     if conn.execute(
                         "SELECT 1 FROM research_turns t JOIN jobs j ON j.id=t.job_id "
                         "WHERE t.conversation_id=? AND j.status IN "
@@ -846,12 +852,11 @@ class ProductStore:
                         raise ValueError("Önceki yanıtın tamamlanmasını bekleyin.")
                 else:
                     conversation_id = uuid.uuid4().hex
-                    self._require_workspace(conn, request.get("workspace_id"))
                     conn.execute(
                         "INSERT INTO conversations VALUES(?,?,?,?,?)",
                         (
                             conversation_id,
-                            request.get("workspace_id"),
+                            None,
                             str(request["query"]).strip()[:120],
                             item["created_at"],
                             item["created_at"],
@@ -883,13 +888,8 @@ class ProductStore:
                 )
         return self.get_job(item["id"])
 
-    def list_conversations(self, workspace_id: str | None = None) -> list[dict[str, Any]]:
-        return self.rows(
-            "SELECT * FROM conversations"
-            + (" WHERE workspace_id=?" if workspace_id else "")
-            + " ORDER BY updated_at DESC LIMIT 100",
-            (workspace_id,) if workspace_id else (),
-        )
+    def list_conversations(self) -> list[dict[str, Any]]:
+        return self.rows("SELECT * FROM conversations ORDER BY updated_at DESC LIMIT 100")
 
     def get_conversation(
         self, conversation_id: str, *, before: str | None = None, page_size: int | None = None
@@ -1017,7 +1017,10 @@ class ProductStore:
             if brief
             else "*"
         )
-        return self.rows(f"SELECT {fields} FROM jobs ORDER BY created_at DESC LIMIT ?", (limit,))
+        return self.rows(
+            f"SELECT {fields} FROM jobs WHERE kind!='refresh' ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        )
 
     def claim_next(self) -> dict[str, Any] | None:
         with self.connection() as conn:
@@ -1108,6 +1111,7 @@ class ProductStore:
                 {
                     row["key"]: json.loads(row["value"])
                     for row in conn.execute("SELECT * FROM settings")
+                    if row["key"] in DEFAULT_SETTINGS
                 }
             )
         return result
@@ -1116,18 +1120,17 @@ class ProductStore:
         from rasathane.product.agenda import AgendaProfile
 
         rows = self.rows("SELECT value FROM agenda_config WHERE key='profile'")
-        return AgendaProfile.model_validate(
-            json.loads(rows[0]["value"]) if rows else {}
-        ).model_dump()
+        stored = json.loads(rows[0]["value"]) if rows else {}
+        # Yalnız kayıt okurken emekli alanları yok say; yeni POST girdileri strict kalır.
+        stored.pop("workspace_ids", None)
+        stored.pop("include_topics", None)
+        return AgendaProfile.model_validate(stored).model_dump()
 
     def save_agenda_profile(self, data: dict[str, Any]) -> dict[str, Any]:
         from rasathane.product.agenda import AgendaProfile
 
         value = AgendaProfile.model_validate({**self.agenda_profile(), **data}).model_dump()
-        value["workspace_ids"] = list(dict.fromkeys(value["workspace_ids"]))
         with self.connection() as conn:
-            for item_id in value["workspace_ids"]:
-                self._require_workspace(conn, item_id)
             conn.execute(
                 "INSERT OR REPLACE INTO agenda_config VALUES('profile',?)", (json_text(value),)
             )
@@ -1246,10 +1249,6 @@ class ProductStore:
                 raise ValueError(f"Geçersiz ayar: {key}")
             if key == "web_enabled" and not isinstance(value, bool):
                 raise ValueError("web_enabled boolean olmalı.")
-            if key == "topic_refresh_minutes" and (
-                type(value) is not int or value < 0 or value > 10080 or 0 < value < 15
-            ):
-                raise ValueError("Yenileme aralığı 0 (kapalı) veya 15–10080 dakika olmalı.")
         with self.connection() as conn:
             conn.executemany(
                 "INSERT OR REPLACE INTO settings VALUES(?,?)",
@@ -1264,9 +1263,6 @@ class ProductStore:
                 for key, table in (
                     ("sources", "feeds"),
                     ("articles", "articles"),
-                    ("workspaces", "workspaces"),
-                    ("notes", "notes"),
-                    ("topics", "topics"),
                 )
             }
             result["library"] = conn.execute(

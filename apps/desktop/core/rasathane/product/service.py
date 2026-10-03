@@ -28,7 +28,7 @@ class JobCancelled(RuntimeError):
 
 
 class ProductService:
-    """FIFO tek iş; kalıcı durum; yalnız uygulama açıkken topic timer."""
+    """FIFO tek iş; kalıcı durum; yalnız uygulama açıkken kaynak ve gündem yenileme."""
 
     def __init__(
         self,
@@ -80,18 +80,13 @@ class ProductService:
                 )
 
     def submit(self, kind: str, request: dict[str, Any]) -> dict[str, Any]:
-        if kind not in {"analysis", "research", "refresh", "feed_refresh", "agenda"}:
+        if kind not in {"analysis", "research", "feed_refresh", "agenda"}:
             raise ValueError("Desteklenmeyen iş türü.")
         frozen = {**request, "settings": self.store.settings()}
-        if kind == "refresh" and not frozen["settings"]["web_enabled"]:
-            raise ValueError("Web araması kapalı; konu kaynakları yenilenemedi.")
         if kind == "analysis":
             frozen["url"] = validate_public_url(request.get("url", ""))
-        if kind in {"research", "refresh"} and request.get("workspace_id"):
-            if not any(
-                row["id"] == request["workspace_id"] for row in self.store.list_workspaces()
-            ):
-                raise ValueError("Çalışma alanı bulunamadı.")
+        if any(key in request for key in ("workspace_id", "topic_id")):
+            raise ValueError("Çalışma alanı ve konu takibi artık desteklenmiyor.")
         if kind == "research" and not str(request.get("query", "")).strip():
             raise ValueError("Arama sorgusu boş olamaz.")
         if kind == "agenda":
@@ -137,8 +132,6 @@ class ProductService:
     def _schedule(self) -> None:
         if not self._session_ready():
             return
-        settings = self.store.settings()
-        minutes = settings["topic_refresh_minutes"]
         pending_source_jobs = self.store.rows(
             "SELECT request FROM jobs WHERE kind='feed_refresh' "
             "AND status IN ('queued','running','cancel_requested')"
@@ -172,53 +165,16 @@ class ProductService:
                 self.submit("feed_refresh", {"source_id": feed["id"], "automatic": True})
         # Gündem, bu turda vadesi gelen kaynakların tamamı sonuçlandıktan sonra çalışır.
         self._schedule_agenda()
-        # Web search and topic timing are independent of subscribed publisher feeds.
-        if not minutes or not settings["web_enabled"]:
-            return
-        pending = {
-            job["request"].get("topic_id")
-            for job in self.store.list_jobs(brief=True)
-            if job["status"] in {"queued", "running", "cancel_requested"}
-        }
-        # Hatalı provider'ı iki saniyede bir tekrar çağırma. Son başarısız/manual işin
-        # zamanı da aralık bütçesine girer; last_success değerini değiştirip yeşile boyamaz.
-        attempts: dict[str, str] = {}
-        for job in self.store.list_jobs(brief=True):
-            topic_id = job["request"].get("topic_id")
-            if topic_id and topic_id not in attempts:
-                attempts[topic_id] = job["created_at"]
-        for topic in self.store.list_topics():
-            if not topic["enabled"] or topic["id"] in pending:
-                continue
-            previous = topic["last_refreshed_at"]
-            if attempt := attempts.get(topic["id"]):
-                if (
-                    datetime.now(UTC) - datetime.fromisoformat(attempt)
-                ).total_seconds() < minutes * 60:
-                    continue
-            # Yeni topic ilk manuel yenilemesini bekler; ayar oluşturmak ağ çağrısı yapmaz.
-            if (
-                previous
-                and (datetime.now(UTC) - datetime.fromisoformat(previous)).total_seconds()
-                >= minutes * 60
-            ):
-                self.submit("refresh", {"topic_id": topic["id"]})
 
     def _schedule_agenda(self) -> None:
         if not self._session_ready():
             return
-        from rasathane.product.agenda import candidates, context
+        from rasathane.product.agenda import candidates
 
         profile = self.store.agenda_profile()
         if not profile["enabled"]:
             return
-        ctx = context(self.store)
-        if not (
-            profile["interests"].strip()
-            or profile["project_context"].strip()
-            or ctx["workspaces"]
-            or ctx["topics"]
-        ):
+        if not (profile["interests"].strip() or profile["project_context"].strip()):
             return
         previous_jobs = self.store.rows(
             "SELECT status,created_at FROM jobs WHERE kind='agenda' "
@@ -350,29 +306,6 @@ class ProductService:
                     previous = self.store.latest_conversation_citations(conversation_id)
                 result.update(answer_from_sources(result, previous))
                 result.update(conversation_id=conversation_id, turn_id=request.get("turn_id"))
-            elif job["kind"] == "refresh":
-                topic = next(
-                    (row for row in self.store.list_topics() if row["id"] == request["topic_id"]),
-                    None,
-                )
-                if topic is None:
-                    raise ValueError("Konu takibi bulunamadı.")
-                result = self._research(
-                    {**request, "query": topic["query"], "web": True}, check, progress
-                )
-                check()
-                if result["status"] in {"local_only", "web_blocked_pii"} or (
-                    result["errors"] and not result["web_results"]
-                ):
-                    raise RuntimeError(
-                        result["errors"][0]
-                        if result["errors"]
-                        else "Konu için web kaynakları yenilenemedi."
-                    )
-                result["topic_id"] = topic["id"]
-                result["new_count"] = self.store.record_topic_hits(
-                    topic["id"], result["web_results"]
-                )
             elif job["kind"] == "agenda":
                 from rasathane.product.agenda import build_agenda
 
@@ -381,8 +314,10 @@ class ProductService:
                 check()
                 self.store.finish_agenda(job["id"], result)
                 return True
-            else:
+            elif job["kind"] == "feed_refresh":
                 result = self._feed_refresh(request, check, progress)
+            else:
+                raise ValueError("Desteklenmeyen iş türü.")
             check()
             self.store.update_job(job["id"], "completed", result=result)
             return True
@@ -406,8 +341,6 @@ class ProductService:
                     if is_cancel
                     else f"{type(exc).__name__}: {str(exc)[:500]}",
                 )
-                if job["kind"] == "refresh" and not is_cancel:
-                    self.store.topic_error(job["request"]["topic_id"], str(exc))
             return job is not None
         finally:
             self._run_lock.release()
@@ -418,12 +351,11 @@ class ProductService:
     def _research(
         self, request: dict[str, Any], check: Callable[[], None], progress: Callable[[str], None]
     ) -> dict[str, Any]:
-        query, workspace_id = request["query"], request.get("workspace_id")
+        query = request["query"]
         progress("local_search")
         result: dict[str, Any] = {
             "query": query,
-            "workspace_id": workspace_id,
-            "local_results": local_results(self.store, query, workspace_id),
+            "local_results": local_results(self.store, query),
             "web_results": [],
             "provider": "local",
             "status": "completed",
@@ -470,7 +402,7 @@ class ProductService:
                 result["errors"].append(f"{url}: {str(exc)[:200]}")
             check()
             saved = self.store.save_web_source(
-                workspace_id,
+                None,
                 url,
                 hit.get("title") or url,
                 body,
@@ -633,8 +565,6 @@ class ProductService:
             "counts": self.store.counts(),
             "sources": self.store.list_feeds(),
             "articles": self.store.list_articles(),
-            "workspaces": self.store.list_workspaces(),
-            "topics": self.store.list_topics(),
             "jobs": self.store.list_jobs(brief=True),
             "library": self.store.library(brief=True),
             "settings": self.store.settings(),

@@ -27,6 +27,17 @@ const SIDECAR_PORT = (() => {
 const SIDECAR = `http://127.0.0.1:${SIDECAR_PORT}`;
 const $ = (id) => document.getElementById(id);
 
+// Zoom, pencere ve yazı boyutu değiştiğinde sohbet gerçek header yüksekliğini izler.
+const header = document.querySelector(".topbar");
+if (header) {
+  const measureHeader = () => document.documentElement.style.setProperty(
+    "--header-height", `${Math.ceil(header.getBoundingClientRect().height)}px`,
+  );
+  measureHeader();
+  new ResizeObserver(measureHeader).observe(header);
+}
+
+
 // Kaynaklar yalnız kullanıcının tıklamasıyla, main'in URL denetiminden sonra açılır.
 document.addEventListener("click", async (event) => {
   const anchor = event.target.closest?.("a[href]");
@@ -493,6 +504,7 @@ function render(d) {
   bas.focus({ preventScroll: true });
   kutuphaneYuklendi = false; // yeni analiz → kütüphane önbelleğini geçersiz kıl
   kutuphaneVeri = null;
+  if ($("analiz-arsivi").open) void kutuphaneYukle();
 }
 
 /* ---- çıktı içeriği render'ları (Faz 9: ekranda inline gösterim) --------- */
@@ -1349,8 +1361,6 @@ const GORUNUMLER = [
   "akis",
   "analiz",
   "arastir",
-  "calisma",
-  "konular",
   "kaynaklar",
 ];
 function setGorunum(ad) {
@@ -1360,7 +1370,7 @@ function setGorunum(ad) {
     ayarlarYukle();
     return;
   }
-  if (ad === "kutuphane") ad = "calisma";
+  if (ad === "kutuphane") ad = "analiz";
   if (!GORUNUMLER.includes(ad)) ad = "akis";
   document.body.classList.toggle("research-active", ad === "arastir");
   for (const g of GORUNUMLER) {
@@ -1369,7 +1379,7 @@ function setGorunum(ad) {
     s.setAttribute("aria-selected", String(g === ad));
     s.tabIndex = g === ad ? 0 : -1; // roving tabindex (WAI-ARIA tab klavye sözleşmesi)
   }
-  if (ad === "calisma") kutuphaneYukle();
+  if (ad === "analiz") kutuphaneYukle();
   productUI.viewChanged(ad);
 }
 
@@ -1558,7 +1568,7 @@ async function ayarlarYukle() {
         `Kaynak: ${kaynak[d.ollama_host_kaynak] || d.ollama_host_kaynak || "yapılandırma bilgisi yok"}`;
       $("ayar-motor-kok").value = d.output_base || "";
       $("ayar-motor-durum").textContent =
-        "Yeni analizlerin çalışma dosyaları burada tutulur. Varsayılan konum uygulamanın yerel veri alanıdır. OneDrive gibi eşitleme kapsamındaki bir klasörü seçerseniz o servis dosyaları eşitleyebilir. Veritabanı uygulamanın yerel veri alanında kalır.";
+        "Yeni analiz dosyaları burada tutulur. Varsayılan konum uygulamanın yerel veri alanıdır. OneDrive gibi eşitleme kapsamındaki bir klasörü seçerseniz o servis dosyaları eşitleyebilir. Veritabanı uygulamanın yerel veri alanında kalır.";
     }
     await renderMotorlar();
     if (status) status.textContent = "Yerel yapılandırma güncel. Bağlantı testleri isteğe bağlıdır.";
@@ -1691,7 +1701,7 @@ async function ayarMotorKaydet() {
     if (selected.cancelled) return;
     if (selected.path) $("ayar-motor-kok").value = selected.path;
     geri.textContent =
-      "Çalışma alanı değişti. Yeni konum yeniden açıldığında kullanılacak; mevcut dosyalar yerinde kalır.";
+      "Analiz dosyalarının konumu değişti. Yeni konum yeniden açıldığında kullanılacak; mevcut dosyalar yerinde kalır.";
   } catch (error) {
     geri.textContent = error.message || "Konum seçilemedi.";
   }

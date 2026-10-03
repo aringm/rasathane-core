@@ -20,6 +20,15 @@ async function verifyProductUI(window) {
     await pause(150);
   }
   await wait(`!document.body.classList.contains('session-locked') && document.querySelector('#gundem-durum')?.textContent && document.querySelector('#kaynak-sohbet-form')`);
+  const shell = await js(`(() => {
+    const nav=document.querySelector('.app-nav').getBoundingClientRect();
+    return {tabs:document.querySelectorAll('.app-nav [data-gorunum]').length,
+      retiredPresent:!!document.querySelector('#sekme-calisma,#sekme-konular,#gorunum-calisma,#gorunum-konular,#arastir-alan,#urun-takip-sikligi'),
+      centered:Math.abs(nav.x+nav.width/2-document.documentElement.clientWidth/2)<2,
+      overflow:document.documentElement.scrollWidth>innerWidth+1,
+      analysisArchive:!!document.querySelector('#gorunum-analiz #analiz-arsivi')};
+  })()`);
+  if (shell.tabs!==4 || shell.retiredPresent || !shell.centered || shell.overflow || !shell.analysisArchive) throw new Error("Sade gezinme ve header kabulü doğrulanamadı.");
   const before = await js(`window.rasathane.request('/api/rasathane/settings')`);
   if (!before.ok) throw new Error("Ayar readback alınamadı.");
   await js(`for(const d of document.querySelectorAll('dialog[open]'))d.close()`);
@@ -42,7 +51,7 @@ async function verifyProductUI(window) {
   await pointer('[data-gorunum="akis"]');
   const agenda = await js(`window.rasathane.request('/api/rasathane/agenda')`);
   if (!agenda.ok || !agenda.data.profile || !agenda.data.status) throw new Error("Kişisel gündem IPC readback alınamadı.");
-  console.log(JSON.stringify({smoke:"product-settings-pointer", authenticated:true, headerSettings:true, profileSettings:true, unchangedSettingsSaveReadback:true, agendaProfilePresent:true, categorizedSources:sources}));
+  console.log(JSON.stringify({smoke:"product-settings-pointer", authenticated:true, headerSettings:true, profileSettings:true, unchangedSettingsSaveReadback:true, agendaProfilePresent:true, categorizedSources:sources, productShell:shell}));
 }
 
 module.exports = { verifyProductUI };

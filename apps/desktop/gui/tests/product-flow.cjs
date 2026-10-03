@@ -21,6 +21,7 @@ function check(name,truth){receipt.checks.push({name,passed:!!truth});if(!truth)
 async function js(code){return win.webContents.executeJavaScript(code,true);}
 async function click(selector){
  const point=await js(`(() => {const e=document.querySelector(${JSON.stringify(selector)});if(!e||e.disabled)throw Error('Click target unavailable');e.scrollIntoView({block:'nearest'});const r=e.getBoundingClientRect();if(!r.width||!r.height)throw Error('Click target hidden');return{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)};})()`);
+ point.x=Math.round(point.x*win.webContents.getZoomFactor()); point.y=Math.round(point.y*win.webContents.getZoomFactor());
  win.webContents.sendInputEvent({type:'mouseMove',...point});
  win.webContents.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...point});
  await sleep(60);
@@ -107,7 +108,7 @@ app.whenReady().then(async()=>{
   await click('#sekme-akis');
   await wait(()=>js(`!!document.querySelector('.agenda-explanation')`));
   check('personal agenda visibly explains relevance project and next step',await js(`document.querySelector('#bulten-sonuc').textContent.includes('Benim için neden önemli?') && document.querySelector('#bulten-sonuc').textContent.includes('Projeye etkisi') && document.querySelector('#bulten-sonuc').textContent.includes('Sonraki adım') && document.querySelector('.agenda-method').textContent.includes('model değerlendirmesi yapılmadı')`));
-  check('personal agenda retains source evidence and persisted profile',await js(`document.querySelector('.agenda-evidence').textContent.includes('Başvuru') && document.querySelector('#gundem-ilgiler').value.includes('Başvuru') && document.querySelector('#gundem-profil input[value="${workspace}"]').checked`));
+  check('personal agenda retains source evidence and persisted profile',await js(`document.querySelector('.agenda-evidence').textContent.includes('Başvuru') && document.querySelector('#gundem-ilgiler').value.includes('Başvuru') && !document.querySelector('#gundem-konular') && !document.querySelector('.agenda-workspaces')`));
   await wait(()=>receipt.requests.includes('/api/rasathane/bulletins') && receipt.requests.includes('/api/rasathane/conversations'));
   check('history loads only after product state is ready',receipt.requests.indexOf('/api/rasathane/state') < receipt.requests.indexOf('/api/rasathane/bulletins') && receipt.requests.indexOf('/api/rasathane/state') < receipt.requests.indexOf('/api/rasathane/conversations'));
   await sleep(500);
@@ -184,31 +185,22 @@ app.whenReady().then(async()=>{
   await wait(()=>js(`!document.querySelector('#gorunum-akis').classList.contains('gizli') && document.querySelector('#akis-kaynak-filter').value===${JSON.stringify(originalSourceId)} && document.querySelectorAll('.radar-entry').length===2 && !document.querySelector('#akis-liste').hasAttribute('aria-busy') && !document.querySelector('#urun-durum').textContent.includes('yenileniyor')`));
   check('show source news navigates to filtered archive including paused source',await js(`document.querySelector('#akis-sonuc-durum').textContent.includes('2 haber') && Array.from(document.querySelectorAll('.radar-source-name')).every(n=>n.textContent==='Hukuk Gündemi QA')`));
   await js(`document.querySelector('#akis-kaynak-filter').value='';document.querySelector('#akis-kaynak-filter').dispatchEvent(new Event('change'))`);
-  await js(`document.querySelector('[data-gorunum="calisma"]').click();document.querySelector('.workspace-examples button').click()`);
-  await wait(()=>js(`document.querySelectorAll('.workspace-button').length===3 && !document.querySelector('.workspace-examples button').disabled`));
-  await js(`document.querySelector('.workspace-examples button').click()`);
-  await wait(()=>js(`document.querySelector('.workspace-examples').textContent.includes('0 çalışma alanı, 0 not ve 0 konu')`));
-  check('example setup persists and repeated run does not duplicate',await js(`document.querySelectorAll('.workspace-button').length===3`));
-  await snap('02d-workspaces');
-  await js(`document.querySelector('[data-gorunum="konular"]').click();document.querySelector('.topic-results').click()`);
-  await wait(()=>js(`document.querySelector('#konu-sonuc-dialog').open`));
-  check('topic results explain no completed search without fake news',await js(`document.querySelector('#konu-sonuc-liste').textContent.includes('Henüz tamamlanmış kontrol yok')`));
-  await js(`document.querySelector('#konu-sonuc-dialog').close()`);
+  check('retired feature screens and controls are absent',await js(`!document.querySelector('#sekme-calisma,#sekme-konular,#gorunum-calisma,#gorunum-konular,#arastir-alan,#urun-takip-sikligi') && document.querySelectorAll('.app-nav [role="tab"]').length===4 && !!document.querySelector('#gorunum-analiz #analiz-arsivi')`));
   await click('#profil-ac');
   await click('#profil-ayarlar');
-  check('profile opens settings as modal and keeps underlying topic view',await js(`document.querySelector('#gorunum-ayarlar').open && !document.querySelector('#gorunum-konular').classList.contains('gizli') && !document.querySelector('#sekme-ayarlar')`));
+  check('profile opens settings as modal and keeps underlying feed view',await js(`document.querySelector('#gorunum-ayarlar').open && !document.querySelector('#gorunum-akis').classList.contains('gizli') && !document.querySelector('#sekme-ayarlar')`));
   await snap('02e-settings');
-  await js(`document.querySelector('#ayar-sekme-arama').click();document.querySelector('#urun-takip-sikligi').value='300';document.querySelector('#urun-takip-sikligi').dispatchEvent(new Event('input',{bubbles:true}))`);
+  await js(`document.querySelector('#ayar-sekme-arama').click();document.querySelector('#urun-arama-saglayici').value='duckduckgo';document.querySelector('#urun-arama-saglayici').dispatchEvent(new Event('input',{bubbles:true}))`);
   const beforeDraftRefresh=receipt.requests.filter(route=>route==='/api/rasathane/state').length;
   await js(`document.querySelector('#akis-yenile').click()`);
   await wait(()=>receipt.requests.filter(route=>route==='/api/rasathane/state').length>beforeDraftRefresh);
   await wait(()=>js(`!document.querySelector('#urun-durum').textContent.includes('yenileniyor')`));
-  check('background refresh does not overwrite edited settings',await js(`document.querySelector('#urun-takip-sikligi').value==='300' && !document.querySelector('#ayarlar-vazgec').disabled`));
+  check('background refresh does not overwrite edited settings',await js(`document.querySelector('#urun-arama-saglayici').value==='duckduckgo' && !document.querySelector('#ayarlar-vazgec').disabled`));
   await js(`document.querySelector('#ayarlar-vazgec').click()`);
-  check('settings discard restores persisted values',await js(`document.querySelector('#urun-takip-sikligi').value==='180' && document.querySelector('#ayarlar-vazgec').disabled`));
-  await js(`document.querySelector('#ayar-sekme-arama').click();document.querySelector('#urun-takip-sikligi').value='240';document.querySelector('#urun-takip-sikligi').dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#urun-ayar-form').requestSubmit()`);
+  check('settings discard restores persisted values',await js(`document.querySelector('#urun-arama-saglayici').value==='auto' && document.querySelector('#ayarlar-vazgec').disabled`));
+  await js(`document.querySelector('#ayar-sekme-arama').click();document.querySelector('#urun-arama-saglayici').value='duckduckgo';document.querySelector('#urun-arama-saglayici').dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#urun-ayar-form').requestSubmit()`);
   await wait(()=>js(`document.querySelector('#urun-ayar-sonuc').textContent.includes('Ayarlar kaydedildi')`));
-  check('external settings form controls persist correctly',await js(`document.querySelector('#urun-takip-sikligi').value==='240'`));
+  check('external settings form controls persist correctly',await js(`document.querySelector('#urun-arama-saglayici').value==='duckduckgo'`));
   await js(`document.querySelector('#ayar-sekme-modeller').click();document.querySelector('#ilk-kurulum-btn').click()`);
   check('model setup opens above settings dialog',await js(`document.querySelector('#ilk-kurulum').open && document.querySelector('#gorunum-ayarlar').open`));
   await js(`document.querySelector('#kurulum-kapat').click();document.querySelector('#ayar-sekme-gorunum').click();document.querySelector('#urun-tema').value='light';document.querySelector('#urun-tema').dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('#urun-ayar-form').requestSubmit()`);
@@ -240,7 +232,7 @@ app.whenReady().then(async()=>{
   check('follow-up finds existing source evidence',await js(`Array.from(document.querySelectorAll('.chat-assistant')).at(-1).textContent.includes('çevrimiçi')`));
   win.reload(); await new Promise(r=>win.webContents.once('did-finish-load',r));
   await wait(()=>js(`document.querySelectorAll('.chat-history-item').length>0`));
-  check('settings survive a full renderer reload',await js(`document.querySelector('#urun-takip-sikligi').value==='240' && document.querySelector('#urun-tema').value==='light' && document.documentElement.dataset.theme==='light'`));
+  check('settings survive a full renderer reload',await js(`document.querySelector('#urun-arama-saglayici').value==='duckduckgo' && document.querySelector('#urun-tema').value==='light' && document.documentElement.dataset.theme==='light'`));
   check('personal profile survives full renderer reload',await js(`document.querySelector('#gundem-ilgiler').value==='Başvuru süresi ve Türk hukuku' && document.querySelector('#gundem-projeler').value==='Başvuru iş akışındaki sürelerin incelenmesi'`));
   await js(`for(const d of document.querySelectorAll('dialog[open]'))d.close();document.querySelector('[data-gorunum="kaynaklar"]').click()`);
   await wait(()=>js(`!!document.querySelector(${JSON.stringify(addedSourceSelector)})`));
@@ -260,13 +252,49 @@ app.whenReady().then(async()=>{
   await js(`document.querySelector('#arastir-gecmis-ac').click();Array.from(document.querySelectorAll('.chat-history-item')).find(n=>n.textContent.startsWith('Uzun QA geçmişi')).click()`);
   await wait(()=>js(`document.querySelectorAll('.chat-message').length===100`));
   check('long history opens newest 50 turns',await js(`document.querySelector('.chat-user').textContent.includes('tur 06') && Array.from(document.querySelectorAll('.chat-assistant')).at(-1).textContent.includes('55') && !!document.querySelector('.chat-older')`));
-  check('opened conversation locks its workspace selector',await js(`document.querySelector('#arastir-alan').disabled && document.querySelector('#arastir-alan').value===${JSON.stringify(workspace)}`));
+  check('legacy conversation opens without retired workspace selector',await js(`!document.querySelector('#arastir-alan') && document.querySelectorAll('.chat-message').length===100`));
   await js(`document.querySelector('#arastir-sonuc').scrollTop=0`); await snap('04b-history-page');
   await js(`document.querySelector('.chat-older').click()`);
   await wait(()=>js(`document.querySelectorAll('.chat-message').length===110`));
   check('older page restores all 55 turns in order',await js(`document.querySelectorAll('.chat-user').length===55 && document.querySelectorAll('.chat-assistant').length===55 && document.querySelector('.chat-user').textContent.includes('tur 01') && !document.querySelector('.chat-older')`));
   check('history requested real cursor API',receipt.requests.some(route=>route.includes('/conversations/') && route.includes('?before=')));
   await js(`document.querySelector('#arastir-sonuc').scrollTop=0`); await snap('04c-history-complete');
+  receipt.responsive=[];
+  for (const theme of ['dark','light']) {
+    await js(`document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
+    for (const [label,width,height,zoom] of [
+      ['1K',1024,768,1],['FullHD',1920,1080,1],
+      ['3K-2880',2880,1800,1],['3K-3072',3072,1728,1],
+      ['4K',3840,2160,1],['3K-150%',2880,1800,1.5],['4K-200%',3840,2160,2]
+    ]) {
+      win.webContents.setZoomFactor(zoom); win.setContentSize(width,height); await sleep(200);
+      for (const view of ['akis','analiz','arastir','kaynaklar']) {
+        await click('#sekme-'+view);
+        const metrics=await js(`(() => {
+          const nav=document.querySelector('.app-nav').getBoundingClientRect();
+          const main=document.querySelector('.app-main').getBoundingClientRect();
+          const composer=document.querySelector('.chat-composer').getBoundingClientRect();
+          return {active:!document.querySelector('#gorunum-'+${JSON.stringify(view)}).classList.contains('gizli'),width:innerWidth,height:innerHeight,
+            overflow:document.documentElement.scrollWidth>innerWidth+1,
+            navCenterDelta:Math.abs(nav.x+nav.width/2-document.documentElement.clientWidth/2),
+            mainCenterDelta:Math.abs(main.x+main.width/2-document.documentElement.clientWidth/2),
+            mainWidth:main.width,navFont:parseFloat(getComputedStyle(document.querySelector('.sekme')).fontSize),
+            composerBottom:composer.bottom,composerWidth:composer.width};
+        })()`);
+        receipt.responsive.push({theme,label,view,zoom,...metrics});
+        check(`${theme} ${label} ${view}: centered without overflow`,metrics.active && !metrics.overflow && metrics.navCenterDelta<2 && metrics.mainCenterDelta<2 && (view!=='arastir'||(metrics.composerWidth>0&&metrics.composerBottom<=metrics.height+1)));
+        if(zoom===1 && width>=2880)check(`${theme} ${label} ${view}: wide screen scale`,metrics.mainWidth>=(width>=3500?2400:2000) && metrics.navFont>=18);
+      }
+      await click('#header-ayarlar');
+      check(`${theme} ${label}: settings fit viewport`,await js(`(() => {
+        const r=document.querySelector('#gorunum-ayarlar').getBoundingClientRect();
+        const save=document.querySelector('#ayarlar-kaydet').getBoundingClientRect();
+        return r.left>=0 && r.right<=innerWidth+1 && r.bottom<=innerHeight+1 && save.bottom<=innerHeight+1;
+      })()`));
+      await click('#ayarlar-kapat');
+    }
+  }
+  win.webContents.setZoomFactor(1); win.setContentSize(1440,1000); await click('#sekme-arastir');
   if(process.env.RASATHANE_QA_LIVE_SOURCE==='1'){
     receipt.live_source='https://simonwillison.net/atom/everything/';
     await click('#sekme-kaynaklar');
@@ -290,8 +318,9 @@ app.whenReady().then(async()=>{
   await wait(()=>js(`document.body.classList.contains('session-locked') && document.querySelector('#app-main').inert`));
   check('logout locks and clears news',await js(`document.body.classList.contains('session-locked') && document.querySelector('#app-main').inert && !document.querySelector('#akis-liste').textContent`));
   check('logout clears conversation',await js(`!document.querySelector('.chat-assistant')`)); await snap('05-logout');
-  check('logout clears bulletin and examples status',await js(`document.querySelector('#bulten-sonuc').hidden && !document.querySelector('#bulten-sonuc').textContent && !document.querySelector('#bulten-ses')?.getAttribute('src')`));
+  check('logout clears bulletin',await js(`document.querySelector('#bulten-sonuc').hidden && !document.querySelector('#bulten-sonuc').textContent && !document.querySelector('#bulten-ses')?.getAttribute('src')`));
   check('logout clears personal context and source chat',await js(`!document.querySelector('#gundem-ilgiler').value && !document.querySelector('#gundem-projeler').value && !document.querySelector('.source-chat-turn') && document.querySelector('#gundem-son-ac').hidden`));
+  check('retired feature endpoints are never called',!receipt.requests.some(route=>/^\/api\/rasathane\/(workspaces|notes|topics|setups)(\/|\?|$)/.test(route)));
   receipt.ok=true;
  }catch(e){receipt.ok=false;receipt.failure=e.stack;if(win){receipt.dom=await js(`document.body.innerText`).catch(()=>null);await snap('failure').catch(()=>{});}}
  finally{

@@ -1,40 +1,67 @@
-# Bülten, araştırma ve çalışma alanları
+# Bülten ve kaynaklı araştırma
 
-Sahip: **Av. Mehmet Arın Gülüm**. Rasathane 0.5.4.
+Sahip: **Av. Mehmet Arın Gülüm**. Rasathane 0.8.
 
-## Akıştan bülten
+## Kişisel gündem
 
-1. Akışta kaynak veya metin filtresi seçin.
-2. **Bülten hazırla / aç** ile başlık, tarih aralığı ve 5/10/20 haber sınırını belirleyin. Alınacak başlıklar önizlemede listelenir; yalnız yüklenmiş haberler değerlendirilir.
-3. **Bülten oluştur** metni, kaynak bağlantılarını ve kapsam açıklamalarını yerel veritabanına kaydeder. Metin kayıtlı haberlerden cümle seçilerek derlenir; yeni iddialar üretilmez.
-4. **Bülteni seslendir** Türkçe WAV hazırlar. Windows Türkçe konuşma sesi gerekir. Ses yoksa metin kaybolmaz ve hata görünür. Oynatıcıyla duraklatıp devam edebilirsiniz.
-5. Kayıtlı bültenler listesinden önceki bir bülteni açın. Kaynak daha sonra değişse de kayıtlı bülten aynı kalır. Tam veri dışa aktarımı bülten snapshot'larını da içerir.
+Akış’ta **İlgi alanlarım ve proje bağlamım** bölümüne ilgilerinizi ve projelerinizi
+yazıp profili kaydedin. **Kaynakları yenile ve gündem hazırla** etkin kaynakların
+kontrolünü başlatır; gündem yenilemelerin tamamlanmasını bekler. Haberler bu iki
+açıklamaya göre değerlendirilir. Önem, ilgiyle bağlantı, proje etkisi, önerilen
+adım ve dayanak alıntı bültende görünür.
 
-Tarih filtresi varsa yayın tarihi, bulunmuyorsa edinim/kayıt tarihi kullanılır. Tarihsiz kayıtlar yalnız tüm tarihler seçiminde yer alır. Metadata künyeleri ve yönetilen özetler tam metin gibi sunulmaz. Ses, kaynak adreslerini harf harf okumaz; madde başlıklarını, özeti ve gerekli kapsam açıklamasını okur.
+Otomatik takip uygulama açıkken ve oturum geçerliyken çalışır. Kaynakların
+kontrol aralıkları ile gündemin değerlendirme aralığı ayrı ayarlardır. Kaynak
+hataları, işin ilerlemesi ve son başarılı kontrol görünür; değişmeyen içerik için
+mükerrer bülten oluşturulmaz. Yerel model kullanılamazsa konu eşleşmesi açıkça
+etiketlenir. Ayrıntılar: [kişisel gündem ve kaynak yönetimi](KISISEL-GUNDEM-KAYNAK-ASISTANI.md).
+
+## Akıştan ayrıca bülten oluşturma
+
+1. Akışta kategori, kaynak veya metin filtresi seçin.
+2. **Bülten seçenekleri** ile başlık, tarih aralığı ve 5/10/20 haber sınırını
+   belirleyin. Alınacak başlıklar önizlemede listelenir; mevcut filtrelerden
+   geçen, yüklenmiş haberler kullanılır.
+3. **Bülten oluştur** metni, kaynak bağlantılarını ve kapsam açıklamalarını
+   yerel veritabanına kaydeder. Bu derleme kayıtlı kaynak metninden cümle seçer;
+   kişisel gündem değerlendirmesinden bağımsız oluşturulabilir.
+4. **Bülteni oku** kayıtlı metni açar. **Dinle** Türkçe WAV hazırlar. Windows
+   Türkçe konuşma sesi gerekir; ses yoksa metin kaybolmaz ve hata görünür.
+   Oynatıcıyla duraklatabilir, hız değiştirebilir ve ses dosyasını indirebilirsiniz.
+5. Kayıtlı bültenler listesinden önceki bir bülteni açın. Kaynak daha sonra
+   değişse de kayıtlı bülten aynı kalır. Tam veri export’u bültenleri içerir.
+
+Tarih filtresinde yayın tarihi, bulunmuyorsa edinim/kayıt tarihi kullanılır.
+Tarihsiz kayıtlar yalnız tüm tarihler seçiminde yer alır. Metadata künyeleri ve
+yönetilen özetler tam metin gibi sunulmaz. Ses; madde başlıklarını, özeti ve
+kapsam açıklamasını okur, kaynak adreslerini harf harf okumaz.
 
 ## Araştır
 
-Mesajlar tek bir konuşma alanında, yazma kutusu altta gösterilir. **Geçmiş** header'da açılır ve konuşma başlığıyla aranır. Enter gönderir, Shift+Enter satır ekler. İlk sorudan önce çalışma alanını seçin; açık konuşmanın alanı sabittir. Başka alan için **Yeni konuşma** kullanın.
+Mesajlar tek konuşma alanında, yazma kutusu altta gösterilir. **Geçmiş**
+header’da açılır ve konuşma başlığıyla aranır. Enter gönderir, Shift+Enter satır
+ekler. **Yeni konuşma** ayrı bir araştırma başlatır. Çalışma alanı seçimi yoktur.
 
-Yanıtlar mevcut kaynak alıntılarına dayanır. Kaynak bölümü metni ve bağlantıyı gösterir. Bir çalışma alanı seçildiğinde o alanın not/kaynakları ve genel haberler aranır. Ortak kitaplıktaki bağımsız konu kaynaklarını da aramak için **Tüm yerel kayıtlar** seçilir. Bu ayrım kitaplık görünümünde de açıklanır.
+Yanıtlar mevcut yerel kayıtlar ve seçildiğinde web aramasıyla edinilen kaynak
+alıntılarına dayanır. Kaynak bölümü metni ve bağlantıyı gösterir. Web araması
+için yalnız mevcut sorgu sağlayıcıya gönderilir; yerel arşiv ve konuşma geçmişi
+toplu olarak dışarı gönderilmez. Kaynak bulunamazsa bu durum açıkça belirtilir.
+Önceki konuşma geçmişleri okunabilir; devam soruları aynı konuşmada sorulabilir.
 
-## Örnek çalışma alanları
+Çalışma alanı ve konu takibi özellikleri kaldırılmıştır. Eski alanlar, notlar,
+konu kayıtları ve tamamlanmış işler veri kaybı olmadan arşivde saklanır ve tam
+export’a dahil edilir. Eski yerel belgeler genel araştırmada bulunabilir;
+yeni işler çalışma alanına bağlanmaz ve konu sorgusu zamanlayıcısı çalışmaz.
 
-**Çalışma alanı → Örnek çalışma alanlarını kur** iki alan, iki plan notu ve iki takip sorgusu ekler:
+## Profil, ayarlar ve analiz arşivi
 
-| Çalışma alanı | Plan | Bağımsız konu sorgusu |
-|---|---|---|
-| Örnek · İş hukuku araştırması | İşçilik alacakları için kaynakları toplama ve not alma | Yargıtay işçilik alacakları kıdem tazminatı |
-| Örnek · Yapay zekâ ve veri koruma | Resmî kaynakları inceleme ve açık soruları kaydetme | site:kvkk.gov.tr yapay zekâ |
+Header’ın ortasında **Akış**, **Analiz**, **Araştır** ve **Kaynaklar** sekmeleri
+bulunur. Sağdaki profil kartı hesap/plan, ayarlar ve çıkış menüsünü açar.
+Header’daki **Ayarlar** düğmesi de aynı pencereyi açar. Bölümler Görünüm,
+Web araması, Yerel modeller, Dosyalar ve veri, Hesap ve plan şeklindedir.
+**Ayarları kaydet** değişiklikleri kalıcılaştırır; Escape pencereyi kapatır.
+Oturum token’ları renderer’a verilmez.
 
-Planlar örnek metinlerdir; gerçek dosya, karar veya hukuki görüş değildir. Mevcut kayıtlar değiştirilmez; kurulum tekrarında eşleşen kayıtlar korunur. İlk denemede Araştır'da ilgili alanı seçip web'i kapatarak “İşçilik alacakları araştırma planı” sorusuyla notun bulunmasını kontrol edebilirsiniz.
-
-## Konu takibi
-
-Takip adı ve web sorgusu kaydedilir. **Şimdi kontrol et** ilk aramayı başlatır; sonuçlarda ilk kez görülen URL sayılır. **Sonuçları aç** son başarılı aramanın kaynaklarını gösterir; daha sonraki bir hata bu sonucu silmez. Henüz kontrol yoksa boş durum açıkça gösterilir.
-
-Takip RSS haber akışıyla aynı veri kümesi değildir. Arama başına en fazla beş web sonucu alınır. İlk kontrolden sonra uygulama açık ve kullanıcı giriş yapmışken, ayarlardaki süreyle tekrar çalışır. Uygulama kapalıyken arama yapan bağımsız bir servis yoktur. Örnek kurulum otomatik internet araması başlatmaz; ilk kontrol kullanıcı tarafından yapılır.
-
-## Profil ve ayarlar
-
-Sol alttaki profil kartı hesap/plan, ayarlar ve çıkış menüsünü açar. Ayarlar mevcut sayfanın üzerinde modal olarak açılır: Görünüm, Web ve konu takibi, Yerel modeller, Dosyalar ve veri, Hesap ve plan. Değişiklikler **Ayarları kaydet** ile kalıcı olur. Escape pencereyi kapatır; oturum token'ları renderer'a verilmez.
+Analiz çıktıları **Analiz → Analiz arşivi** bölümünden yeniden açılır. Kaynak
+künyesi, özetler, artifact’lar ve teknik provenance korunur. Analiz dosyalarının
+fiziksel çıktı klasörü ayarı kullanılmaya devam eder.

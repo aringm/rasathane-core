@@ -21,7 +21,6 @@ def create_bulletin(
     store: ProductStore,
     article_ids: list[str],
     title: str = "Akış bülteni",
-    workspace_id: str | None = None,
 ) -> dict[str, Any]:
     if not 1 <= len(article_ids) <= MAX_ARTICLES:
         raise ValueError("Bülten için 1–20 haber seçin.")
@@ -55,7 +54,6 @@ def create_bulletin(
         "id": uuid.uuid4().hex,
         "title": title,
         "created_at": now(),
-        "workspace_id": workspace_id,
         "items": items,
         "summary": "\n\n".join(paragraphs),
         "notice": NOTICE,

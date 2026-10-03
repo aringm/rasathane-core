@@ -139,31 +139,10 @@
           tabindex="-1"
         >
           <span aria-hidden="true">⌕</span>Araştır</button
-        ><button
-          class="sekme"
-          id="sekme-calisma"
-          type="button"
-          role="tab"
-          data-gorunum="calisma"
-          aria-controls="gorunum-calisma"
-          aria-selected="false"
-          tabindex="-1"
-        >
-          <span aria-hidden="true">▤</span>Çalışma alanı</button
-        ><button
-          class="sekme"
-          id="sekme-konular"
-          type="button"
-          role="tab"
-          data-gorunum="konular"
-          aria-controls="gorunum-konular"
-          aria-selected="false"
-          tabindex="-1"
-        >
-          <span aria-hidden="true">◎</span>Konu takibi</button
         >
         <button class="sekme" id="sekme-kaynaklar" type="button" role="tab" data-gorunum="kaynaklar" aria-controls="gorunum-kaynaklar" aria-selected="false" tabindex="-1"><span aria-hidden="true">▥</span>Kaynaklar</button>
       </nav>
+      <div class="header-actions">
       <button type="button" class="btn btn-ikincil header-settings" id="header-ayarlar">Ayarlar</button>
       <div class="profile-card">
         <div id="profil-menu" class="profile-menu" role="menu" aria-label="Hesap ve ayarlar" hidden>
@@ -178,6 +157,7 @@
           <span class="profile-meta"><strong id="profil-ad">Muhakeme hesabı</strong><span id="profil-plan">Hesap ve ayarlar</span></span>
           <span aria-hidden="true">⌄</span>
         </button>
+      </div>
       </div>
       </div>
     </header>
@@ -598,134 +578,17 @@
             </aside>
           </div>
         </div>
-      </div>
-
-      <section
-        id="gorunum-arastir"
-        class="gizli"
-        role="tabpanel"
-        aria-labelledby="sekme-arastir"
-        tabindex="0"
-      >
-        <header class="research-heading">
-          <div><h1>Araştır</h1><p id="arastir-baslik">Yeni konuşma</p></div>
-          <div class="research-heading-actions">
-            <div class="research-history-anchor">
-              <button type="button" class="btn btn-ikincil" id="arastir-gecmis-ac" aria-expanded="false" aria-controls="arastir-gecmis-panel">Geçmiş</button>
-              <section id="arastir-gecmis-panel" class="research-history-panel" aria-label="Konuşma geçmişi" hidden>
-                <h2>Konuşma geçmişi</h2>
-                <label for="arastir-gecmis-ara" class="sr-only">Konuşmalarda ara</label>
-                <input id="arastir-gecmis-ara" type="search" placeholder="Konuşmalarda ara…" autocomplete="off" />
-                <div id="arastir-gecmis" class="chat-history"></div>
-              </section>
-            </div>
-            <button type="button" class="btn btn-ikincil" id="arastir-yeni">Yeni konuşma</button>
-          </div>
-        </header>
-        <div class="chat-main">
-          <div id="arastir-sonuc" class="chat-messages" role="log" aria-label="Araştırma mesajları" aria-live="polite"></div>
-          <div id="arastir-durum" class="product-status" role="status" aria-live="polite">Bir soru sorun; yanıtın dayandığı kaynakları birlikte inceleyin.</div>
-          <form id="arastir-form" class="chat-composer">
-            <label for="arastir-sorgu" class="sr-only">Mesajınız</label>
-            <textarea id="arastir-sorgu" required maxlength="500" rows="2" placeholder="Bir konu sorun veya önceki sorunuza devam edin…" aria-describedby="arastir-gizlilik arastir-alan-not"></textarea>
-            <div class="chat-options">
-              <div class="chat-workspace-control"><label for="arastir-alan" class="sr-only">Çalışma alanı</label><select id="arastir-alan" aria-describedby="arastir-alan-not"><option value="">Tüm yerel kayıtlar</option></select></div>
-              <label class="check-line"><input id="arastir-web" type="checkbox" />Web’de de ara</label>
-              <button class="btn chat-send" id="arastir-btn" type="submit" aria-label="Gönder" title="Gönder (Enter)">↑</button>
-            </div>
-          </form>
-          <div class="chat-footnotes"><p id="arastir-alan-not" class="field-note">Çalışma alanı konuşma boyunca aynı kalır.</p><p id="arastir-gizlilik" class="field-note">Web’e yalnız gönderdiğiniz sorgu iletilir. Enter: gönder · Shift+Enter: yeni satır</p></div>
-        </div>
-      </section>
-      <section
-        id="gorunum-calisma"
-        class="gizli"
-        role="tabpanel"
-        aria-labelledby="sekme-calisma"
-        tabindex="0"
-      >
-        <div class="page-heading">
-          <div>
-            <h1>Çalışma alanı</h1>
-            <p>Notları ve kaynakları bir araştırma etrafında biriktirin.</p>
-          </div>
-          <button class="btn btn-ikincil" id="calisma-export" type="button">
-            Dışa aktar
-          </button>
-        </div>
-        <div class="workspace-layout">
-          <aside class="workspace-list">
-            <h2>Alanlar</h2>
-            <div id="calisma-alanlar"></div>
-            <form id="calisma-ekle-form">
-              <label for="calisma-ad">Yeni çalışma alanı</label
-              ><input
-                id="calisma-ad"
-                type="text"
-                required
-                maxlength="120"
-                placeholder="Araştırma adı"
-              /><button class="btn btn-ikincil mini" type="submit">
-                Alan oluştur
-              </button>
-            </form>
-          </aside>
-          <div class="workspace-content">
-            <div
-              id="calisma-durum"
-              class="product-status"
-              role="status"
-              aria-live="polite"
-            >
-              Bir çalışma alanı seçin veya yeni alan oluşturun.
-            </div>
-            <form id="not-form" class="kart product-form gizli">
-              <div class="alan">
-                <label for="not-baslik">Not başlığı</label
-                ><input
-                  id="not-baslik"
-                  type="text"
-                  required
-                  maxlength="200"
-                  placeholder="Kısa bir başlık"
-                />
-              </div>
-              <div class="alan">
-                <label for="not-govde">Not</label
-                ><textarea
-                  id="not-govde"
-                  rows="6"
-                  required
-                  maxlength="6000"
-                  placeholder="Bulgularınızı ve kaynak yorumlarınızı yazın"
-                ></textarea>
-              </div>
-              <div class="form-actions">
-                <button class="btn" type="submit">Notu kaydet</button
-                ><span id="not-sonuc" role="status" aria-live="polite"></span>
-              </div>
-            </form>
-            <section aria-labelledby="not-baslik-listesi">
-              <h2 id="not-baslik-listesi">Notlar</h2>
-              <div id="not-liste" class="record-list"></div>
-            </section>
-            <section aria-labelledby="yerel-kitaplik-baslik">
-              <h2 id="yerel-kitaplik-baslik">Yerel kitaplık</h2>
-              <div id="yerel-kitaplik" class="record-list"></div>
-            </section>
-          </div>
-        </div>
-        <details class="legacy-library">
-          <summary>Önceki analiz klasörleri</summary>
+        <details class="analysis-library" id="analiz-arsivi">
+          <summary>Analiz arşivi</summary>
           <div
             id="gorunum-kutuphane"
             role="region"
-            aria-label="Önceki analiz klasörleri"
+            aria-label="Analiz arşivi"
             tabindex="0"
           >
             <section
               class="kart kutuphane-kontrol"
-              aria-label="Kütüphane filtreleri"
+              aria-label="Analiz arşivi filtreleri"
             >
               <div class="alan buyume">
                 <label for="kutuphane-ara">Ara</label>
@@ -776,64 +639,50 @@
             <div class="kutuphane-bos gizli" id="kutuphane-bos"></div>
           </div>
         </details>
-      </section>
+      </div>
+
       <section
-        id="gorunum-konular"
+        id="gorunum-arastir"
         class="gizli"
         role="tabpanel"
-        aria-labelledby="sekme-konular"
+        aria-labelledby="sekme-arastir"
         tabindex="0"
       >
-        <div class="page-heading">
-          <div>
-            <h1>Konu takibi</h1>
-            <p>Belirli bir konudaki yeni kaynakları kontrol edin.</p>
+        <header class="research-heading">
+          <div><h1>Araştır</h1><p id="arastir-baslik">Yeni konuşma</p></div>
+          <div class="research-heading-actions">
+            <div class="research-history-anchor">
+              <button type="button" class="btn btn-ikincil" id="arastir-gecmis-ac" aria-expanded="false" aria-controls="arastir-gecmis-panel">Geçmiş</button>
+              <section id="arastir-gecmis-panel" class="research-history-panel" aria-label="Konuşma geçmişi" hidden>
+                <h2>Konuşma geçmişi</h2>
+                <label for="arastir-gecmis-ara" class="sr-only">Konuşmalarda ara</label>
+                <input id="arastir-gecmis-ara" type="search" placeholder="Konuşmalarda ara…" autocomplete="off" />
+                <div id="arastir-gecmis" class="chat-history"></div>
+              </section>
+            </div>
+            <button type="button" class="btn btn-ikincil" id="arastir-yeni">Yeni konuşma</button>
           </div>
+        </header>
+        <div class="chat-main">
+          <div id="arastir-sonuc" class="chat-messages" role="log" aria-label="Araştırma mesajları" aria-live="polite"></div>
+          <div id="arastir-durum" class="product-status" role="status" aria-live="polite">Bir soru sorun; yanıtın dayandığı kaynakları birlikte inceleyin.</div>
+          <form id="arastir-form" class="chat-composer">
+            <label for="arastir-sorgu" class="sr-only">Mesajınız</label>
+            <textarea id="arastir-sorgu" required maxlength="500" rows="2" placeholder="Bir konu sorun veya önceki sorunuza devam edin…" aria-describedby="arastir-gizlilik"></textarea>
+            <div class="chat-options">
+              <label class="check-line"><input id="arastir-web" type="checkbox" />Web’de de ara</label>
+              <button class="btn chat-send" id="arastir-btn" type="submit" aria-label="Gönder" title="Gönder (Enter)">↑</button>
+            </div>
+          </form>
+          <div class="chat-footnotes"><p id="arastir-gizlilik" class="field-note">Web’e yalnız gönderdiğiniz sorgu iletilir. Enter: gönder · Shift+Enter: yeni satır</p></div>
         </div>
-        <form id="konu-form" class="kart product-form">
-          <div class="satir">
-            <div class="alan">
-              <label for="konu-ad">Takip adı</label
-              ><input
-                id="konu-ad"
-                type="text"
-                required
-                maxlength="120"
-                placeholder="Konunun kısa adı"
-              />
-            </div>
-            <div class="alan buyume">
-              <label for="konu-sorgu">Arama sorgusu</label
-              ><input
-                id="konu-sorgu"
-                type="text"
-                required
-                maxlength="500"
-                placeholder="Takip edilecek konu veya anahtar kelimeler"
-              />
-            </div>
-            <button class="btn" type="submit">Konu ekle</button>
-          </div>
-          <p class="field-note">
-            Konu kontrolü web araması kullanır. İlk kontrolden sonra uygulama
-            açık ve oturumunuz açıkken Ayarlar’daki sıklıkla yenilenir.
-            Sonuçlar bu ekrandan açılır; konu takibi çalışma alanlarından bağımsızdır.
-          </p>
-        </form>
-        <div
-          id="konu-durum"
-          class="product-status"
-          role="status"
-          aria-live="polite"
-        ></div>
-        <div id="konu-liste" class="record-list"></div>
       </section>
     </main>
     <dialog id="gorunum-ayarlar" class="settings-dialog" aria-labelledby="ayarlar-baslik">
         <div class="page-heading settings-heading">
           <div>
             <h2 id="ayarlar-baslik">Ayarlar</h2>
-            <p>Yerel profil, internet erişimi ve çalışma konumu.</p>
+            <p>Yerel profil, internet erişimi ve analiz dosyaları.</p>
           </div>
           <button type="button" class="btn btn-ikincil" id="ayarlar-kapat" aria-label="Ayarları kapat">Kapat</button>
           <button class="btn btn-ikincil" id="ilk-kurulum-btn" type="button">
@@ -879,26 +728,15 @@
                 <option value="configured">Yapılandırılmış sağlayıcı</option>
               </select>
             </div>
-            <div class="alan">
-              <label for="urun-takip-sikligi"
-                >Konu kontrol sıklığı (dakika)</label
-              ><input
-                id="urun-takip-sikligi"
-                type="number"
-                min="0"
-                max="10080"
-                step="15"
-                value="180"
-              />
-            </div>
+
           </div>
           <label class="check-line"
             ><input id="urun-web" type="checkbox" />Web arama özelliğini
             kullanıma aç</label
           >
           <p class="field-note">
-            Araştırma başlatırken web erişimi ayrıca seçilir. Yerel notlar web
-            aramasına gönderilmez.
+            Araştırma başlatırken web erişimi ayrıca seçilir. Web’e yalnız
+            gönderdiğiniz sorgu iletilir.
           </p>
           <div class="form-actions">
             <button class="btn" type="submit">Ayarları kaydet</button
@@ -958,7 +796,7 @@
         </section>
 
         <section class="bolum">
-          <h3>Çalışma dosyalarının konumu</h3>
+          <h3>Analiz dosyalarının konumu</h3>
           <div class="kart ayar-kart">
             <div class="satir">
               <div class="alan buyume">
@@ -969,7 +807,7 @@
                   type="text"
                   id="ayar-motor-kok"
                   readonly
-                  placeholder="Varsayılan yerel çalışma konumu"
+                  placeholder="Varsayılan yerel analiz konumu"
                   autocomplete="off"
                   spellcheck="false"
                 />

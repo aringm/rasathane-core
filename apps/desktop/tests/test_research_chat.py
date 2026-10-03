@@ -21,7 +21,6 @@ def test_conversation_survives_restart_with_bound_quotes_and_followup(tmp_path):
         "research",
         {
             "query": "Kıdem tazminatı hakkında ne biliyoruz?",
-            "workspace_id": workspace["id"],
             "web": False,
         },
     )
@@ -43,9 +42,9 @@ def test_conversation_survives_restart_with_bound_quotes_and_followup(tmp_path):
     reopened = ProductStore(tmp_path)
     chat = reopened.get_conversation(first["request"]["conversation_id"])
     assert len(chat["messages"]) == 4
-    assert chat["workspace_id"] == workspace["id"]
+    assert chat["workspace_id"] is None
     assert chat["messages"][-1]["status"] == "completed"
-    assert reopened.export(workspace["id"])["conversations"][0]["messages"] == chat["messages"]
+    assert reopened.export()["conversations"][0]["messages"] == chat["messages"]
 
 
 def test_no_answer_does_not_recycle_previous_unrelated_sources(tmp_path):
@@ -53,9 +52,7 @@ def test_no_answer_does_not_recycle_previous_unrelated_sources(tmp_path):
     workspace = store.create_workspace("Araştırma")
     store.save_note(workspace["id"], "Kira", "Kira sözleşmesi koşulları")
     service = ProductService(store, autostart=False)
-    first = service.submit(
-        "research", {"query": "Kira", "workspace_id": workspace["id"], "web": False}
-    )
+    first = service.submit("research", {"query": "Kira", "web": False})
     service.run_once()
     second = service.submit(
         "research",
@@ -82,11 +79,8 @@ def test_only_current_query_leaves_computer_and_workspace_cannot_change(tmp_path
             return []
 
     store = ProductStore(tmp_path)
-    workspace = store.create_workspace("Özel çalışma")
     service = ProductService(store, search=Search(), autostart=False)
-    first = service.submit(
-        "research", {"query": "Yerel özel not", "workspace_id": workspace["id"], "web": False}
-    )
+    first = service.submit("research", {"query": "Yerel özel not", "web": False})
     service.run_once()
     second = service.submit(
         "research",
@@ -100,7 +94,7 @@ def test_only_current_query_leaves_computer_and_workspace_cannot_change(tmp_path
     assert calls == ["Bunu açıkla"]
     assert store.get_job(second["id"])["status"] == "completed"
     other = store.create_workspace("Diğer")
-    with pytest.raises(ValueError, match="çalışma alanı"):
+    with pytest.raises(ValueError, match="Çalışma alanı"):
         service.submit(
             "research",
             {
@@ -196,20 +190,10 @@ def test_full_web_text_is_quoted_with_evidence_offsets(tmp_path):
 
 
 def test_native_worker_and_scheduler_wait_for_authenticated_main(tmp_path, monkeypatch):
-    from datetime import UTC, datetime, timedelta
-
     monkeypatch.setenv("RASATHANE_SESSION_TOKEN", "synthetic-session")
     store = ProductStore(tmp_path)
     service = ProductService(store, autostart=False)
-    topic = store.create_topic("İşçilik", "işçilik")
-    with store.connection() as conn:
-        conn.execute(
-            "UPDATE topics SET last_refreshed_at=? WHERE id=?",
-            (
-                (datetime.now(UTC) - timedelta(days=1)).isoformat(),
-                topic["id"],
-            ),
-        )
+    store.upsert_feed("Hukuk", "https://example.org/feed")
     service._schedule()
     assert store.list_jobs() == []
     job = service.submit("research", {"query": "Kıdem", "web": False})
@@ -236,7 +220,7 @@ def test_natural_followup_retrieves_inflected_source_and_rejects_distractors(tmp
     service = ProductService(store, autostart=False)
     first = service.submit(
         "research",
-        {"query": "Başvuru süresi nedir?", "workspace_id": workspace["id"], "web": False},
+        {"query": "Başvuru süresi nedir?", "web": False},
     )
     service.run_once()
     cid = first["request"]["conversation_id"]
@@ -266,9 +250,7 @@ def test_general_natural_query_patterns_are_not_fixture_specific(tmp_path, query
         workspace["id"], "Ödeme yöntemleri", "Ödemeler banka üzerinden gerçekleştirilebilir."
     )
     service = ProductService(store, autostart=False)
-    job = service.submit(
-        "research", {"query": query, "workspace_id": workspace["id"], "web": False}
-    )
+    job = service.submit("research", {"query": query, "web": False})
     service.run_once()
     assert store.get_job(job["id"])["result"]["answer_kind"] == "source_extracts"
 
@@ -339,7 +321,7 @@ def test_followup_preserves_original_evidence_offsets_and_hash(tmp_path):
     service = ProductService(store, autostart=False)
     first = service.submit(
         "research",
-        {"query": "Başvurular nasıl yapılır?", "workspace_id": workspace["id"], "web": False},
+        {"query": "Başvurular nasıl yapılır?", "web": False},
     )
     service.run_once()
     original = store.get_job(first["id"])["result"]["citations"][0]
@@ -357,3 +339,29 @@ def test_followup_preserves_original_evidence_offsets_and_hash(tmp_path):
     for key in ("quote", "quote_start", "quote_end", "evidence_hash", "content_hash", "source_id"):
         assert inherited[key] == original[key]
     assert inherited["quote"] == body[inherited["quote_start"] : inherited["quote_end"]]
+
+
+def test_legacy_conversation_remains_readable_without_restoring_workspace_scope(tmp_path):
+    store = ProductStore(tmp_path)
+    workspace = store.create_workspace("Eski çalışma")
+    store.save_note(workspace["id"], "Kıdem", "Kıdem tazminatı kaynak metni")
+    service = ProductService(store, autostart=False)
+    first = service.submit("research", {"query": "Kıdem", "web": False})
+    cid = first["request"]["conversation_id"]
+    assert service.run_once()
+    old_messages = store.get_conversation(cid)["messages"]
+    with store.connection() as conn:
+        conn.execute("UPDATE conversations SET workspace_id=? WHERE id=?", (workspace["id"], cid))
+    reopened = ProductStore(tmp_path)
+    assert reopened.get_conversation(cid)["messages"] == old_messages
+    service = ProductService(reopened, autostart=False)
+    followup = service.submit(
+        "research", {"query": "Bunu açıkla", "conversation_id": cid, "web": False}
+    )
+    assert "workspace_id" not in followup["request"]
+    assert service.run_once()
+    chat = reopened.get_conversation(cid)
+    assert chat["workspace_id"] == workspace["id"]
+    assert chat["messages"][: len(old_messages)] == old_messages
+    assert chat["messages"][-1]["status"] == "completed"
+    assert reopened.export()["conversations"][0]["messages"] == chat["messages"]

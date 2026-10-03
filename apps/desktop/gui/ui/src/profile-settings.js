@@ -128,7 +128,7 @@ export function createProfileSettings({ $, onSettings }) {
     content.scrollTop = 0;
   }
   const appearance = page("gorunum", "Görünüm");
-  const network = page("arama", "Web ve konu takibi");
+  const network = page("arama", "Web araması");
   const models = page("modeller", "Yerel modeller");
   const files = page("dosyalar", "Dosyalar ve veri");
   const account = page("hesap", "Hesap ve plan");
@@ -140,7 +140,6 @@ export function createProfileSettings({ $, onSettings }) {
   moveField("urun-tema", appearance);
   moveField("urun-profil", models);
   moveField("urun-arama-saglayici", network);
-  moveField("urun-takip-sikligi", network);
   const web = $("urun-web");
   web.setAttribute("form", form.id);
   const webLabel = web.closest("label");

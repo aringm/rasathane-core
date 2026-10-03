@@ -2162,7 +2162,6 @@ body {
   gap: 38px;
 }
 .feed-layout h2,
-.workspace-layout h2,
 .research-layout h2 {
   font-size: 15px;
   letter-spacing: 0;
@@ -2340,93 +2339,20 @@ body {
   font-size: 10px;
   overflow-wrap: anywhere;
 }
-.workspace-layout {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 36px;
-  align-items: start;
-}
-.workspace-list {
-  border-right: 1px solid var(--cizgi);
-  padding-right: 24px;
-}
-.workspace-button {
-  display: block;
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: none;
-  color: var(--metin-soluk);
-  font-family: var(--font-body);
-  text-align: left;
-  font-size: 13px;
-  cursor: pointer;
-  overflow-wrap: anywhere;
-}
-.workspace-button[aria-pressed="true"] {
-  border-color: var(--cizgi);
-  background: var(--yuzey-2);
-  color: var(--metin);
-}
-.workspace-list form {
-  border-top: 1px solid var(--cizgi);
-  margin-top: 25px;
-  padding-top: 23px;
-}
-.workspace-list form label {
-  display: block;
-  margin-bottom: 9px;
-}
-.workspace-list form input {
-  font-size: 13px;
-}
-.workspace-list form button {
-  margin-top: 12px;
-}
-.workspace-list .empty-state {
-  padding: 15px;
-  min-height: 70px;
-  font-size: 12px;
-}
-.workspace-content > section {
-  margin-bottom: 35px;
-}
-.workspace-content h2 {
-  margin-top: 28px;
-}
-.workspace-content .product-status {
-  margin-top: 0;
-}
 .note-body {
   white-space: pre-wrap;
 }
-.topic-record {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 25px;
-}
-.topic-record > div {
-  min-width: 0;
-}
-.topic-record > .btn {
-  flex: none;
-}
-.topic-record .record-meta {
-  margin: 14px 0 0;
-}
-.legacy-library {
+.analysis-library {
   margin-top: 40px;
   padding-top: 25px;
   border-top: 1px solid var(--cizgi);
   color: var(--metin-soluk);
   font-size: 13px;
 }
-.legacy-library > summary {
+.analysis-library > summary {
   cursor: pointer;
 }
-.legacy-library #gorunum-kutuphane {
+.analysis-library #gorunum-kutuphane {
   margin-top: 25px;
 }
 .settings-grid {
@@ -2563,13 +2489,6 @@ input[readonly] {
   .feed-sources {
     padding-left: 20px;
   }
-  .workspace-layout {
-    grid-template-columns: 180px minmax(0, 1fr);
-    gap: 25px;
-  }
-  .workspace-list {
-    padding-right: 18px;
-  }
   .product-form .satir .alan:not(.buyume) {
     flex: 1 1 180px;
   }
@@ -2665,48 +2584,6 @@ input[readonly] {
     grid-template-columns: 1fr;
     gap: 30px;
   }
-  .workspace-layout {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .workspace-list {
-    border-right: 0;
-    border-bottom: 1px solid var(--cizgi);
-    padding: 0 0 20px;
-  }
-  .workspace-list #calisma-alanlar {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-  }
-  .workspace-button {
-    width: auto;
-    flex: none;
-  }
-  .workspace-list form {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-top: 20px;
-    padding-top: 16px;
-  }
-  .workspace-list form label {
-    position: absolute;
-    clip: rect(0, 0, 0, 0);
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-  }
-  .workspace-list form button {
-    margin: 0;
-    flex: none;
-  }
-  .workspace-list form input {
-    min-width: 0;
-  }
-  .topic-record {
-    gap: 16px;
-  }
   .settings-grid {
     gap: 18px;
   }
@@ -2752,12 +2629,6 @@ input[readonly] {
   .settings-grid {
     grid-template-columns: 1fr;
   }
-  .topic-record {
-    flex-direction: column;
-  }
-  .topic-record > .btn {
-    align-self: flex-start;
-  }
   .setup-dialog {
     padding: 24px;
     width: calc(100% - 28px);
@@ -2777,13 +2648,6 @@ input[readonly] {
   }
   .record-meta {
     font-size: 10px;
-  }
-  .workspace-list form {
-    gap: 8px;
-  }
-  .workspace-list form .btn {
-    padding: 9px 11px;
-    font-size: 11px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3090,8 +2954,6 @@ input[readonly] {
 .chat-composer textarea { display: block; width: 100%; resize: none; min-height: 60px; max-height: 180px; border: 0; border-radius: 0; background: transparent; padding: 4px 0 12px; color: var(--metin); font: inherit; line-height: 1.6; }
 .chat-composer textarea:focus { outline: none; box-shadow: none; }
 .chat-options { display: flex; align-items: center; gap: 14px; }
-.chat-workspace-control { min-width: 0; max-width: 290px; }
-.chat-workspace-control select { width: 100%; font-size: 12px; min-height: 34px; padding: 6px 24px 6px 9px; border-radius: 7px; }
 .chat-options .check-line { font-size: 12px; margin: 0; flex-shrink: 0; }
 .chat-options .chat-send { margin-left: auto; width: 40px; height: 40px; min-height: 40px; padding: 0; border-radius: 50%; font-size: 24px; flex-shrink: 0; }
 .chat-main > .product-status { align-self: center; width: min(100%, 820px); margin: 5px 0 10px; padding: 0; min-height: 18px; font-size: 12px; background: transparent; border: 0; }
@@ -3151,7 +3013,6 @@ input[readonly] {
   .research-heading-actions { gap: 5px; }
   .research-heading-actions > .btn, .research-history-anchor > .btn { padding: 8px; font-size: 11px; }
   .chat-options { gap: 8px; flex-wrap: wrap; }
-  .chat-workspace-control { flex: 1; max-width: none; }
   .chat-messages { padding: 22px 3px; }
   .chat-messages:has(.chat-welcome) { padding-block: 12px; }
   .chat-welcome { padding: 12px 0; }

@@ -113,7 +113,7 @@ function installBridge() {
   });
   protectedHandle("rasathane:select-workspace", async (lease, event) => {
     check(event);
-    const result = await dialog.showOpenDialog(anaPencere, { title: "Rasathane çalışma alanı", properties: ["openDirectory", "createDirectory"] });
+    const result = await dialog.showOpenDialog(anaPencere, { title: "Rasathane analiz çıktı klasörü", properties: ["openDirectory", "createDirectory"] });
     lease.assertCurrent();
     if (result.canceled || !result.filePaths[0]) return { cancelled: true };
     const selected = path.resolve(result.filePaths[0]);
@@ -123,21 +123,20 @@ function installBridge() {
     fs.renameSync(`${settingsPath}.tmp`, settingsPath);
     return { cancelled: false, path: selected, restartRequired: true };
   });
-  protectedHandle("rasathane:export-data", async (lease, event, workspaceId) => {
+  protectedHandle("rasathane:export-data", async (lease, event) => {
     check(event);
-    if (workspaceId !== null && (typeof workspaceId !== "string" || !/^[a-f0-9]{32}$/.test(workspaceId))) throw new Error("Çalışma alanı kimliği geçersiz.");
-    const choice = await dialog.showSaveDialog(anaPencere, { title: "Rasathane verisini dışa aktar", defaultPath: path.join(app.getPath("documents"), "rasathane-calisma-alani.json"), filters: [{ name: "JSON", extensions: ["json"] }] });
+    const choice = await dialog.showSaveDialog(anaPencere, { title: "Rasathane verisini dışa aktar", defaultPath: path.join(app.getPath("documents"), "rasathane-arsiv.json"), filters: [{ name: "JSON", extensions: ["json"] }] });
     lease.assertCurrent();
     if (choice.canceled || !choice.filePath) return { cancelled: true };
     const file = path.resolve(choice.filePath); const temporary = `${file}.${crypto.randomBytes(8).toString("hex")}.partial`;
     let handle;
     try {
       await configureSidecarSession(await account.serviceAccessToken(), lease);
-      const response = await fetch(`http://127.0.0.1:${sidecarPort}/api/rasathane/export${workspaceId ? `?workspace_id=${encodeURIComponent(workspaceId)}` : ""}`, { redirect: "error", signal: AbortSignal.any([lease.signal, AbortSignal.timeout(120000)]), headers: { Origin: APP_ORIGIN, "X-Rasathane-Session": sessionToken } });
+      const response = await fetch(`http://127.0.0.1:${sidecarPort}/api/rasathane/export`, { redirect: "error", signal: AbortSignal.any([lease.signal, AbortSignal.timeout(120000)]), headers: { Origin: APP_ORIGIN, "X-Rasathane-Session": sessionToken } });
       if (!response.ok || !response.body || !response.headers.get("content-type")?.includes("application/json")) throw new Error("Dışa aktarma yanıtı alınamadı.");
       lease.assertCurrent();
       handle = await fs.promises.open(temporary, "wx", 0o600); let bytes = 0; const hash = crypto.createHash("sha256");
-      for await (const chunk of response.body) { lease.assertCurrent(); bytes += chunk.length; if (bytes > 256 * 1024 * 1024) throw new Error("Dışa aktarma boyutu 256 MB sınırını aştı; çalışma alanını seçerek yeniden deneyin."); hash.update(chunk); await handle.writeFile(chunk); }
+      for await (const chunk of response.body) { lease.assertCurrent(); bytes += chunk.length; if (bytes > 256 * 1024 * 1024) throw new Error("Dışa aktarma boyutu 256 MB sınırını aştı. Yerel veritabanının yedeğiyle arşivi koruyabilirsiniz."); hash.update(chunk); await handle.writeFile(chunk); }
       await handle.sync(); await handle.close(); handle = null; lease.assertCurrent(); await fs.promises.rename(temporary, file);
       return { saved: true, path: file, bytes, sha256: hash.digest("hex") };
     } finally { if (handle) await handle.close(); if (fs.existsSync(temporary)) await fs.promises.unlink(temporary); }
@@ -404,7 +403,7 @@ async function smokeDogrula(pencere) {
           () => window.rasathane.setupStatus(),
           () => window.rasathane.installModels(),
           () => window.rasathane.selectWorkspace(),
-          () => window.rasathane.exportData(null),
+          () => window.rasathane.exportData(),
           () => window.rasathane.openSource('https://www.resmigazete.gov.tr/'),
         ];
         const results = await Promise.allSettled(actions.map(action => action()));

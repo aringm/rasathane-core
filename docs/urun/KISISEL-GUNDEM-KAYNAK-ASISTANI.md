@@ -1,10 +1,9 @@
-# Rasathane 0.7: kişisel gündem ve kaynak yönetimi
+# Rasathane 0.8: kişisel gündem ve kaynak yönetimi
 
 Sahip: **Av. Mehmet Arın Gülüm**.
 
 Akış ekranında **İlgi alanlarım ve proje bağlamım** bölümünü açın. İlgi ve
-projelerinizi yazın, değerlendirmeye katılacak çalışma alanlarını seçin. Seçilen
-alanların notları ve etkin konu takipleri de bağlama katılır. Profili kaydedin;
+projelerinizi yazın. Haberler bu iki açıklamaya göre değerlendirilir. Profili kaydedin;
 **Kaynakları yenile ve gündem hazırla** ile ilk gündemi oluşturun.
 
 Otomatik güncelleme uygulama açıkken ve oturum geçerliyken çalışır. Her kaynak
@@ -46,6 +45,13 @@ Belirsiz veya birbiriyle çelişen komutta işlem yapmaz, açıklama ister. Öne
 düğmesine basmak seçilen kaynağı ekler. Sohbet geçmişi bu bilgisayarda tutulur.
 
 Header'daki **Ayarlar** veya profil menüsündeki **Ayarlar** aynı pencereyi açar.
-Görünüm, web/konu takibi, yerel modeller, dosyalar ve hesap ayrı bölümlerdedir.
+Görünüm, web araması, yerel modeller, dosyalar ve hesap ayrı bölümlerdedir.
 Arka plan yenilemesi kaydedilmemiş değişikliklerinizi ezmez. **Ayarları kaydet**
 sonucu yerel kayıtla doğrulanır; **Değişiklikleri geri al** son kaydı yükler.
+
+
+Ana gezinme header’ın ortasında **Akış**, **Analiz**, **Araştır** ve **Kaynaklar**
+sekmelerinden oluşur. Çalışma alanı ve konu takibi özellikleri kaldırılmıştır;
+bu özelliklerden kalan kayıtlar arşivde veri kaybı olmadan saklanır ve tam
+veri export’una dahil edilir. Önceki araştırma konuşmaları okunabilir ve
+sürdürülebilir. Kişisel gündem ilgi alanı ve proje açıklamalarınıza göre çalışır.

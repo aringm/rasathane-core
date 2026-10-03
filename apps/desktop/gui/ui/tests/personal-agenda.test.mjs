@@ -46,7 +46,7 @@ function deferred() {
   const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
   return { promise, resolve, reject };
 }
-const profile = { enabled: true, interests: "hukuk", project_context: "Yasal araştırma", workspace_ids: [], include_topics: true, refresh_minutes: 30, window_hours: 72, max_items: 8, use_local_model: true };
+const profile = { enabled: true, interests: "hukuk", project_context: "Yasal araştırma", refresh_minutes: 30, window_hours: 72, max_items: 8, use_local_model: true };
 const state = (latest = { id: "personal-1" }, job = { id: "job", status: "completed" }) => ({ profile: { ...profile }, latest, status: { job } });
 function fixture(t, options = {}) {
   const d = dom(), shown = [];
@@ -157,4 +157,22 @@ test("generation requires unsaved profile edits to be saved first", async t => {
   assert.equal(f.$("gundem-profil").open, true);
   assert.equal(f.$("gundem-profil-kaydet").focused, true);
   assert.match(f.$("gundem-profil-durum").textContent, /Önce profil/);
+});
+
+
+test("legacy agenda context fields are not submitted after workspace and topic retirement", async t => {
+  const requests = [];
+  const f = fixture(t, { api: async (path, options) => {
+    if (path === "/agenda-profile") { requests.push(options.body); return { profile: options.body }; }
+    return state();
+  } });
+  f.ui.update({ ...state(), profile: { ...profile, workspace_ids: ["old"], include_topics: true } }, [{ id: "old", name: "Eski alan" }]);
+  f.$("gundem-ilgiler").value = "Mevzuat ve yerel modeller";
+  await f.$("gundem-ilgiler").fire("input");
+  await f.$("gundem-profil-form").fire("submit");
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].interests, "Mevzuat ve yerel modeller");
+  assert.equal(Object.hasOwn(requests[0], "workspace_ids"), false);
+  assert.equal(Object.hasOwn(requests[0], "include_topics"), false);
+  assert.equal(f.$("gundem-konular"), undefined);
 });

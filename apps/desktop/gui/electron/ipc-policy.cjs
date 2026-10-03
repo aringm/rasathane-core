@@ -7,13 +7,13 @@ const JSON_ROUTES = new Map([
   ["/gui/ollama_test", ["POST"]], ["/gui/klasor_ac", ["POST"]],
   ["/gui/dosya", ["GET"]],
   ["/api/rasathane/state", ["GET"]], ["/api/rasathane/analysis", ["POST"]],
-  ["/api/rasathane/jobs", ["GET"]], ["/api/rasathane/workspaces", ["GET", "POST"]],
+  ["/api/rasathane/jobs", ["GET"]],
   ["/api/rasathane/conversations", ["GET"]],
   ["/api/rasathane/bulletins", ["GET", "POST"]],
   ["/api/rasathane/agenda-profile", ["GET", "POST"]], ["/api/rasathane/agenda", ["GET", "POST"]],
   ["/api/rasathane/source-assistant", ["POST"]], ["/api/rasathane/source-assistant/history", ["GET"]],
-  ["/api/rasathane/notes", ["GET", "POST"]], ["/api/rasathane/research", ["POST"]],
-  ["/api/rasathane/topics", ["GET", "POST"]], ["/api/rasathane/library", ["GET"]],
+  ["/api/rasathane/research", ["POST"]],
+  ["/api/rasathane/library", ["GET"]],
   ["/api/rasathane/settings", ["GET", "POST"]], ["/api/rasathane/export", ["GET"]],
   ["/api/rasathane/sources", ["GET", "POST"]], ["/api/rasathane/articles", ["GET"]],
 ]);
@@ -25,8 +25,10 @@ function validateRequest(route, options = {}) {
   if (!options || typeof options !== "object" || Array.isArray(options)) throw new Error("Geçersiz istek.");
   if (Object.keys(options).some(key => !["method", "body"].includes(key))) throw new Error("İzin verilmeyen istek alanı.");
   const method = options.method || "GET";
-  const methods = JSON_ROUTES.get(url.pathname) || (/^\/api\/rasathane\/(jobs|conversations|bulletins|topics)\/[a-zA-Z0-9_-]+$/.test(url.pathname) ? ["GET"] : /^\/api\/rasathane\/(bulletins\/[a-zA-Z0-9_-]+\/speech|articles\/[a-zA-Z0-9_-]+\/(summary|speech)|jobs\/[a-zA-Z0-9_-]+\/cancel|(topics|sources)\/[a-zA-Z0-9_-]+\/refresh|sources\/[a-zA-Z0-9_-]+\/update)$/.test(url.pathname) ? ["POST"] : []);
+  const methods = JSON_ROUTES.get(url.pathname) || (/^\/api\/rasathane\/(jobs|conversations|bulletins)\/[a-zA-Z0-9_-]+$/.test(url.pathname) ? ["GET"] : /^\/api\/rasathane\/(bulletins\/[a-zA-Z0-9_-]+\/speech|articles\/[a-zA-Z0-9_-]+\/(summary|speech)|jobs\/[a-zA-Z0-9_-]+\/cancel|sources\/[a-zA-Z0-9_-]+\/refresh|sources\/[a-zA-Z0-9_-]+\/update)$/.test(url.pathname) ? ["POST"] : []);
   if (!methods.includes(method)) throw new Error("Bu API işlemi izinli değil.");
+  if (url.searchParams.has("workspace_id") || url.searchParams.has("topic_id")) throw new Error("Emekli özellik filtresi desteklenmiyor.");
+  if (options.body && typeof options.body === "object" && ["workspace_id", "topic_id", "workspace_ids", "include_topics", "topic_refresh_minutes"].some(key => Object.hasOwn(options.body, key))) throw new Error("Çalışma alanı ve konu takibi artık desteklenmiyor.");
   if (method === "GET" && options.body !== undefined) throw new Error("GET gövdesi desteklenmiyor.");
   const body = options.body === undefined ? undefined : JSON.stringify(options.body);
   if (body !== undefined && Buffer.byteLength(body) > 32768) throw new Error("İstek gövdesi çok büyük.");

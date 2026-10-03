@@ -23,35 +23,47 @@ def service(tmp_path, monkeypatch):
     set_service_session(None)
 
 
-async def test_user_flow_workspace_note_search_export(service):
-    transport = httpx.ASGITransport(app=gui_http_app())
+async def test_retired_features_are_unreachable_but_archive_and_research_survive(service):
+    store = service.store
+    workspace = store.create_workspace("Eski iş hukuku")
+    store.save_note(workspace["id"], "Kıdem", "İşçilik alacağı")
+    topic = store.create_topic("Eski konu", "işçilik")
     async with httpx.AsyncClient(
-        transport=transport, base_url="http://localhost", headers={"Origin": "rasathane://app"}
+        transport=httpx.ASGITransport(app=gui_http_app()), base_url="http://localhost"
     ) as client:
-        empty = await client.get("/api/rasathane/state")
-        assert empty.status_code == 200
-        assert empty.json()["counts"]["articles"] == 0
-        workspace = (
-            await client.post("/api/rasathane/workspaces", json={"name": "İş hukuku"})
-        ).json()
-        note = await client.post(
-            "/api/rasathane/notes",
-            json={"workspace_id": workspace["id"], "title": "Kıdem", "body": "İşçilik alacağı"},
-        )
-        assert note.status_code == 201
+        state = (await client.get("/api/rasathane/state")).json()
+        assert not {"workspaces", "topics"} & state.keys()
+        assert not {"workspaces", "topics", "notes"} & state["counts"].keys()
+        for resource in ("workspaces", "notes", "topics"):
+            assert (await client.get(f"/api/rasathane/{resource}")).status_code == 404
+            assert (await client.post(f"/api/rasathane/{resource}", json={})).status_code == 404
+        for suffix in ("", "/refresh"):
+            path = f"/api/rasathane/topics/{topic['id']}{suffix}"
+            response = await (client.post(path, json={}) if suffix else client.get(path))
+            assert response.status_code == 404
+        for path, body in (
+            ("research", {"query": "iscilik", "workspace_id": workspace["id"]}),
+            ("bulletins", {"article_ids": ["one"], "workspace_id": workspace["id"]}),
+            ("settings", {"topic_refresh_minutes": 180}),
+            ("agenda-profile", {"include_topics": True}),
+            ("agenda-profile", {"workspace_ids": []}),
+        ):
+            assert (await client.post(f"/api/rasathane/{path}", json=body)).status_code == 422
+        for path in ("export", "conversations"):
+            assert (await client.get(f"/api/rasathane/{path}?workspace_id=old")).status_code == 400
         queued = await client.post(
-            "/api/rasathane/research",
-            json={"query": "iscilik", "workspace_id": workspace["id"], "web": False},
+            "/api/rasathane/research", json={"query": "iscilik", "web": False}
         )
         assert queued.status_code == 202
-        service.run_once()
+        assert "workspace_id" not in queued.json()["request"]
+        assert service.run_once()
         job = (await client.get("/api/rasathane/jobs/" + queued.json()["id"])).json()
         assert job["status"] == "completed"
         assert job["result"]["local_results"][0]["title"] == "Kıdem"
-        exported = await client.get(
-            "/api/rasathane/export", params={"workspace_id": workspace["id"]}
-        )
+        exported = await client.get("/api/rasathane/export")
         assert exported.json()["notes"][0]["body"] == "İşçilik alacağı"
+        assert exported.json()["workspaces"][0] == workspace
+        assert exported.json()["topics"][0] == topic
         assert "attachment" in exported.headers["content-disposition"]
 
 
@@ -97,36 +109,6 @@ async def test_source_management_and_archive_filters(service):
         listed = (await client.get("/api/rasathane/sources")).json()["items"]
         current = next(row for row in listed if row["id"] == source["id"])
         assert current["article_count"] == 1 and current["supported"] is True
-
-
-async def test_topic_detail_restores_latest_completed_result_outside_recent_jobs(service):
-    store = service.store
-    topic = store.create_topic("İş hukuku", "işçilik alacağı")
-    path = "/api/rasathane/topics/" + topic["id"]
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=gui_http_app()),
-        base_url="http://localhost",
-        headers={"Origin": "rasathane://app"},
-    ) as client:
-        assert (await client.get(path)).json() == {"topic": topic, "latest_result": None}
-        assert (await client.get("/api/rasathane/topics/olmayan")).status_code == 404
-        old = store.enqueue("refresh", {"topic_id": topic["id"]})
-        store.update_job(old["id"], "completed", result={"web_results": []})
-        latest = store.enqueue("refresh", {"topic_id": topic["id"]})
-        expected = {
-            "web_results": [{"url": "https://example.org/karar", "title": "Karar"}],
-            "new_count": 1,
-        }
-        store.update_job(latest["id"], "completed", result=expected)
-        failed = store.enqueue("refresh", {"topic_id": topic["id"]})
-        store.update_job(failed["id"], "failed", error="Kaynak erişilemedi.")
-        for _ in range(101):
-            unrelated = store.enqueue("refresh", {"topic_id": "other-topic"})
-            store.update_job(unrelated["id"], "completed", result={"web_results": []})
-        assert latest["id"] not in {job["id"] for job in store.list_jobs()}
-        response = await client.get(path)
-        assert response.status_code == 200
-        assert response.json() == {"topic": topic, "latest_result": expected}
 
 
 async def test_analysis_user_flow_executes_full_public_engine_and_persists_artifacts(
@@ -276,8 +258,8 @@ async def test_validation_rejects_ssrf_unknown_settings_and_string_bool(service)
             await client.post("/api/rasathane/settings", json={"output_dir": "C:/Windows"})
         ).status_code == 422
         assert (
-            await client.post("/api/rasathane/settings", json={"topic_refresh_minutes": 1})
-        ).status_code == 400
+            await client.post("/api/rasathane/settings", json={"topic_refresh_minutes": 180})
+        ).status_code == 422
         assert (
             await client.post(
                 "/api/rasathane/research",

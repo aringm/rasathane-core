@@ -60,3 +60,16 @@ test("yalnız ana renderer ve exact custom origin", () => {
   frame.url = "rasathane://app.evil/index.html";
   assert.equal(trustedSender({ sender: contents, senderFrame: frame }, window), false);
 });
+
+
+test("emekli çalışma alanı ve konu takibi IPC üzerinden çağrılamaz", () => {
+  for (const path of ["workspaces", "notes", "topics", "topics/abc", "topics/abc/refresh"]) {
+    for (const method of ["GET", "POST"]) assert.throws(() => validateRequest(`/api/rasathane/${path}`, {method}));
+  }
+  for (const path of ["research", "bulletins", "agenda-profile", "settings"]) {
+    for (const field of ["workspace_id", "topic_id", "workspace_ids", "include_topics", "topic_refresh_minutes"]) assert.throws(() => validateRequest(`/api/rasathane/${path}`, {method: "POST", body: {[field]: null}}));
+  }
+  assert.throws(() => validateRequest("/api/rasathane/conversations?workspace_id=abc"));
+  assert.throws(() => validateRequest("/api/rasathane/export?topic_id=abc"));
+  assert.equal(validateRequest("/api/rasathane/sources/abc/refresh", {method: "POST"}).method, "POST");
+});

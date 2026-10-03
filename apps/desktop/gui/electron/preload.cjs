@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("rasathane", Object.freeze({
   request: (path, options) => ipcRenderer.invoke("rasathane:request", path, options),
   selectWorkspace: () => ipcRenderer.invoke("rasathane:select-workspace"),
-  exportData: (workspaceId) => ipcRenderer.invoke("rasathane:export-data", workspaceId),
+  exportData: () => ipcRenderer.invoke("rasathane:export-data"),
   openAccount: () => ipcRenderer.invoke("rasathane:open-account"),
   sendLoginCode: email => ipcRenderer.invoke("rasathane:send-login-code", email),
   verifyLoginCode: code => ipcRenderer.invoke("rasathane:verify-login-code", code),

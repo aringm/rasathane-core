@@ -38,8 +38,7 @@ def store(tmp_path):
 
 
 def test_bulletin_snapshot_preserves_sources_scope_and_export_after_source_changes(store):
-    workspace = store.create_workspace("Örnek çalışma")
-    result = bulletins.create_bulletin(store, ["haber", "karar"], workspace_id=workspace["id"])
+    result = bulletins.create_bulletin(store, ["haber", "karar"])
     assert result["article_count"] == 2 and result["ready_count"] == 1
     assert (
         result["items"][0]["summary"] == "Başvuru süresi otuz gündür. Yetkili merci açıklama yaptı."
@@ -54,9 +53,10 @@ def test_bulletin_snapshot_preserves_sources_scope_and_export_after_source_chang
     with store.connection() as conn:
         conn.execute("UPDATE articles SET summary='Değişen haber' WHERE id='haber'")
     assert ProductStore(store.directory).get_bulletin(result["id"]) == result
-    exported = store.export(workspace["id"])
-    assert exported["documents"][0]["provenance"]["bulletin"] == result
-    assert any(row["kind"] == "bulletin" for row in store.search("başvuru", workspace["id"]))
+    exported = store.export()
+    saved_document = next(row for row in exported["documents"] if row["kind"] == "bulletin")
+    assert saved_document["provenance"]["bulletin"] == result
+    assert any(row["kind"] == "bulletin" for row in store.search("başvuru"))
     assert store.list_bulletins()[0]["article_count"] == 2
 
 
@@ -67,8 +67,8 @@ def test_invalid_selection_is_atomic(store, ids):
     assert store.list_bulletins() == []
 
 
-def test_invalid_workspace_does_not_save_bulletin(store):
-    with pytest.raises(ValueError):
+def test_retired_workspace_argument_does_not_save_bulletin(store):
+    with pytest.raises(TypeError):
         bulletins.create_bulletin(store, ["haber"], workspace_id="olmayan")
     assert store.list_bulletins() == []
 

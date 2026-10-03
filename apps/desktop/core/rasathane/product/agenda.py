@@ -9,7 +9,7 @@ import unicodedata
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Any
+from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
@@ -24,10 +24,6 @@ class AgendaProfile(BaseModel):
     enabled: StrictBool = True
     interests: str = Field(default="", max_length=3000)
     project_context: str = Field(default="", max_length=4000)
-    workspace_ids: list[Annotated[str, Field(min_length=1, max_length=64)]] = Field(
-        default_factory=list, max_length=20
-    )
-    include_topics: StrictBool = True
     refresh_minutes: StrictInt = Field(default=30, ge=15, le=10080)
     window_hours: StrictInt = Field(default=72, ge=6, le=168)
     max_items: StrictInt = Field(default=8, ge=3, le=20)
@@ -36,21 +32,7 @@ class AgendaProfile(BaseModel):
 
 def context(store: ProductStore) -> dict[str, Any]:
     profile = store.agenda_profile()
-    selected = set(profile["workspace_ids"])
-    workspaces = [w for w in store.list_workspaces() if w["id"] in selected]
-    notes = store.rows(
-        "SELECT workspace_id,title,substr(body,1,500) AS body,updated_at FROM notes "
-        "WHERE workspace_id IN (SELECT value FROM json_each(?)) "
-        "ORDER BY updated_at DESC LIMIT 20",
-        (json_text(sorted(selected)),),
-    )
-    topics = [t for t in store.list_topics() if t["enabled"]] if profile["include_topics"] else []
-    return {
-        "profile": profile,
-        "workspaces": [{"id": w["id"], "name": w["name"]} for w in workspaces],
-        "notes": notes,
-        "topics": [{"name": t["name"], "query": t["query"]} for t in topics[:30]],
-    }
+    return {"profile": profile}
 
 
 def candidates(
@@ -135,9 +117,6 @@ def fingerprint(ctx: dict[str, Any], articles: list[dict[str, Any]]) -> str:
 def _context_terms(ctx: dict[str, Any]) -> set[str]:
     profile = ctx["profile"]
     values = [profile["interests"], profile["project_context"]]
-    values.extend(w["name"] for w in ctx["workspaces"])
-    values.extend(n["title"] + " " + n["body"] for n in ctx["notes"])
-    values.extend(t["name"] + " " + t["query"] for t in ctx["topics"])
     return set(_words(" ".join(values)))
 
 
@@ -353,13 +332,10 @@ def build_agenda(
             "notice": "Seçilen zaman aralığında etkin kaynaklardan yeni içerik yok.",
         }
     # 4096 context penceresinde çıktı için de yer bırakılır. Profilin ilk alanı
-    # diğer bağlamı yutmasın: ilgi, proje ve seçili çalışmalar ayrı ayrı sınırlı.
+    # diğer bağlamı yutmasın: ilgi ve proje açıklamaları ayrı ayrı sınırlı.
     context_text = {
         "interests": profile["interests"][:400],
         "project": profile["project_context"][:400],
-        "workspaces": ", ".join(w["name"] for w in ctx["workspaces"])[:200],
-        "notes": " ".join(n["title"] + ": " + n["body"] for n in ctx["notes"])[:200],
-        "topics": ", ".join(t["query"] for t in ctx["topics"])[:200],
     }
     ranked = articles  # candidates ilgi puanı + güncellik sırasındadır.
     limit = min(profile["max_items"], 8 if store.settings()["analysis_profile"] == "ram8" else 20)
@@ -500,7 +476,6 @@ def build_agenda(
         "id": uuid.uuid4().hex,
         "title": "Kişisel gündem",
         "created_at": stamp,
-        "workspace_id": None,
         "items": items,
         "summary": "\n\n".join(paragraphs),
         "notice": notice,

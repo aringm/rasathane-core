@@ -1,12 +1,18 @@
 # Rasathane — Akış, bülten ve kaynak yönetimi
 
-**Hedef sürüm:** 0.6.0 · **Sahip:** Av. Mehmet Arın Gülüm
+**Hedef sürüm:** 0.8.0 · **Sahip:** Av. Mehmet Arın Gülüm
 
 Bu not, özgün Radar düzenine yaklaşan masaüstü revizyonunu açıklar. Kaynak kodu
 doğrulamaları tamamlanmıştır; imzalı paket, kurulum ve kullanıcı akışı kabulü
 ayrı release kayıtlarında tutulur.
 
 ## Akış ve günlük bülten
+
+Kişisel gündem **İlgi alanlarım ve proje bağlamım** açıklamalarına göre yeni
+haberleri değerlendirir. Önce ilgi ve proje profilini kaydedin; **Kaynakları
+yenile ve gündem hazırla** ilk kaynak kontrolü ve gündem üretimini başlatır.
+Kurulu yerel modelin değerlendirmesi ve dayanak alıntısı bültende görünür;
+model kullanılamazsa konu eşleşmesi açıkça etiketlenir.
 
 Akışın üstünde günlük bülten, altında kategori ve kaynak filtreleriyle haber
 listesi bulunur. Özgün Radar'ın bülteni görünür tutan düzeni ve ayrı kaynak
@@ -32,14 +38,18 @@ ile okur. Oynatma hızı 1×–2× arasında seçilebilir; WAV dosyası **Sesi i
 alınır. Hız seçimi oynatıcıya aittir, indirilen WAV dosyasını yeniden üretmez.
 Türkçe Windows sesi yoksa açıklayıcı hata gösterilir.
 
-Özetleme **extractive** çalışır: kayıtlı kaynak açıklamalarından cümle seçer.
+Filtrelerden ayrıca oluşturulan bültenin özeti **extractive** çalışır: kayıtlı kaynak açıklamalarından cümle seçer.
 Haberlerin tam metni bu işlemde edinilmez; başlık dışında metin bulunmayan
 kayıtlar da açıkça belirtilir. Özgün Stüdyo, çok konuşmacılı podcast veya LLM
 editör sistemi bu revizyonda taşınmış değildir.
 
 ## Kaynakları yönetme
 
-Sol menüdeki **Kaynaklar** ekranı ad/adres araması, takipte/duraklatılmış/hatalı
+Header’ın ortasında dört sekme bulunur: Akış, Analiz, Araştır ve Kaynaklar.
+Kaynak sohbetine URL veya açık bir ekle/düzenle/duraklat komutu yazılabilir;
+uygulanan işlem sohbet içinde makbuzuyla gösterilir.
+
+Header’daki **Kaynaklar** ekranı ad/adres araması, takipte/duraklatılmış/hatalı
 filtreleri ve kaynak tablosunu sunar. Kaynağın adresi, kategorisi, türü, kayıtlı
 haber sayısı ve son kontrol durumu birlikte görülebilir.
 
@@ -60,8 +70,10 @@ kaynak kategorisini doğrudan taşır.
 
 Otomatik kaynak kontrolü uygulama açıkken ve hesap oturumu geçerliyken çalışır.
 Kaynağın etkinliği, kendi yenileme aralığı ve hata sonrası bekleme süresi esas
-alınır. Araştırmadaki **web araması** ve **konu takibi sıklığı** bu aboneliklerden
-bağımsızdır; konu takibini kapatmak haber kaynaklarını durdurmaz.
+alınır. Araştırmadaki **web araması** bu aboneliklerden bağımsızdır; web
+aramasını kapatmak haber kaynaklarını durdurmaz. Kişisel gündem ilgi alanları
+ve proje açıklamasına göre değerlendirme yapar; kaynak işlerinin sonuçlanmasını
+bekler. Konu takibi zamanlayıcısı kaldırılmıştır.
 
 Otomatik kaynak işleri, araştırma/analiz ve manuel işlemlerden sonra sıraya
 alınır. Başlamış tek edinim tamamlanabilir; sonraki iş seçiminde kullanıcı
@@ -75,14 +87,23 @@ ya da hata durumuna yazılmaz.
 
 ## Profil ve ayarlar
 
-Sol alttaki profil kartından **Ayarlar** açılır. Görünüm, web ve konu takibi,
-yerel modeller ve dosyalar kendi bölümlerinde gösterilir. Alan değişiklikleri
+Header’ın sağındaki profil kartından veya doğrudan **Ayarlar** düğmesinden
+ayarlar açılır. Görünüm, web araması, yerel modeller ve dosyalar kendi
+bölümlerinde gösterilir. Alan değişiklikleri
 taslak olarak tutulur; arka plandaki durum yenilemesi bunları ezmez. **Kaydet**
 kalıcı ayarları günceller ve sonucu gösterir. Kayıt sürerken yapılan yeni bir
 değişiklik kaydedilmiş sayılmaz. Bağlantı ve yerel servis durumu ayarlar içinden
 yeniden kontrol edilebilir.
 
-## Doğrulama kapsamı
+Çalışma alanı ve konu takibi özellikleri kaldırılmıştır. Eski kayıtlar tam
+export’ta ve yerel arşivde korunur; araştırma konuşmaları sürdürülebilir.
+Analiz çıktıları **Analiz arşivi** içinden açılır.
+
+## Önceki doğrulama kapsamı
+
+Aşağıdaki sonuçlar önceki kaynak yönetimi revizyonunun tarihsel kaydıdır.
+0.8 kaldırma ve responsive kabulü [0.8 kapsam belgesinde](CALISMA-KONU-KALDIRMA-RESPONSIVE-0.8.md)
+ayrıca izlenir.
 
 API, store, scheduler ve kaynak adapter regression grubunda 65 test geçti.
 Son kuyruk düzeltmesinden sonra adapter/scheduler dosyasındaki 24 test yeniden

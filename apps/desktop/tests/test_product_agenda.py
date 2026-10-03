@@ -43,7 +43,7 @@ def store(tmp_path):
 def test_profile_context_snapshot_novelty_and_stale_articles(store):
     workspace = store.create_workspace("Hukuk ürünü")
     store.save_note(workspace["id"], "Veri işleme", "Açık kaynak araçların değerlendirilmesi")
-    store.save_agenda_profile({"workspace_ids": [workspace["id"]]})
+    store.save_agenda_profile({"project_context": "Hukuk ürünü, açık kaynak veri işleme"})
     service = ProductService(store, autostart=False)
     job = service.submit("agenda", {})
     assert service.run_once()
@@ -190,7 +190,7 @@ async def test_agenda_api_profile_validation_and_job_result(store, monkeypatch):
         unknown = await client.post(
             "/api/rasathane/agenda-profile", json={"workspace_ids": ["missing"]}
         )
-        assert unknown.status_code == 400
+        assert unknown.status_code == 422
         job = (await client.post("/api/rasathane/agenda", json={})).json()
         service.run_once()
         result = (await client.get("/api/rasathane/agenda")).json()
@@ -592,3 +592,24 @@ def test_partial_grounding_retries_without_duplicate_bulletin_history(store, mon
     assert store.agenda_state()["status"] == "unchanged"
     saved = store.get_bulletin(store.agenda_state()["bulletin_id"])
     assert sum(i["evaluation_method"] == "local_model" for i in saved["items"]) == 1
+
+
+def test_legacy_profile_fields_are_ignored_on_read_and_rejected_on_write(store):
+    import json
+
+    from pydantic import ValidationError
+
+    original = store.agenda_profile()
+    legacy = {**original, "workspace_ids": ["missing"], "include_topics": True}
+    with store.connection() as conn:
+        conn.execute("UPDATE agenda_config SET value=? WHERE key='profile'", (json.dumps(legacy),))
+        conn.execute("INSERT INTO settings VALUES('topic_refresh_minutes','180')")
+    reopened = ProductStore(store.directory)
+    assert reopened.agenda_profile() == original
+    assert "topic_refresh_minutes" not in reopened.settings()
+    assert agenda.context(reopened) == {"profile": original}
+    for key, value in (("workspace_ids", []), ("include_topics", False)):
+        with pytest.raises(ValidationError):
+            reopened.save_agenda_profile({key: value})
+    assert reopened.agenda_profile() == original
+    assert reopened.save_agenda_profile({"interests": "Yeni ilgi"})["interests"] == "Yeni ilgi"

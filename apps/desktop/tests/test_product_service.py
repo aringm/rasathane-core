@@ -26,32 +26,25 @@ def test_real_sqlite_research_persists_citations_and_source_version(tmp_path):
         fetch=lambda url: {"title": "Kanun", "body": "İşçilik alacağı kanun metni", "url": url},
         autostart=False,
     )
-    job = service.submit(
-        "research", {"query": "iscilik", "workspace_id": workspace["id"], "web": True}
-    )
+    job = service.submit("research", {"query": "iscilik", "web": True})
     service.run_once()
     result = store.get_job(job["id"])["result"]
     assert result["local_results"]
     assert result["web_results"][0]["content_hash"]
-    assert store.export(workspace["id"])["citations"]
-    assert store.search("kanun", workspace["id"])
+    assert result["web_results"][0]["version_id"]
+    assert store.search("kanun")
+    assert store.export()["notes"]
 
 
-def test_topic_refresh_dedupes_new_results(tmp_path):
+def test_retired_jobs_and_context_are_rejected_before_queue(tmp_path):
     store = ProductStore(tmp_path)
-    service = ProductService(
-        store,
-        search=Search(),
-        fetch=lambda url: {"title": "Kanun", "body": "Metin", "url": url},
-        autostart=False,
-    )
-    topic = store.create_topic("İşçilik", "işçilik")
-    one = service.submit("refresh", {"topic_id": topic["id"]})
-    service.run_once()
-    two = service.submit("refresh", {"topic_id": topic["id"]})
-    service.run_once()
-    assert store.get_job(one["id"])["result"]["new_count"] == 1
-    assert store.get_job(two["id"])["result"]["new_count"] == 0
+    service = ProductService(store, search=Search(), autostart=False)
+    with pytest.raises(ValueError, match="iş türü"):
+        service.submit("refresh", {"topic_id": "old"})
+    for key in ("workspace_id", "topic_id"):
+        with pytest.raises(ValueError, match="artık desteklenmiyor"):
+            service.submit("research", {"query": "q", key: "old"})
+    assert store.list_jobs() == []
 
 
 def test_cancel_running_research_does_not_report_completion(tmp_path):
@@ -173,34 +166,44 @@ def test_unconfigured_search_failure_is_visible_and_not_empty_success(tmp_path):
     assert store.get_job(job["id"])["error"]
 
 
-def test_scheduler_only_requeues_due_previously_refreshed_topics(tmp_path):
+def test_scheduler_ignores_legacy_topics_but_still_refreshes_sources(tmp_path):
     store = ProductStore(tmp_path)
-    service = ProductService(store, search=Search(), autostart=False)
-    new = store.create_topic("Yeni", "yeni")
-    old = store.create_topic("Eski", "eski")
+    topic = store.create_topic("Eski", "eski")
     yesterday = (datetime.now(UTC) - timedelta(days=1)).isoformat()
     with store.connection() as conn:
-        conn.execute("UPDATE topics SET last_refreshed_at=? WHERE id=?", (yesterday, old["id"]))
+        conn.execute("UPDATE topics SET last_refreshed_at=? WHERE id=?", (yesterday, topic["id"]))
+        conn.execute("INSERT INTO settings VALUES('topic_refresh_minutes','15')")
+    service = ProductService(store, search=Search(), autostart=False)
+    source = store.upsert_feed("Kaynak", "https://example.org/feed")
     service._schedule()
-    assert len(store.list_jobs()) == 1
-    assert store.list_jobs()[0]["request"]["topic_id"] == old["id"]
-    assert not any(job["request"].get("topic_id") == new["id"] for job in store.list_jobs())
-    service._schedule()
-    assert len(store.list_jobs()) == 1
-    store.save_settings({"topic_refresh_minutes": 0})
-    service._schedule()
-    assert len(store.list_jobs()) == 1
+    assert [job["kind"] for job in store.list_jobs()] == ["feed_refresh"]
+    assert store.list_jobs()[0]["request"]["source_id"] == source["id"]
+    assert store.list_topics()[0]["last_refreshed_at"] == yesterday
+    assert "topic_refresh_minutes" not in store.settings()
+    with pytest.raises(ValueError, match="Desteklenmeyen ayar"):
+        store.save_settings({"topic_refresh_minutes": 0})
 
 
-def test_web_disabled_topic_refresh_is_rejected_without_false_freshness(tmp_path):
+def test_upgrade_cancels_legacy_topic_jobs_without_deleting_history(tmp_path):
     store = ProductStore(tmp_path)
     topic = store.create_topic("Kararlar", "kararlar")
-    service = ProductService(store, search=Search(), autostart=False)
-    store.save_settings({"web_enabled": False})
-    with pytest.raises(ValueError, match="kapalı"):
-        service.submit("refresh", {"topic_id": topic["id"]})
-    assert store.list_topics()[0]["last_refreshed_at"] is None
-    assert store.list_jobs() == []
+    completed = store.enqueue("analysis", {})
+    pending = store.enqueue("analysis", {})
+    store.update_job(completed["id"], "completed", result={"new_count": 2})
+    with store.connection() as conn:
+        conn.execute(
+            "UPDATE jobs SET kind='refresh',request=?", ('{"topic_id":"' + topic["id"] + '"}',)
+        )
+    reopened = ProductStore(tmp_path)
+    assert reopened.get_job(completed["id"])["result"] == {"new_count": 2}
+    retired = reopened.get_job(pending["id"])
+    assert retired["status"] == "cancelled" and retired["cancel_requested"]
+    assert "kaldırıldığı" in retired["error"]
+    assert reopened.list_topics() == [topic]
+    assert reopened.list_jobs() == []
+    assert len(reopened.export()["jobs"]) == 2
+    service = ProductService(reopened, search=Search(), autostart=False)
+    assert not service.run_once()
 
 
 def test_default_public_feed_config_has_zero_fixture_articles_and_keeps_disabled_feed(tmp_path):

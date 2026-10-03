@@ -7,9 +7,8 @@
 | Akış | RSS/Atom ve resmî kaynak takibi; tek haber özeti, kalıcı toplu bülten ve Türkçe seslendirme |
 | Analiz | Video, web, GitHub, arXiv ve sosyal kaynak analizi; özet, çeviri, değerlendirme ve üretim araçları |
 | Araştır | Tek chat görünümü; header'da konuşma geçmişi, web ve yerel kaynaklarla devam soruları |
-| Çalışma alanı | Kalıcı notlar, araştırma geçmişi ve kaynaklar |
-| Konu takibi | Web sorgusunu düzenli kontrol etme; yeni URL sayısı ve son başarılı sonuçlara erişim |
-| Profil ve ayarlar | Sol alttaki profil kartından hesap, sekmeli ayarlar, kurulum ve çıkış |
+| Kaynaklar | Kategorili kaynak yönetimi; URL ekleme, kaynak sohbeti, düzenleme ve duraklatma |
+| Profil ve ayarlar | Header’ın sağındaki profil kartından hesap, sekmeli ayarlar, kurulum ve çıkış |
 
 Yerel çekirdek **AGPL-3.0-or-later** lisansıyla ücretsizdir; ticari kullanım dahil AGPL hakları geçerlidir. Masaüstü uygulamasında Muhakeme hesabıyla giriş zorunludur; yerel özellikler ücretli abonelik gerektirmez. Yönetilen servisler için aylık toplam **49 TL** ve **14 günlük** deneme sözleşmesi ayrı yürütülür. Marka ve üçüncü taraf model lisansları: [NOTICE](NOTICE.md).
 
@@ -34,13 +33,15 @@ Site için `apps/web` içinde `pnpm lint` ve `pnpm build` kullanılır. Windows 
 
 ## Çalışma sınırları
 
-Akıştaki **Bülten hazırla / aç**, mevcut filtrelerdeki en fazla 20 haberden kaynak alıntılarına dayalı bir derleme oluşturur. Metin ve kaynaklar yerel snapshot olarak saklanır; yeniden açıldığında değişmez. Türkçe ses Windows konuşma motoruyla üretilir. Tam karar metni bulunmayan künyelerden karar özeti üretilmez. LLM veya model indirmesi gerektirmez.
+Akıştaki **Bülten seçenekleri**, mevcut filtrelerdeki en fazla 20 haberden kaynak alıntılarına dayalı bir derleme oluşturur. Metin ve kaynaklar yerel snapshot olarak saklanır; yeniden açıldığında değişmez. Türkçe ses Windows konuşma motoruyla üretilir. Tam karar metni bulunmayan künyelerden karar özeti üretilmez. LLM veya model indirmesi gerektirmez.
 
-Çalışma alanı notları ve o alana bağlı araştırma kayıtlarını toplar. **Örnek çalışma alanlarını kur**, iki araştırma planı ve iki bağımsız takip sorgusu ekler; tekrar çalıştırmak mükerrer kayıt oluşturmaz. Konu takibi çalışma alanına otomatik bağlanmaz ve RSS akışını filtrelemez. İlk manuel kontrolden sonra, uygulama ve oturum açıkken belirlenen aralıkta web'de arar. Son başarılı kontrol **Sonuçları aç** ile görülebilir. Kullanım adımları: [bülten ve araştırma](docs/urun/BULTEN-ARASTIRMA.md).
+Kişisel gündem, Akış’taki **İlgi alanlarım ve proje bağlamım** açıklamalarını kullanır. Etkin kaynaklar kendi kontrol aralıklarıyla yenilenir; gündem kaynak işlerinin tamamlanmasını bekler. Yerel model haberin önemini, proje etkisini ve sonraki adımı kaynak alıntısıyla değerlendirir; model kullanılamazsa konu eşleşmesi açıkça etiketlenir. Otomatik takip uygulama ve hesap oturumu açıkken çalışır. Kullanım adımları: [bülten ve araştırma](docs/urun/BULTEN-ARASTIRMA.md).
+
+Header’ın ortasında dört ana sekme bulunur: Akış, Analiz, Araştır ve Kaynaklar. Analiz çıktıları **Analiz arşivi** içinde açılır. Çalışma alanı ve konu takibi özellikleri kaldırılmıştır; eski kayıtlar veri kaybı olmadan arşivde ve tam export’ta korunur. Önceki araştırma konuşmaları sürdürülebilir. Yeni gündem bağlamı kişisel ilgi alanı ve proje açıklamalarından oluşur.
 
 8 GB profilinde 4096 context, CPU inference ve tek ağır iş kullanılır. LLM/embedding birlikte yüklenmez; worker spawn öncesinde anlık boş RAM denetlenir. Bu profil gerçek bir 8 GB makinenin kabul testini ikame etmez.
 
-Web aramasını açmak arama terimini seçilen sağlayıcıya gönderir. Kaynak takibi ve içerik edinimi ilgili kamu sitelerine bağlanır. Notlar, SQLite, hash'ler ve analiz çıktıları kullanıcı cihazında kalır. Cloud analiz varsayılan olarak kapalıdır. Renderer token, shell veya dosya sistemine doğrudan erişmez.
+Web aramasını açmak arama terimini seçilen sağlayıcıya gönderir. Kaynak takibi ve içerik edinimi ilgili kamu sitelerine bağlanır. Yerel arşiv, SQLite, hash'ler ve analiz çıktıları kullanıcı cihazında kalır. Cloud analiz varsayılan olarak kapalıdır. Renderer token, shell veya dosya sistemine doğrudan erişmez.
 
 Resmî karar metadata'sı kapsamlı karar metni değildir. Kaynakta yayımlanma tarihi bulunmadığında karar tarihi bu adla gösterilir. Servis yapılandırılmamışsa veya yanıt alınamıyorsa arayüz bunu açıkça belirtir.
 

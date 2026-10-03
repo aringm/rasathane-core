@@ -4,11 +4,11 @@ Sahip: **Av. Mehmet Arın Gülüm**. Tarih: 3 Ekim 2026.
 
 ## Ürün
 
-Tek Rasathane: kaynak takibi, ayrıntılı analiz, kaynaklı araştırma ve yerel çalışma alanı. Gözlemevi'nin analiz çıktısı aynı ürünün Analiz görünümüdür. Radar/Gözlemevi ayrı ürün adı veya ayrı indirme olarak sunulmaz.
+Tek Rasathane: kaynak takibi, ayrıntılı analiz, kaynaklı araştırma ve kişisel gündem. Gözlemevi'nin analiz çıktısı aynı ürünün Analiz görünümüdür. Radar/Gözlemevi ayrı ürün adı veya ayrı indirme olarak sunulmaz.
 
 ## Kimlik
 
-Muhakeme'nin faithful HQ logo style guide'ı görsel olarak incelendi. Aile ilişkisi terazi kopyasıyla değil, bakır yüzey, krem çizgi ve geometrik biçimle kurulur. Rasathane'nin bağımsız işareti faceted kare içindeki lens ve yörüngedir: farklı kaynaklar tek inceleme odağında buluşur.
+Rasathane, web sitesinde kullanılan **r** işaretini masaüstünde de kullanır. Muhakeme logo ailesiyle ilişkili tipografi ve renk dili korunur. İşaret masaüstü, web sitesi ve kurulum paketinde tutarlı biçimde yer alır.
 
 | Token      | Değer     | Rol                  |
 | ---------- | --------- | -------------------- |
@@ -29,16 +29,16 @@ Webde ana imza kaynakların yörünge/lens diyagramıdır. Sol hizalı ürün va
 Rasathane     Ürün · Veri ve kaynak · Fiyat       Hesap · İndirme
 Kaynakları izle.              kaynak yörüngeleri
 Bağlantıyı çözümle.           tek inceleme odağı
-Araştırmanı biriktir.         yerel çalışma alanı
-                 takip → analiz → araştır → çalışma alanı
+Gündemi değerlendir.          kişisel ilgi ve proje bağlamı
+                 takip → analiz → araştır → kişisel gündem
 Yerel çekirdek / yönetilen hizmet                  49 TL / ay
 ```
 
-Masaüstünde altı ana sekme: Akış, Analiz, Araştır, Çalışma alanı, Konu takibi, Ayarlar. Analiz künyesi, kısa/ayrıntılı özet, kişisel analiz, kaynak sinyalleri, doğrulama, zihin haritası, bilgi değeri, aşamalar, artifact'lar ve teknik provenance korunur. Kütüphane Çalışma alanı içinde yer alır.
+Masaüstünde dört ana sekme header’ın orta eksenindedir: **Akış, Analiz, Araştır, Kaynaklar**. Profil ve Ayarlar erişimi header’ın sağında bulunur. Analiz künyesi, kısa/ayrıntılı özet, kişisel analiz, kaynak sinyalleri, doğrulama, zihin haritası, bilgi değeri, aşamalar, artifact’lar ve teknik provenance korunur. Geçmiş çıktılar Analiz görünümündeki **Analiz arşivi** içinde açılır. Kişisel gündem yalnız ilgi alanları ve proje açıklamasını kullanır. Çalışma alanı ve konu takibi arayüzleri kaldırılmıştır; eski kayıtlar arşiv ve tam export’ta veri kaybı olmadan korunur.
 
 ## Gözden geçirme
 
-İlk fikirde yalnız büyük bir marka işareti vardı; bu, ürünün takip/inceleme/toplama işini açıklamıyordu. İmza bu yüzden kaynak yörüngelerine ve tek odak noktasına dönüştürüldü. Bakır renk aile gereğidir; dekoratif gradient wash ve sürekli animasyon eklenmez. Sekmeler, gerçek veri listeleri ve editörler kullanıcının işini öne çıkarır.
+Mevcut r işareti ve marka renkleri korunur. Dekoratif gradient wash ve sürekli animasyon eklenmez. Sekmeler, gerçek veri listeleri, sohbet ve kaynak yönetimi kullanıcının işini öne çıkarır. 1K, 3K ve 4K ekranlar ile %150/%200 ölçeklerde okunabilirlik ve kontrol erişimi ayrı doğrulanır; matris ve makbuzlar [0.8 kapsam belgesinde](CALISMA-KONU-KALDIRMA-RESPONSIVE-0.8.md) tutulur.
 
 ## Davranış ve doğrulama
 
@@ -59,7 +59,7 @@ Akış gerçek kaynak listesini, son kontrol zamanı ve hatalarını gösterir. 
 
 İşlem listesi kısa kayıtları okur; ayrıntılı sonuç yalnız açıldığında veya etkin job izlenirken tek-job endpoint'inden edinilir. Ayarlardaki gerçek `analysis_profile`, analiz girdisinin profil etiketiyle aynıdır. Yerel kitaplıktaki kısaltılmış metin önizleme olarak işaretlenir; tam kayıt veritabanı ve dışa aktarma dosyasında korunur.
 
-Hesap paneli native Muhakeme PKCE bağlantısını kullanır. Cihazdaki oturum kaydı hizmetin etkin olduğuna kanıt sayılmaz; plan, sunucu zamanı ve deneme uygunluğu entitlement yanıtıyla doğrulanır. 14 günlük deneme ayrı kullanıcı düğmesiyle başlatılır; yalnız `deneme_baslatilabilir === true` olduğunda kullanılabilir. Oturum geçersizleştiğinde giriş düğmesi yeniden görünür. Yerel çıkış sunucuya erişilemediğinde de tamamlanabilir ve bu durum kullanıcıya söylenir.
+Hesap paneli native Muhakeme e-posta ve doğrulama kodu girişini kullanır. Cihazdaki oturum kaydı hizmetin etkin olduğuna kanıt sayılmaz; plan, sunucu zamanı ve deneme uygunluğu entitlement yanıtıyla doğrulanır. 14 günlük deneme ayrı kullanıcı düğmesiyle başlatılır; yalnız `deneme_baslatilabilir === true` olduğunda kullanılabilir. Oturum geçersizleştiğinde giriş düğmesi yeniden görünür. Yerel çıkış sunucuya erişilemediğinde de tamamlanabilir ve bu durum kullanıcıya söylenir.
 
 İlk kurulum yerel profil ve web tercihini kaydeder; model indirmesini kendiliğinden başlatmaz. Paketlenen Gemma 4 sürümü Apache 2.0, BGE MIT lisanslıdır. Checkbox lisans bildirimlerinin okunması ve yaklaşık 3,1 GB indirme isteğidir; ek bir Gemma kullanım koşulu kabulü oluşturmaz. Kurulum durumu native indirme makbuzu ve checksum sonucundan okunur. Windows Türkçe ses kurulumu açıkça anlatılır; bulunmayan ses motoru hazır gösterilmez.
 
@@ -67,11 +67,16 @@ Bu paket temel 8 GB profilini içerir. 16 GB profili, native model metadata'sın
 
 Analiz ekranındaki bulut sayacı yalnız kaydedilen bulut LLM çağrılarını anlatır. Sıfır değer kaynak edinimi, web doğrulaması ve ses motorunun bütün internet trafiği için kanıt sayılmaz. Bu aşamalar ayrı gösterilir.
 
-Lazy job geçişinden sonra gerçek araştırma akışı tekrar doğrulandı: yeni araştırma POST 202 → tek-job GET 200 → bir Türkçe yerel not, sıfır web sonucu. Geçmiş araştırma kısa job listesindeki düğmeden tek-job GET ile yeniden açıldı; sorgu ve çalışma alanı da geri yüklendi.
+Araştırma tek konuşma görünümünü kullanır; konuşma geçmişi header’da açılır. Yeni sorular yerel arşivde ve açıkça seçildiğinde web’de aranır. Yeni işler çalışma alanı scope’u almaz; eski konuşmalar okunabilir ve devam sorularıyla sürdürülebilir. Konu takibi scheduler’ı kaldırılmıştır. Eski alan/not/konu kayıtları tam export’ta korunur.
 
 Native dışa aktarma, dosya seçme dialog'u ve main process'teki stream/atomic yazma işlemini kullanır. Arayüz yalnız `saved/path/bytes/sha256` makbuzu geldiğinde kaydedildi der; iptal ayrı durumdur. Browser preview JSON/Blob indirmesini tarayıcıya iletir.
 
-## Doğrulama kaydı · 3 Ekim 2026
+## Önceki revizyonların doğrulama kaydı · 3 Ekim 2026
+
+Aşağıdaki tablo ve artifact testleri tarihsel kanıtlardır. Çalışma alanı veya
+eski gezinme içeren satırlar 0.8 arayüzü olarak okunmamalıdır. Güncel kaldırma
+ve responsive kabulü [0.8 kapsam belgesinde](CALISMA-KONU-KALDIRMA-RESPONSIVE-0.8.md)
+ayrıca kaydedilir.
 
 | Kontrol                                   | Sonuç                                                                                                                                                                            |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

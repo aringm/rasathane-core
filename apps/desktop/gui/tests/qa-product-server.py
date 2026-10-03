@@ -59,10 +59,9 @@ api._service = service
 # Persist a real source-bound agenda in the isolated fixture. No publisher
 # request or model download is made; the enabled source was checked above.
 store.save_agenda_profile({
-    "enabled": False, "use_local_model": False, "include_topics": False,
+    "enabled": False, "use_local_model": False,
     "interests": "Başvuru süresi ve Türk hukuku",
     "project_context": "Başvuru iş akışındaki sürelerin incelenmesi",
-    "workspace_ids": [space["id"]],
 })
 store.update_feed(news_feed["id"], enabled=True)
 agenda_job = service.submit("agenda", {})
@@ -75,12 +74,20 @@ for index in range(1, 56):
         "research",
         {
             "query": f"Uzun QA geçmişi · tur {index:02d}",
-            "workspace_id": space["id"],
             "web": False,
             **({"conversation_id": archive_id} if archive_id else {}),
         },
     )
     archive_id = archive_job["request"]["conversation_id"]
+    if index == 1:
+        # Legacy scope is archived metadata, not a supported new-job field.
+        # Seed it directly in this isolated database to preserve the history test.
+        with store.connection() as conn:
+            conn.execute(
+                "UPDATE conversations SET workspace_id=? WHERE id=?",
+                (space["id"], archive_id),
+            )
+    assert "workspace_id" not in archive_job["request"]
     store.update_job(archive_job["id"], "completed", result={"answer": f"Arşiv yanıtı {index:02d}"})
 
 if "--seed-only" in sys.argv[2:]:

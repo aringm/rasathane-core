@@ -6,7 +6,6 @@ import { createResearchChat } from "./research-chat.js";
 import { createNewsSummary } from "./news-summary.js";
 import { createNewsBulletin } from "./news-bulletin.js";
 import { createPersonalAgenda } from "./personal-agenda.js";
-import { createWorkspaceExamples } from "./workspace-examples.js";
 // Birleşik ürünün gerçek kayıtları. Dış metinler yalnız güvenli DOM helper'ıyla yazılır.
 import { recordDate } from "./record-provenance.js";
 
@@ -22,7 +21,6 @@ export function createProductUI({
   let state = null;
   let unlocked = false;
   let authEpoch = 0;
-  let activeWorkspace = null;
   let currentView = "akis";
   let lastSuccess = null;
   let loadingPromise = null;
@@ -62,7 +60,7 @@ export function createProductUI({
     note: "Not",
     article: "Kaynak",
     web: "Web kaynağı",
-    web_source: "Konu / web kaynağı",
+    web_source: "Web kaynağı",
     bulletin: "Bülten",
   };
   const feedRefresh = $("kaynak-kontrol-btn");
@@ -329,189 +327,6 @@ export function createProductUI({
     sourcesUI.update(state?.sources || []);
     dashboard.update(state || {});
   }
-  function renderTopics() {
-    const topics = state?.topics || [];
-    $("konu-liste").replaceChildren(
-      ...(topics.length
-        ? topics.map((topic) => {
-            const webEnabled = !!state?.settings?.web_enabled;
-            const button = el(
-              "button",
-              {
-                type: "button",
-                class: "btn btn-ikincil mini",
-                disabled: !webEnabled,
-                title: webEnabled
-                  ? "Konu için web kaynaklarını kontrol et"
-                  : "Konu kontrolü için Ayarlar'da web aramasını açın",
-              },
-              "Şimdi kontrol et",
-            );
-            button.addEventListener("click", async () => {
-              button.disabled = true;
-              try {
-                const job = await api(
-                  `/topics/${encodeURIComponent(topic.id)}/refresh`,
-                  { method: "POST" },
-                );
-                await waitJob(job, $("konu-durum"));
-                await load();
-                message(
-                  $("konu-durum"),
-                  "Konu kontrolü tamamlandı. Bulunan kaynakları Sonuçları aç düğmesiyle inceleyebilirsiniz.",
-                );
-              } catch (error) {
-                message($("konu-durum"), errorMessage(error), true);
-              } finally {
-                button.disabled = false;
-              }
-            });
-            const results = el("button", { type: "button", class: "btn btn-ikincil mini topic-results", onclick: async () => {
-              results.disabled = true;
-              try {
-                const data = await api(`/topics/${encodeURIComponent(topic.id)}`);
-                const result = data.latest_result;
-                topicResultBody.replaceChildren(
-                  el("h3", {}, topic.name),
-                  el("p", { class: "field-note" }, topic.query),
-                  ...(result ? [
-                    el("p", {}, `${(result.web_results || []).length} kaynak · Son başarılı kontrolün sonuçları`),
-                    ...(result.web_results || []).map((item) => record(item)),
-                    ...(!result.web_results?.length ? [empty("Son kontrol bu sorguyla kaynak bulamadı.")] : []),
-                    ...(result.errors || []).map((text) => el("p", { class: "field-note" }, text)),
-                  ] : [empty("Henüz tamamlanmış kontrol yok. Web aramasını açıp Şimdi kontrol et düğmesini kullanın.")]),
-                );
-                topicResultDialog.showModal();
-              } catch (error) { message($("konu-durum"), errorMessage(error), true); }
-              finally { results.disabled = false; }
-            } }, "Sonuçları aç");
-            return el(
-              "article",
-              { class: "record topic-record" },
-              el(
-                "div",
-                {},
-                el("h3", {}, topic.name),
-                el("p", {}, topic.query),
-                el(
-                  "div",
-                  { class: "record-meta" },
-                  date(topic.last_refreshed_at),
-                  el("span", {}, `Yeni kaynak: ${count(topic.new_count)}`),
-                ),
-                topic.last_error
-                  ? el(
-                      "p",
-                      { class: "record-error" },
-                      errorMessage(topic.last_error),
-                    )
-                  : null,
-                !webEnabled
-                  ? el(
-                      "p",
-                      { class: "field-note" },
-                      "Konu kontrolü için Ayarlar'da web aramasını açın.",
-                    )
-                  : null,
-              ),
-              el("div", { class: "form-actions" }, button, results),
-            );
-          })
-        : [
-            empty("Henüz takip konusu yok. Bir isim ve arama sorgusu ekleyin."),
-          ]),
-    );
-  }
-  function renderWorkspaces() {
-    const workspaces = state?.workspaces || [];
-    if (
-      activeWorkspace &&
-      !workspaces.some((item) => item.id === activeWorkspace)
-    )
-      activeWorkspace = null;
-    if (!activeWorkspace && workspaces.length)
-      activeWorkspace = workspaces[0].id;
-    $("calisma-alanlar").replaceChildren(
-      ...(workspaces.length
-        ? workspaces.map((workspace) =>
-            el(
-              "button",
-              {
-                type: "button",
-                class: "workspace-button",
-                "aria-pressed": String(workspace.id === activeWorkspace),
-                onclick: () => {
-                  activeWorkspace = workspace.id;
-                  renderWorkspaces();
-                  loadNotes();
-                },
-              },
-              workspace.name,
-            ),
-          )
-        : [empty("Henüz çalışma alanı yok.")]),
-    );
-    const previous = $("arastir-alan").value;
-    $("arastir-alan").replaceChildren(
-      el("option", { value: "" }, "Tüm yerel kayıtlar"),
-      ...workspaces.map((workspace) =>
-        el("option", { value: workspace.id }, workspace.name),
-      ),
-    );
-    if (workspaces.some((workspace) => workspace.id === previous))
-      $("arastir-alan").value = previous;
-    $("not-form").classList.toggle("gizli", !activeWorkspace);
-    $("calisma-export").disabled = !state;
-    const selected = workspaces.find(
-      (workspace) => workspace.id === activeWorkspace,
-    );
-    message(
-      $("calisma-durum"),
-      selected
-        ? `${selected.name} çalışma alanı`
-        : "Bir çalışma alanı oluşturun. Notlarınız ve araştırma kayıtlarınız bu alanda birikir.",
-    );
-    renderLibrary();
-  }
-  function renderLibrary() {
-    const items = (state?.library || []).filter(
-      (item) =>
-        item.kind !== "note" &&
-        (!activeWorkspace ||
-          item.workspace_id === activeWorkspace ||
-          item.workspace_id == null),
-    );
-    $("yerel-kitaplik").replaceChildren(
-      ...(items.length
-        ? items.map((item) =>
-            record(item, {
-              action: item.provenance
-                ? el(
-                    "details",
-                    { class: "source-provenance" },
-                    el("summary", {}, "Kaynak kaydı"),
-                    ...Object.entries(item.provenance)
-                      .filter(([, value]) =>
-                        ["string", "number", "boolean"].includes(typeof value),
-                      )
-                      .map(([key, value]) =>
-                        el(
-                          "p",
-                          {},
-                          `${{ source_id: "Kaynak kimliği", version_id: "Kaynak sürümü", content_hash: "İçerik hash'i", provider: "Edinim sağlayıcısı", url: "Kaynak adresi", fetch_status: "Edinim durumu" }[key] || key}: ${String(value).slice(0, 300)}`,
-                        ),
-                      ),
-                  )
-                : null,
-            }),
-          )
-        : [
-            empty(
-              "Bu alanda kayıtlı kaynak yok. Bir araştırma başlatın veya bağlantıyı analiz edin.",
-            ),
-          ]),
-    );
-  }
   function renderJobs() {
     const jobs = state?.jobs || [];
     jobList.replaceChildren(
@@ -590,7 +405,7 @@ export function createProductUI({
                 el(
                   "h3",
                   {},
-                  `${kindLabels[job.kind] || (job.kind === "refresh" ? "Konu kontrolü" : "Kaynak kontrolü")} · ${jobLabels[job.status] || "Durum bilinmiyor"}`,
+                  `${kindLabels[job.kind] || "Kaynak kontrolü"} · ${jobLabels[job.status] || "Durum bilinmiyor"}`,
                 ),
                 el(
                   "p",
@@ -607,37 +422,6 @@ export function createProductUI({
           })
         : [empty("Henüz başlatılan işlem yok.")]),
     );
-  }
-  async function loadNotes() {
-    const workspace = activeWorkspace;
-    if (!workspace) {
-      $("not-liste").replaceChildren(
-        empty("Not yazmak için bir çalışma alanı oluşturun."),
-      );
-      return;
-    }
-    $("not-liste").replaceChildren(empty("Notlar yükleniyor…"));
-    try {
-      const result = await api(
-        `/notes?workspace_id=${encodeURIComponent(workspace)}`,
-      );
-      if (workspace !== activeWorkspace) return;
-      const items = result.items || [];
-      $("not-liste").replaceChildren(
-        ...(items.length
-          ? items.map((item) =>
-              record({ ...item, kind: "note" }, { full: true }),
-            )
-          : [
-              empty(
-                "Henüz not yok. İlk bulgunuzu yukarıdaki editöre kaydedin.",
-              ),
-            ]),
-      );
-    } catch (error) {
-      if (workspace === activeWorkspace)
-        $("not-liste").replaceChildren(empty(errorMessage(error)));
-    }
   }
   function applyTheme(theme) {
     const dark =
@@ -680,12 +464,10 @@ export function createProductUI({
         state = await api("/state");
         lastSuccess = new Date().toISOString();
         renderFeed();
-        renderTopics();
-        renderWorkspaces();
         renderSettings();
         sourceChat.unlock();
         agenda.unlock();
-        agenda.update(state.agenda, state.workspaces);
+        agenda.update(state.agenda);
         renderJobs();
         // İlk açılışta motor hazır olmadan geçmiş isteği gönderme.
         research.refreshHistory();
@@ -693,9 +475,8 @@ export function createProductUI({
         const counts = state.counts || {};
         message(
           loadStatus,
-          `${count(counts.articles)} içerik · ${count(counts.workspaces)} çalışma alanı · Son okuma: ${date(lastSuccess)}`,
+          `${count(counts.articles)} içerik · Son okuma: ${date(lastSuccess)}`,
         );
-        if (currentView === "calisma") await loadNotes();
         try {
           if (
             !setupDismissed &&
@@ -807,8 +588,8 @@ export function createProductUI({
       safeURL(item.url) && item.analysis_supported !== false && item.provenance?.analysis_supported !== false && !["official_metadata", "managed_summary"].includes(item.provenance?.text_scope)
         ? el("button", { type: "button", class: "btn btn-ikincil mini", onclick: () => { $("url").value = item.url; $("url").dispatchEvent(new Event("input")); setView("analiz"); $("url").focus(); } }, "Derinlemesine analiz") : null) }) });
   const draft = createSettingsDraft({
-    read: () => ({ theme: $("urun-tema").value, analysis_profile: $("urun-profil").value, search_provider: $("urun-arama-saglayici").value, topic_refresh_minutes: Number($("urun-takip-sikligi").value), web_enabled: $("urun-web").checked }),
-    write: value => { $("urun-tema").value = value.theme; $("urun-profil").value = value.analysis_profile; $("urun-arama-saglayici").value = value.search_provider; $("urun-takip-sikligi").value = value.topic_refresh_minutes; $("urun-web").checked = value.web_enabled; },
+    read: () => ({ theme: $("urun-tema").value, analysis_profile: $("urun-profil").value, search_provider: $("urun-arama-saglayici").value, web_enabled: $("urun-web").checked }),
+    write: value => { $("urun-tema").value = value.theme; $("urun-profil").value = value.analysis_profile; $("urun-arama-saglayici").value = value.search_provider; $("urun-web").checked = value.web_enabled; },
     onState: detail => window.dispatchEvent(new CustomEvent("rasathane:settings-state", { detail })),
   });
   window.addEventListener("rasathane:settings-edited", () => draft.changed());
@@ -822,15 +603,6 @@ export function createProductUI({
   bulletin.node.before(agenda.node);
   const bulletinStyle = el("link", { rel: "stylesheet", href: "./bulletin.css" });
   document.head.append(bulletinStyle);
-  const topicResultBody = el("div", { class: "record-list", id: "konu-sonuc-liste" });
-  const topicResultClose = el("button", { type: "button", class: "btn btn-ikincil", onclick: () => topicResultDialog.close() }, "Kapat");
-  const topicResultDialog = el("dialog", { class: "setup-dialog", id: "konu-sonuc-dialog", "aria-labelledby": "konu-sonuc-baslik" },
-    el("div", { class: "page-heading" }, el("h2", { id: "konu-sonuc-baslik" }, "Takip sonuçları"), topicResultClose), topicResultBody);
-  document.body.append(topicResultDialog);
-  const examples = createWorkspaceExamples({ el, api, onCreated: async () => { await load(); await loadNotes(); } });
-  $("gorunum-calisma").querySelector(".page-heading").after(examples.node);
-  $("gorunum-calisma").querySelector(".page-heading p").textContent = "Notlarınızı ve bu alana bağlı araştırmaları bir arada tutun. Konu takibi tüm alanlardan bağımsız çalışır.";
-  $("yerel-kitaplik").before(el("p", { class: "field-note" }, "Bu alana bağlı araştırmalar ve ortak kitaplıktaki kayıtlar gösterilir. Araştır’da alan seçtiğinizde o alanın not ve kaynaklarıyla genel haberler aranır; ortak konu kaynaklarını aramak için Tüm yerel kayıtlar’ı seçin."));
   function renderResearch(result) {
     research.showResult(result);
   }
@@ -881,59 +653,6 @@ export function createProductUI({
   $("kaynaklar-yenile").addEventListener("click", load);
   $("kaynaklar-kontrol").addEventListener("click", event => refreshFeeds(null, event.currentTarget));
   $("akis-kaynaklar-git").addEventListener("click", () => setView("kaynaklar"));
-  $("calisma-ekle-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-    submit(event.currentTarget, $("calisma-durum"), async () => {
-      const created = await api("/workspaces", {
-        method: "POST",
-        body: { name: $("calisma-ad").value.trim() },
-      });
-      $("calisma-ad").value = "";
-      await load();
-      activeWorkspace = created.id;
-      renderWorkspaces();
-      await loadNotes();
-    });
-  });
-  $("not-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-    submit(event.currentTarget, $("not-sonuc"), async () => {
-      if (!activeWorkspace) throw new Error("Önce bir çalışma alanı seçin.");
-      await api("/notes", {
-        method: "POST",
-        body: {
-          workspace_id: activeWorkspace,
-          title: $("not-baslik").value.trim(),
-          body: $("not-govde").value.trim(),
-        },
-      });
-      $("not-baslik").value = "";
-      $("not-govde").value = "";
-      message($("not-sonuc"), "Not kaydedildi.");
-      await loadNotes();
-    });
-  });
-  $("konu-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-    submit(event.currentTarget, $("konu-durum"), async () => {
-      await api("/topics", {
-        method: "POST",
-        body: {
-          name: $("konu-ad").value.trim(),
-          query: $("konu-sorgu").value.trim(),
-        },
-      });
-      $("konu-ad").value = "";
-      $("konu-sorgu").value = "";
-      await load();
-      message(
-        $("konu-durum"),
-        state?.settings?.web_enabled
-          ? "Konu eklendi. İlk kontrol için Şimdi kontrol et'e basın."
-          : "Konu eklendi. Kontrol başlatmak için Ayarlar'da web aramasını açın.",
-      );
-    });
-  });
   $("urun-ayar-form").addEventListener("submit", (event) => {
     event.preventDefault();
     submit(event.currentTarget, $("urun-ayar-sonuc"), async () => {
@@ -951,54 +670,6 @@ export function createProductUI({
       message($("urun-ayar-sonuc"), draft.hasChanges() ? "Önceki değişiklikler kaydedildi; yeni değişiklikler henüz kaydedilmedi." : "Ayarlar kaydedildi.");
       onSettings?.();
     });
-  });
-  $("calisma-export").addEventListener("click", async () => {
-    const button = $("calisma-export");
-    button.disabled = true;
-    try {
-      if (window.rasathane) {
-        if (!window.rasathane.exportData)
-          throw new Error(
-            "Bu uygulama sürümünde yerel dışa aktarma bağlantısı bulunamadı.",
-          );
-        const receipt = await window.rasathane.exportData(
-          activeWorkspace || null,
-        );
-        if (receipt.cancelled) {
-          message($("calisma-durum"), "Dışa aktarma iptal edildi.");
-          return;
-        }
-        if (!receipt.saved || !receipt.path || !receipt.sha256)
-          throw new Error("Dışa aktarma makbuzu doğrulanamadı.");
-        message(
-          $("calisma-durum"),
-          `Dışa aktarma kaydedildi: ${receipt.path} (${count(receipt.bytes)} bayt). SHA256: ${receipt.sha256}`,
-        );
-        return;
-      }
-      const data = await api(
-        "/export" +
-          (activeWorkspace
-            ? `?workspace_id=${encodeURIComponent(activeWorkspace)}`
-            : ""),
-      );
-      const url = URL.createObjectURL(
-        new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
-      );
-      const anchor = el("a", {
-        href: url,
-        download: "rasathane-calisma-alani.json",
-      });
-      document.body.append(anchor);
-      anchor.click();
-      anchor.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      message($("calisma-durum"), "JSON indirmesi tarayıcıya iletildi.");
-    } catch (error) {
-      message($("calisma-durum"), errorMessage(error), true);
-    } finally {
-      button.disabled = false;
-    }
   });
   function accountMessage(text, isError = false) {
     message(accountNotice, text, isError);
@@ -1365,7 +1036,6 @@ export function createProductUI({
       authEpoch++;
       state = null;
       lastSuccess = null;
-      activeWorkspace = null;
       clearTimeout(modelTimer);
       pendingJobs.clear();
       research.reset();
@@ -1375,14 +1045,9 @@ export function createProductUI({
       dashboard.reset();
       sourcesUI.reset();
       sourceChat.reset();
-      topicResultBody.replaceChildren();
-      topicResultDialog.close();
       for (const id of [
         "akis-liste",
         "kaynak-liste",
-        "not-liste",
-        "konu-liste",
-        "calisma-alanlar",
       ])
         $(id).replaceChildren();
     },
@@ -1392,8 +1057,7 @@ export function createProductUI({
       if (!unlocked) return;
       if (view === "arastir") research.refreshHistory();
       currentView = view;
-      if (view === "calisma") loadNotes();
-      if ((view === "akis" || view === "konular" || view === "kaynaklar") && !pendingJobs.size) load();
+      if ((view === "akis" || view === "kaynaklar") && !pendingJobs.size) load();
     },
   };
 }

@@ -18,22 +18,18 @@ export function createPersonalAgenda({ el, api, bulletin, onChanged }) {
   const projects = el("textarea", { id: "gundem-projeler", maxlength: 4000, placeholder: "Üzerinde çalıştığınız projeler ve karar verirken önem verdiğiniz noktalar" });
   const enabled = el("input", { id: "gundem-otomatik", type: "checkbox" });
   const model = el("input", { id: "gundem-yerel-model", type: "checkbox" });
-  const topics = el("input", { id: "gundem-konular", type: "checkbox" });
   const interval = el("select", { id: "gundem-siklik" }, ...[15, 30, 60, 180, 360, 720, 1440].map(value => el("option", { value }, value < 60 ? `${value} dakikada bir` : `${value / 60} saatte bir`)));
   const windowHours = el("select", { id: "gundem-aralik" }, ...[6, 12, 24, 48, 72, 168].map(value => el("option", { value }, value <= 24 ? `Son ${value} saat` : `Son ${value / 24} gün`)));
   const limit = el("select", { id: "gundem-adet" }, ...[3, 5, 8, 10, 15, 20].map(value => el("option", { value }, `${value} haber`)));
-  const workspaceList = el("div", { class: "agenda-workspaces" });
   const saveStatus = el("p", { class: "field-note full-row", id: "gundem-profil-durum", role: "status" });
   const save = el("button", { type: "submit", class: "btn", id: "gundem-profil-kaydet" }, "Profili kaydet");
   const form = el("form", { id: "gundem-profil-form" },
     el("label", {}, "İlgi alanlarım", interests), el("label", {}, "Projelerim ve önceliklerim", projects),
-    el("div", { class: "full-row" }, el("p", { class: "field-note" }, "Değerlendirmeye katılacak çalışma alanları"), workspaceList),
     el("label", {}, "Kontrol sıklığı", interval), el("label", {}, "Haber aralığı", windowHours), el("label", {}, "Bülten uzunluğu", limit),
     el("p", { class: "field-note full-row" }, "8 GB RAM profilinde bülten en çok 8 haber içerir. Daha uzun bültenler için Ayarlar’dan daha yüksek RAM profili seçebilirsiniz; yerel model ilk 8 haberi değerlendirir."),
     el("label", { class: "check-line" }, enabled, "Uygulama açıkken otomatik güncelle"),
     el("label", { class: "check-line" }, model, "Bu bilgisayardaki modelle değerlendir"),
-    el("label", { class: "check-line" }, topics, "Takip ettiğim konuları da kullan"),
-    el("p", { class: "field-note full-row" }, "Profil, seçili alanların açıklamaları ve notları bu bilgisayardaki modelde işlenir. Model kullanılamazsa konu eşleşmeleri gösterilir; bunun model değerlendirmesi olmadığı belirtilir."),
+    el("p", { class: "field-note full-row" }, "İlgi alanlarınız ve proje bağlamınız bu bilgisayardaki modelde işlenir. Model kullanılamazsa konu eşleşmeleri gösterilir; bunun model değerlendirmesi olmadığı belirtilir."),
     el("div", { class: "form-actions full-row" }, save,
       el("button", { type: "button", class: "btn btn-ikincil", onclick: () => { if (profile && !saving) { dirty = false; write(profile); saveStatus.textContent = "Kayıtlı profil geri yüklendi."; } } }, "Değişiklikleri geri al")), saveStatus);
   const details = el("details", { class: "agenda-profile", id: "gundem-profil" }, el("summary", {}, "İlgi alanlarım ve proje bağlamım"), form);
@@ -41,14 +37,13 @@ export function createPersonalAgenda({ el, api, bulletin, onChanged }) {
     el("div", { class: "agenda-controls" }, generate, cancel, latestButton), status, statusDetails, modelNotice, details);
   function write(value) {
     interests.value = value.interests || ""; projects.value = value.project_context || "";
-    enabled.checked = !!value.enabled; model.checked = !!value.use_local_model; topics.checked = !!value.include_topics;
+    enabled.checked = !!value.enabled; model.checked = !!value.use_local_model;
     for (const [field, number] of [[interval, value.refresh_minutes], [windowHours, value.window_hours], [limit, value.max_items]]) {
       if (![...field.options].some(option => option.value === String(number))) field.append(el("option", { value: number }, String(number)));
       field.value = number;
     }
-    for (const checkbox of workspaceList.querySelectorAll("input")) checkbox.checked = (value.workspace_ids || []).includes(checkbox.value);
   }
-  function read() { return { enabled: enabled.checked, interests: interests.value.trim(), project_context: projects.value.trim(), workspace_ids: [...workspaceList.querySelectorAll("input:checked")].map(input => input.value), include_topics: topics.checked, refresh_minutes: Number(interval.value), window_hours: Number(windowHours.value), max_items: Number(limit.value), use_local_model: model.checked }; }
+  function read() { return { enabled: enabled.checked, interests: interests.value.trim(), project_context: projects.value.trim(), refresh_minutes: Number(interval.value), window_hours: Number(windowHours.value), max_items: Number(limit.value), use_local_model: model.checked }; }
   form.addEventListener("input", () => { dirty = true; saveStatus.textContent = "Kaydedilmemiş profil değişiklikleri var."; });
   form.addEventListener("change", () => { dirty = true; saveStatus.textContent = "Kaydedilmemiş profil değişiklikleri var."; });
   form.addEventListener("submit", async event => {
@@ -66,12 +61,10 @@ export function createPersonalAgenda({ el, api, bulletin, onChanged }) {
     finally { if (generation === epoch) { saving = false; save.disabled = false; } }
   });
   const timestamp = value => value ? new Date(value).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" }) : "Henüz yok";
-  function update(data, workspaces) {
+  function update(data) {
     if (!data || locked) return;
     profile = data.profile;
-    if (workspaces && !dirty) {
-      workspaceList.replaceChildren(...workspaces.map(workspace => el("label", { class: "check-line" }, el("input", { type: "checkbox", value: workspace.id }), workspace.name)));
-    }
+
     if (!dirty && profile) write(profile);
     const info = data.status || {}, job = info.job;
     modelError.textContent = (data.latest?.model_error || info.model_error || "").slice(0, 350);
@@ -96,7 +89,7 @@ export function createPersonalAgenda({ el, api, bulletin, onChanged }) {
       if (!busy) openWhenReady = false;
       if (!busy) status.textContent += ` ${info.notice || "Bu profil ve tarih aralığı için henüz kişisel gündem yok."}`;
     }
-    if (profile && !profile.interests && !profile.project_context && !(profile.workspace_ids || []).length) details.open = true;
+    if (profile && !profile.interests && !profile.project_context) details.open = true;
     schedule();
   }
   function schedule() { clearTimeout(timer); if (!locked) timer = setTimeout(() => void refresh(), busy ? 1800 : 30000); }
@@ -113,5 +106,5 @@ export function createPersonalAgenda({ el, api, bulletin, onChanged }) {
     try { await api("/agenda", { method: "POST", body: { refresh_sources: true } }); if (generation === epoch) { await refresh(); onChanged?.(); } }
     catch (error) { if (generation === epoch) { status.textContent = error.message; openWhenReady = false; busy = false; generate.disabled = false; } }
   }
-  return { node, update, run, unlock() { locked = false; }, reset() { epoch++; locked = true; clearTimeout(timer); profile = latest = latestId = jobId = null; dirty = busy = saving = openWhenReady = false; form.reset(); workspaceList.replaceChildren(); status.textContent = statusDetails.textContent = saveStatus.textContent = modelError.textContent = ""; latestButton.hidden = cancel.hidden = modelNotice.hidden = true; generate.disabled = save.disabled = false; } };
+  return { node, update, run, unlock() { locked = false; }, reset() { epoch++; locked = true; clearTimeout(timer); profile = latest = latestId = jobId = null; dirty = busy = saving = openWhenReady = false; form.reset(); status.textContent = statusDetails.textContent = saveStatus.textContent = modelError.textContent = ""; latestButton.hidden = cancel.hidden = modelNotice.hidden = true; generate.disabled = save.disabled = false; } };
 }

@@ -102,7 +102,7 @@ def test_source_scheduler_independent_from_topic_search_and_respects_source_cont
     backed_off = store.upsert_feed("Bekle", "https://example.org/later")
     store.mark_feed(recent["id"])
     store.record_feed_attempt(backed_off["id"], 600)
-    store.save_settings({"web_enabled": False, "topic_refresh_minutes": 0})
+    store.save_settings({"web_enabled": False})
     service._schedule()
     service._schedule()
     jobs = store.list_jobs()
