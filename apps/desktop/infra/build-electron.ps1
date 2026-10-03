@@ -1,10 +1,26 @@
 [CmdletBinding()]
-param([switch]$SkipTests, [switch]$ReuseCompiled)
+param([switch]$SkipTests, [switch]$ReuseCompiled, [switch]$Unsigned, [string]$CertificateThumbprint = $env:RASATHANE_SIGN_THUMBPRINT)
 $ErrorActionPreference = 'Stop'
 $desktopRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $guiRoot = Join-Path $desktopRoot 'gui'
 $package = Get-Content -LiteralPath (Join-Path $guiRoot 'package.json') -Raw | ConvertFrom-Json
 $version = $package.version
+$certificate = $null
+$signToolPath = $null
+if (-not $Unsigned) {
+  $now = Get-Date
+  $certificates = @(Get-ChildItem Cert:/CurrentUser/My -CodeSigningCert | Where-Object { $_.HasPrivateKey -and $_.NotBefore -le $now -and $_.NotAfter -gt $now })
+  if ($CertificateThumbprint) {
+    $thumbprint = ($CertificateThumbprint -replace '\s','').ToUpperInvariant()
+    if ($thumbprint -notmatch '^[0-9A-F]{40}$') { throw 'Code signing sertifika kimliği geçersiz.' }
+    $certificate = $certificates | Where-Object { $_.Thumbprint -eq $thumbprint } | Select-Object -First 1
+  } else {
+    $certificate = $certificates | Where-Object { $_.Subject -like '*IOT INN*' } | Sort-Object NotAfter -Descending | Select-Object -First 1
+  }
+  if (-not $certificate) { throw 'Geçerli code signing sertifikası bulunamadı. Geliştirici paketi için açıkça -Unsigned kullanın.' }
+  $signToolPath = (Get-ChildItem "${env:ProgramFiles(x86)}/Windows Kits/10/bin/*/x64/signtool.exe" -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1).FullName
+  if (-not $signToolPath -or (Get-AuthenticodeSignature -LiteralPath $signToolPath).Status -ne 'Valid') { throw 'Güvenilir Windows SDK SignTool bulunamadı.' }
+}
 $releaseDirectory = Join-Path $desktopRoot "releases/$version"
 $buildDirectory = Join-Path $guiRoot "dist-electron/$version"
 # Önceki release, kullanıcı verisi ve model cache'i build sırasında silinmez.
@@ -45,12 +61,38 @@ if ($LASTEXITCODE -ne 0) { throw 'PDF motoru/font kaynak eki ve yayın makbuzu d
 uv run --no-sync python (Join-Path $PSScriptRoot 'build-notices.py')
 if ($LASTEXITCODE -ne 0) { throw 'SBOM/lisans envanteri başarısız.' }
 Push-Location $guiRoot
+$signingEnvironment = @{}
+foreach ($name in @('RASATHANE_SIGN_THUMBPRINT','RASATHANE_SIGNTOOL_PATH','RASATHANE_UNSIGNED_BUILD')) { $signingEnvironment[$name] = [Environment]::GetEnvironmentVariable($name,'Process') }
 try {
-  pnpm exec electron-builder --win nsis --x64 "--config.directories.output=$buildDirectory"
+  $env:RASATHANE_UNSIGNED_BUILD = if ($Unsigned) { '1' } else { '0' }
+  $env:RASATHANE_SIGN_THUMBPRINT = if ($certificate) { $certificate.Thumbprint } else { '' }
+  $env:RASATHANE_SIGNTOOL_PATH = $signToolPath
+  pnpm exec electron-builder --win nsis --x64 "--config.directories.output=$buildDirectory" 2>&1 | Tee-Object -Variable builderOutput
   if ($LASTEXITCODE -ne 0) { throw 'Electron/NSIS build başarısız.' }
-} finally { Pop-Location }
+} finally {
+  foreach ($name in $signingEnvironment.Keys) { [Environment]::SetEnvironmentVariable($name,$signingEnvironment[$name],'Process') }
+  Pop-Location
+}
 $artifactName = "Rasathane-Setup-$version-x64.exe"
 $artifactPath = Join-Path $buildDirectory $artifactName
+$signatureChecks = @()
+$signatureEvents = @($builderOutput | ForEach-Object { $line=$_.ToString(); if ($line.StartsWith('RASATHANE_SIGNATURE ')) { $line.Substring(20) | ConvertFrom-Json } })
+foreach ($relative in @($artifactName,'win-unpacked/Rasathane.exe','win-unpacked/resources/elevate.exe')) {
+  $signature = Get-AuthenticodeSignature -LiteralPath (Join-Path $buildDirectory $relative)
+  if (-not $Unsigned -and ($signature.Status -ne 'Valid' -or -not $signature.TimeStamperCertificate -or $signature.SignerCertificate.Thumbprint -ne $certificate.Thumbprint)) { throw "Paket imzası/zaman damgası doğrulanamadı: $relative" }
+  $signatureChecks += [ordered]@{ file=$relative; status=$signature.Status.ToString(); timestamp=[bool]$signature.TimeStamperCertificate; signer_thumbprint=$signature.SignerCertificate.Thumbprint }
+}
+if (-not $Unsigned) {
+  $uninstallerName = "Rasathane-Setup-$version-x64.__uninstaller.exe"
+  $uninstallerPath = [IO.Path]::GetFullPath((Join-Path $buildDirectory $uninstallerName))
+  $uninstallerProof = @($signatureEvents | Where-Object { $_.path -eq $uninstallerPath -and $_.verified -eq $true -and $_.rfc3161_requested -eq $true -and $_.sha256 -match '^[a-f0-9]{64}$' })
+  if ($uninstallerProof.Count -ne 1) { throw 'NSIS kaldırıcı imzasının build makbuzu doğrulanamadı.' }
+  $signatureChecks += [ordered]@{ file=$uninstallerName; status='VerifiedDuringBuild'; verification='signtool /pa /all'; rfc3161_requested=$true; sha256=$uninstallerProof[0].sha256; signer_thumbprint=$certificate.Thumbprint }
+}
+# Pinned upstream binary'ler ve frozen motor imzalama sırasında değiştirilmez.
+foreach ($pair in @(@('infra/dist/ytanaliz-sidecar.exe','win-unpacked/resources/sidecar/ytanaliz-sidecar.exe'),@('infra/dist/worker/rasathane-worker.exe','win-unpacked/resources/worker/rasathane-worker.exe'),@('infra/vendor/tooling/typst/typst.exe','win-unpacked/resources/tooling/typst/typst.exe'))) {
+  if ((Get-FileHash -LiteralPath (Join-Path $desktopRoot $pair[0])).Hash -ne (Get-FileHash -LiteralPath (Join-Path $buildDirectory $pair[1])).Hash) { throw "Pinned/frozen binary değişti: $($pair[1])" }
+}
 $releasePath = Join-Path $releaseDirectory $artifactName
 Copy-Item -LiteralPath $artifactPath -Destination $releasePath -Force
 $hash = (Get-FileHash -LiteralPath $releasePath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -62,6 +104,7 @@ $manifest = [ordered]@{
   sidecar_sha256=(Get-FileHash -LiteralPath (Join-Path $desktopRoot 'infra/dist/ytanaliz-sidecar.exe')).Hash.ToLowerInvariant()
   worker_sha256=(Get-FileHash -LiteralPath (Join-Path $desktopRoot 'infra/dist/worker/rasathane-worker.exe')).Hash.ToLowerInvariant()
   code_signing=(Get-AuthenticodeSignature -LiteralPath $releasePath).Status.ToString()
+  signature_checks=$signatureChecks; unsigned_developer_build=[bool]$Unsigned
   model_setup='Pinned SHA256 download in wizard'; ram_profile='ram8, CPU, 4096 context'
   packaged_acceptance='pending'; built_at_utc=(Get-Date).ToUniversalTime().ToString('o')
 }

@@ -56,15 +56,15 @@
     },
     {
       "path": "README.md",
-      "source_sha256": "5c279f59ee976156a16db9e64e3846f90a69f26aa98c80ee21704c7eea6808d9",
-      "sha256": "5c279f59ee976156a16db9e64e3846f90a69f26aa98c80ee21704c7eea6808d9",
-      "bytes": 3958
+      "source_sha256": "062da4be6a665e30f56f5f95726febd792a462fd8c5cd4fa712acb21b4d662a1",
+      "sha256": "062da4be6a665e30f56f5f95726febd792a462fd8c5cd4fa712acb21b4d662a1",
+      "bytes": 4190
     },
     {
       "path": "apps/desktop/.env.example",
-      "source_sha256": "45f7c5a971fb7999e11bf8555c48ed1f714406aed101d80cea0a9898a7c5200b",
-      "sha256": "45f7c5a971fb7999e11bf8555c48ed1f714406aed101d80cea0a9898a7c5200b",
-      "bytes": 559
+      "source_sha256": "50093d3976ac1cbb79520e827f9f9e7b2bccb84c1b422cabf968cd27d019ae8f",
+      "sha256": "50093d3976ac1cbb79520e827f9f9e7b2bccb84c1b422cabf968cd27d019ae8f",
+      "bytes": 714
     },
     {
       "path": "apps/desktop/.gitignore",
@@ -787,10 +787,22 @@
       "bytes": 929
     },
     {
+      "path": "apps/desktop/gui/electron/sign-windows.cjs",
+      "source_sha256": "fc515aff1b9808ab3d15d1a7b0ea89f0870335bb7b63abd8e66e32e837ec0ad3",
+      "sha256": "fc515aff1b9808ab3d15d1a7b0ea89f0870335bb7b63abd8e66e32e837ec0ad3",
+      "bytes": 5910
+    },
+    {
+      "path": "apps/desktop/gui/electron/sign-windows.test.cjs",
+      "source_sha256": "8d571c4028bbd1c75976d1969c8c2b66dbb3450d9f8d5e7321b2cb470063f5b6",
+      "sha256": "8d571c4028bbd1c75976d1969c8c2b66dbb3450d9f8d5e7321b2cb470063f5b6",
+      "bytes": 11546
+    },
+    {
       "path": "apps/desktop/gui/package.json",
-      "source_sha256": "95872938af26900bfee96706ffd353b4350cb49a1924b1060905ab5eb328881d",
-      "sha256": "95872938af26900bfee96706ffd353b4350cb49a1924b1060905ab5eb328881d",
-      "bytes": 4005
+      "source_sha256": "c00c9d17f512b381e86c238aac583bfdb71bd626f781404f6a1a912f1c49b121",
+      "sha256": "c00c9d17f512b381e86c238aac583bfdb71bd626f781404f6a1a912f1c49b121",
+      "bytes": 4166
     },
     {
       "path": "apps/desktop/gui/pnpm-lock.yaml",
@@ -2348,9 +2360,9 @@
     },
     {
       "path": "apps/desktop/infra/build-electron.ps1",
-      "source_sha256": "af3e3adbb59a802fdee18b02e9303499a8ac891215c399bedd872296f34ea6ab",
-      "sha256": "af3e3adbb59a802fdee18b02e9303499a8ac891215c399bedd872296f34ea6ab",
-      "bytes": 4700
+      "source_sha256": "3618167ac1410b9f568f90bb66548c9b0f5893cca05781e4f93653a4d0e0cf35",
+      "sha256": "3618167ac1410b9f568f90bb66548c9b0f5893cca05781e4f93653a4d0e0cf35",
+      "bytes": 8828
     },
     {
       "path": "apps/desktop/infra/build-notices.py",

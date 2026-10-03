@@ -28,7 +28,7 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
-Site için `apps/web` içinde `pnpm lint` ve `pnpm build` kullanılır. Windows paketi `apps/desktop/infra/build-electron.ps1` ile üretilir. Model ağırlıkları ve uygulama verileri Git'e girmez.
+Site için `apps/web` içinde `pnpm lint` ve `pnpm build` kullanılır. Windows paketi `apps/desktop/infra/build-electron.ps1` ile üretilir. Release build geçerli certificate store/Windows SDK imzası ve zaman damgası ister; kendi geliştirici paketi için açıkça `-Unsigned` kullanılır. İmza hesabının kimlik bilgileri kaynak veya `.env` dosyalarına yazılmaz. Model ağırlıkları ve uygulama verileri Git'e girmez.
 
 ## Çalışma sınırları
 

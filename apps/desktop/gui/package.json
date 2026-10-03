@@ -60,6 +60,7 @@
       "electron/**/*",
       "!electron/*.test.cjs",
       "!electron/build-brand.cjs",
+      "!electron/sign-windows.cjs",
       "ui/**/*",
       "!ui/tests/**/*",
       "package.json"
@@ -112,6 +113,10 @@
       }
     ],
     "win": {
+      "signtoolOptions": {
+        "sign": "electron/sign-windows.cjs",
+        "signingHashAlgorithms": ["sha256"]
+      },
       "target": [
         {
           "target": "nsis",
