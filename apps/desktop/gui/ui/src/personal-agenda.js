@@ -2,7 +2,7 @@ export function createPersonalAgenda({ el, api, bulletin, onChanged }) {
   let epoch = 0, locked = true, saving = false, busy = false, timer, profile = null, dirty = false, latestId = null, latest = null, openWhenReady = false, jobId = null;
   const status = el("p", { class: "agenda-status", id: "gundem-durum", role: "status", "aria-live": "polite" });
   const statusDetails = el("p", { class: "field-note", id: "gundem-kaynak-durum" });
-  const modelNotice = el("details", { class: "agenda-model-notice", hidden: true }, el("summary", {}, "Model değerlendirmesi tamamlanamadı; konu eşleşmeleri kullanıldı."));
+  const modelNotice = el("details", { class: "agenda-model-notice", hidden: true }, el("summary", {}, "Model değerlendirmesi eksik kaldı; değerlendirilemeyen haberlerde konu eşleşmesi kullanıldı."));
   const modelError = el("p", { class: "field-note" }); modelNotice.append(modelError);
   const generate = el("button", { type: "button", class: "btn", id: "gundem-yenile", onclick: () => void run() }, "Kaynakları yenile ve gündem hazırla");
   const latestButton = el("button", { type: "button", class: "agenda-latest-link", id: "gundem-son-ac", hidden: true,
@@ -29,6 +29,7 @@ export function createPersonalAgenda({ el, api, bulletin, onChanged }) {
     el("label", {}, "İlgi alanlarım", interests), el("label", {}, "Projelerim ve önceliklerim", projects),
     el("div", { class: "full-row" }, el("p", { class: "field-note" }, "Değerlendirmeye katılacak çalışma alanları"), workspaceList),
     el("label", {}, "Kontrol sıklığı", interval), el("label", {}, "Haber aralığı", windowHours), el("label", {}, "Bülten uzunluğu", limit),
+    el("p", { class: "field-note full-row" }, "8 GB RAM profilinde bülten en çok 8 haber içerir. Daha uzun bültenler için Ayarlar’dan daha yüksek RAM profili seçebilirsiniz; yerel model ilk 8 haberi değerlendirir."),
     el("label", { class: "check-line" }, enabled, "Uygulama açıkken otomatik güncelle"),
     el("label", { class: "check-line" }, model, "Bu bilgisayardaki modelle değerlendir"),
     el("label", { class: "check-line" }, topics, "Takip ettiğim konuları da kullan"),

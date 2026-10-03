@@ -5,6 +5,7 @@ from __future__ import annotations
 import heapq
 import json
 import time
+import unicodedata
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -140,17 +141,96 @@ def _context_terms(ctx: dict[str, Any]) -> set[str]:
     return set(_words(" ".join(values)))
 
 
+def _grounded_quote(quote: str, source: str) -> str | None:
+    """Tipografik eşdeğerlik sonrası kesintisiz ORİJİNAL kaynak aralığını döndür."""
+    punctuation = str.maketrans({"’": "'", "‘": "'", "“": '"', "”": '"', "…": "..."})
+    quote = fold(_plain_text(quote)).translate(punctuation)
+    if len(quote) < 8:
+        return None
+    source = _plain_text(source)
+    normalized: list[str] = []
+    positions: list[int] = []
+    for position, character in enumerate(source):
+        value = fold(character).translate(punctuation)
+        normalized.append(value)
+        positions.extend([position] * len(value))
+    normalized_source = "".join(normalized)
+    start = normalized_source.find(quote)
+    while start >= 0:
+        end = positions[start + len(quote) - 1] + 1
+        while end < len(source) and unicodedata.combining(source[end]):
+            end += 1
+        original = source[positions[start] : end]
+        # Bir ellipsis'in yalnız bir/iki noktasını eşleştirmek tam alıntı değildir.
+        if fold(original).translate(punctuation) == quote:
+            return original
+        start = normalized_source.find(quote, start + 1)
+    return None
+
+
+class BatchEvaluations(list[dict[str, Any]]):
+    """Tamamlanan batch sonuçları ve kısmi başarısızlık açık birlikte taşınır."""
+
+    model_error: str | None = None
+
+
 def local_evaluate(payload: dict[str, Any], check: Callable[[], None]) -> list[dict[str, Any]]:
     """Kurulu yerel motoru RAM kilidiyle açar; model indirme veya cloud çağrısı yok."""
     from ytcore.config import get_config
 
+    deadline = time.monotonic() + 240
+
+    def bounded_check() -> None:
+        check()
+        if time.monotonic() >= deadline:
+            raise TimeoutError("Kişisel gündemin toplam 240 saniyelik model bütçesi doldu.")
+
+    def batches(host: str | None = None) -> BatchEvaluations:
+        results = BatchEvaluations()
+        for offset in range(0, min(len(payload["items"]), 8), 2):
+            try:
+                bounded_check()
+                batch_items = payload["items"][offset : offset + 2]
+                assessments = _local_evaluate(
+                    {**payload, "items": batch_items}, bounded_check, host_override=host
+                )
+                expected_ids = {i["id"] for i in batch_items}
+                accepted_ids: set[str] = set()
+                for assessment in assessments:
+                    if not isinstance(assessment, dict):
+                        continue
+                    item_id = assessment.get("id")
+                    if (
+                        not isinstance(item_id, str)
+                        or item_id not in expected_ids
+                        or item_id in accepted_ids
+                    ):
+                        continue
+                    results.append(assessment)
+                    accepted_ids.add(item_id)
+                if accepted_ids != expected_ids:
+                    results.model_error = (
+                        "Yerel model batch yanıtında eksik/geçersiz haber kimliği var."
+                    )
+            except Exception as exc:
+                from rasathane.product.service import JobCancelled
+
+                if isinstance(exc, JobCancelled):
+                    raise
+                check()  # Kullanıcı iptali kısmi model sonucu olarak yutulmaz.
+                if not results:
+                    raise
+                results.model_error = f"{type(exc).__name__}: {str(exc)[:250]}"
+                break
+        return results
+
     if get_config().motor_backend == "llamacpp":
         from ytcore.local.llamacpp import generation_session
 
-        with generation_session(check, profile=payload.get("analysis_profile")) as host:
-            check()
-            return _local_evaluate(payload, check, host_override=host)
-    return _local_evaluate(payload, check)
+        with generation_session(bounded_check, profile=payload.get("analysis_profile")) as host:
+            bounded_check()
+            return batches(host)
+    return batches()
 
 
 def _local_evaluate(
@@ -171,7 +251,8 @@ def _local_evaluate(
         "project_impact (proje açısından ihtiyatlı değerlendirme), suggested_action "
         "(inceleme/deneme/izleme önerisi), evidence_quote (verilen metinden aynen kısa alıntı) "
         "alanlarını üret. Yorumunu kaynakta kesinleşmiş sonuç gibi yazma. "
-        "İlgi ilişkisi yoksa açıkça belirt. Her metin alanı en çok 350 karakter. "
+        "İlgi ilişkisi yoksa açıkça belirt. Her yorum alanı en çok 180 karakter; "
+        "evidence_quote kaynak metninden en çok 120 karakterlik kesintisiz alıntı olsun. "
         'Yalnız JSON: {"items":[{"id":...,"importance":...,"relevance_reason":...,'
         '"project_impact":...,"suggested_action":...,"evidence_quote":...}]}'
     )
@@ -339,6 +420,7 @@ def build_agenda(
                 progress("agenda_model")
             evaluations = (evaluate or local_evaluate)(payload, check)
             check()
+            model_error = getattr(evaluations, "model_error", None)
             accepted = 0
             accepted_ids: set[str] = set()
             for assessment in evaluations[:8]:
@@ -362,11 +444,14 @@ def build_agenda(
                     for k in fields
                 ):
                     continue
-                quote = fold(_plain_text(assessment["evidence_quote"]))
-                source = fold(_plain_text((assessed["title"] + ". " + assessed["summary"])[:300]))
-                if len(quote) < 8 or quote not in source:
+                quote = _grounded_quote(
+                    assessment["evidence_quote"],
+                    (assessed["title"] + ". " + assessed["summary"])[:300],
+                )
+                if quote is None:
                     continue
                 assessed.update({k: _plain_text(assessment[k]) for k in fields})
+                assessed["evidence_quote"] = quote
                 assessed.update(
                     importance=assessment["importance"], evaluation_method="local_model"
                 )
@@ -375,7 +460,16 @@ def build_agenda(
             if not accepted:
                 raise ValueError("Model yanıtındaki kaynak alıntıları doğrulanamadı.")
             method = "local_model" if accepted == len(items) else "mixed"
+            if accepted < min(len(items), 8) and not model_error:
+                model_error = (
+                    f"Yerel model alıntıları {accepted}/{min(len(items), 8)} "
+                    "haber için doğrulanabildi."
+                )
         except Exception as exc:
+            from rasathane.product.service import JobCancelled
+
+            if isinstance(exc, JobCancelled):
+                raise
             check()  # İptal/oturum kapanışı fallback olarak yutulmaz.
             model_error = f"{type(exc).__name__}: {str(exc)[:250]}"
     check()
@@ -422,15 +516,27 @@ def build_agenda(
     }
     snapshot["content_hash"] = digest(json_text(snapshot))
     check()
-    if signature == previous.get("fingerprint") and method == "keyword_match":
+    evaluated_count = sum(i["evaluation_method"] == "local_model" for i in items)
+    if signature == previous.get("fingerprint"):
+        old_snapshot = (
+            store.get_bulletin(previous["bulletin_id"]) if previous.get("bulletin_id") else None
+        )
+        previous_count = sum(
+            i.get("evaluation_method") == "local_model"
+            for i in (old_snapshot or {}).get("items", [])
+        )
+    else:
+        previous_count = -1
+    if evaluated_count <= previous_count:
         return {
             "status": "unchanged",
             "bulletin_id": previous.get("bulletin_id"),
             "fingerprint": signature,
             "checked_at": stamp,
             "candidate_count": len(articles),
-            "method": method,
+            "method": previous.get("method"),
             "model_error": model_error,
+            "evaluated_count": previous_count,
         }
     return {
         "status": "updated",
@@ -441,4 +547,5 @@ def build_agenda(
         "snapshot": snapshot,
         "model_error": model_error,
         "method": method,
+        "evaluated_count": evaluated_count,
     }

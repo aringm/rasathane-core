@@ -19,6 +19,10 @@ alıntı, **Haberi aç** bağlantısında yayın bulunur. Yorum, yayıncının d
 sonucu olarak sunulmaz. Model kurulmamışsa veya tamamlayamazsa sözcük eşleşmesi
 açıkça etiketlenir; model indirme kurulum sihirbazındaki açık kullanıcı eylemidir.
 
+8 GB RAM profilinde bülten en çok 8 haber içerir. Daha yüksek RAM profilleri
+20 habere kadar derleme oluşturabilir; ilk 8 haber yerel modelle değerlendirilir,
+diğerleri konu eşleşmesi olarak etiketlenir.
+
 **Dinle** Türkçe bülten sesini hazırlar. Oynatıcıdan hız değiştirilebilir veya
 WAV indirilebilir. Önceki bültenler saklanır. **Yeni bülten oluştur**, akışta
 seçtiğiniz kategori/kaynak/tarih filtrelerinden ayrıca bir derleme oluşturur.

@@ -199,6 +199,17 @@ async def test_agenda_api_profile_validation_and_job_result(store, monkeypatch):
         assert result["status"]["source_count"] == 1
 
 
+def test_direct_model_cancellation_is_not_published_as_fallback(store):
+    store.save_agenda_profile({"use_local_model": True})
+
+    def cancelled(payload, check):
+        raise JobCancelled("Model değerlendirmesi iptal edildi.")
+
+    with pytest.raises(JobCancelled, match="iptal edildi"):
+        agenda.build_agenda(store, lambda: None, cancelled)
+    assert store.list_bulletins() == []
+
+
 def test_model_failure_retries_without_duplicate_history_and_cancel_during_model(
     store, monkeypatch
 ):
@@ -398,3 +409,186 @@ def test_status_reports_source_batch_progress_and_hides_stale_context(store, mon
     assert stale["status"]["latest_is_stale"] is True
     assert "bağlamı değişti" in stale["status"]["notice"]
     assert len(store.list_bulletins()) == 1
+
+
+def test_long_id_model_requests_are_batched_under_single_ram_lease(monkeypatch):
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+
+    from ytcore.local import llamacpp
+
+    monkeypatch.setattr(
+        "ytcore.config.get_config", lambda: SimpleNamespace(motor_backend="llamacpp")
+    )
+    leases, calls = [], []
+
+    @contextmanager
+    def session(check, *, profile):
+        leases.append(profile)
+        check()
+        yield "http://127.0.0.1:18077"
+
+    payload = {
+        "analysis_profile": "ram8",
+        "context": {"interests": "hukuk " * 60},
+        "items": [
+            {"id": f"{i:064x}", "text": "Kaynak doğrulama ve hukuk araştırması. " * 8}
+            for i in range(8)
+        ],
+    }
+
+    def evaluate(batch, check, *, host_override):
+        check()
+        assert host_override == "http://127.0.0.1:18077"
+        assert batch["context"] == payload["context"]
+        # Gerçek alandaki tüm 8 haber tek JSON'a verilirse response kesilir.
+        if len(batch["items"]) > 2:
+            raise ValueError("JSON token sınırında kesildi")
+        calls.append(batch["items"])
+        return [{"id": item["id"]} for item in batch["items"]]
+
+    monkeypatch.setattr(llamacpp, "generation_session", session)
+    monkeypatch.setattr(agenda, "_local_evaluate", evaluate)
+    result = agenda.local_evaluate(payload, lambda: None)
+    assert leases == ["ram8"]
+    assert [len(batch) for batch in calls] == [2, 2, 2, 2]
+    assert [item["id"] for item in result] == [item["id"] for item in payload["items"]]
+    assert result.model_error is None
+
+
+def test_batch_partial_failure_and_total_budget_and_cancel(monkeypatch):
+    from types import SimpleNamespace
+
+    monkeypatch.setattr("ytcore.config.get_config", lambda: SimpleNamespace(motor_backend="ollama"))
+    payload = {"items": [{"id": f"{i:064x}", "text": "Kaynak."} for i in range(8)]}
+    calls = []
+
+    def partial(batch, check, **_):
+        check()
+        calls.append(batch)
+        if len(calls) == 2:
+            raise ValueError("JSON kesildi")
+        return [{"id": item["id"]} for item in batch["items"]]
+
+    monkeypatch.setattr(agenda, "_local_evaluate", partial)
+    result = agenda.local_evaluate(payload, lambda: None)
+    assert len(result) == 2
+    assert "JSON kesildi" in result.model_error
+    assert len(calls) == 2
+    clock = [0.0]
+    monkeypatch.setattr(agenda.time, "monotonic", lambda: clock[0])
+
+    def exceeds_budget(batch, check, **_):
+        check()
+        clock[0] = 241
+        return [{"id": item["id"]} for item in batch["items"]]
+
+    monkeypatch.setattr(agenda, "_local_evaluate", exceeds_budget)
+    result = agenda.local_evaluate(payload, lambda: None)
+    assert len(result) == 2
+    assert "240 saniyelik" in result.model_error
+    clock[0] = 0
+
+    cancelled_calls = []
+
+    def cancel(batch, check, **_):
+        cancelled_calls.append(batch)
+        if len(cancelled_calls) == 2:
+            raise JobCancelled("Batch arasında iptal")
+        return [{"id": item["id"]} for item in batch["items"]]
+
+    monkeypatch.setattr(agenda, "_local_evaluate", cancel)
+    with pytest.raises(JobCancelled):
+        agenda.local_evaluate(payload, lambda: None)
+    assert len(cancelled_calls) == 2
+
+
+def test_model_batch_cannot_attribute_a_response_to_another_batch(monkeypatch):
+    from types import SimpleNamespace
+
+    monkeypatch.setattr("ytcore.config.get_config", lambda: SimpleNamespace(motor_backend="ollama"))
+    payload = {"items": [{"id": f"{i:064x}", "text": "Kaynak."} for i in range(4)]}
+
+    def confused(batch, check, **_):
+        # İlkbatch sonraki batch'in kimliğini döndürüyor. Global whitelist bunu
+        # yanlışlıkla kabul edebilirdi; her istek yalnız kendi iki kimliğini bilir.
+        return [{"id": payload["items"][2]["id"]}, {"id": batch["items"][0]["id"]}]
+
+    monkeypatch.setattr(agenda, "_local_evaluate", confused)
+    result = agenda.local_evaluate(payload, lambda: None)
+    assert [i["id"] for i in result] == [payload["items"][0]["id"], payload["items"][2]["id"]]
+    assert "eksik/geçersiz" in result.model_error
+
+
+def test_typographic_quote_equivalence_returns_exact_original_source():
+    source = "KVKK: Kanun’un 13’üncü maddesi incelendi. ‘İnceleme’ henüz sonuçlanmadı…"
+    assert (
+        agenda._grounded_quote("Kanun'un 13'üncü maddesi incelendi.", source)
+        == "Kanun’un 13’üncü maddesi incelendi."
+    )
+    assert (
+        agenda._grounded_quote("'Inceleme' henüz sonuçlanmadı...", source)
+        == "‘İnceleme’ henüz sonuçlanmadı…"
+    )
+    assert agenda._grounded_quote("Kanun'un 13'üncü maddesi değiştirildi.", source) is None
+    assert agenda._grounded_quote("Kanun'un maddesi incelendi.", source) is None
+    assert (
+        agenda._grounded_quote("Kanun'un 13'üncü maddesi yürürlükten kaldırıldı.", source) is None
+    )
+    assert agenda._grounded_quote("'Inceleme' henüz sonuçlanmadı.", source) is None
+    assert agenda._grounded_quote("'Inceleme' henüz sonuçlanmadı..", source) is None
+    assert agenda._grounded_quote(".. kaynak verisi", "… kaynak verisi") is None
+    # İlk aynı söz ellipsisle bitiyor, ikinci tam noktayla: geçerli ikinci aralık seçilir.
+    assert (
+        agenda._grounded_quote(
+            "Sonuç henüz açıklanmadı.", "Sonuç henüz açıklanmadı… Sonuç henüz açıklanmadı."
+        )
+        == "Sonuç henüz açıklanmadı."
+    )
+    assert (
+        agenda._grounded_quote("Yerel Kafé", "Yerel Kafe\u0301 hakkında not.") == "Yerel Kafe\u0301"
+    )
+
+
+def test_partial_grounding_retries_without_duplicate_bulletin_history(store, monkeypatch):
+    store.save_agenda_profile({"use_local_model": True})
+    feed = store.list_feeds()[0]
+    store.add_articles(
+        feed["id"],
+        [
+            {
+                "id": "law2",
+                "url": "https://example.org/law2",
+                "title": "KVKK açık kaynak",
+                "summary": "Kaynak doğrulama denemesi yapıldı.",
+                "published_at": now(),
+            }
+        ],
+    )
+
+    def partial(payload, check):
+        return [
+            {
+                "id": i["id"],
+                "importance": "medium",
+                "relevance_reason": "Hukuk araştırmasıyla ilişkili.",
+                "project_impact": "Veri işleme incelemesi için başlangıç.",
+                "suggested_action": "Kaynağı inceleyin.",
+                "evidence_quote": "Kişisel veri işleme yöntemleri incelendi."
+                if i["id"] == "law"
+                else "Kaynakta bulunmayan yanlış alıntı",
+            }
+            for i in payload["items"]
+        ]
+
+    monkeypatch.setattr(agenda, "local_evaluate", partial)
+    service = ProductService(store, autostart=False)
+    for _ in range(2):
+        service.submit("agenda", {})
+        service.run_once()
+    assert store.agenda_state()["method"] == "mixed"
+    assert "1/2" in store.agenda_state()["model_error"]
+    assert len(store.list_bulletins()) == 1
+    assert store.agenda_state()["status"] == "unchanged"
+    saved = store.get_bulletin(store.agenda_state()["bulletin_id"])
+    assert sum(i["evaluation_method"] == "local_model" for i in saved["items"]) == 1

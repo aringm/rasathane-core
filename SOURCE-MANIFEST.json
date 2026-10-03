@@ -92,9 +92,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/agenda.py",
-      "source_sha256": "a5a9a3db96376e3dadd0c520d045ac9717e9180801b52f35783c056837ccc103",
-      "sha256": "a5a9a3db96376e3dadd0c520d045ac9717e9180801b52f35783c056837ccc103",
-      "bytes": 19211
+      "source_sha256": "fb03b1438f6978528dadfdcb83f65b4e140ad8d73fd36f1eb69b032c9c0c80dc",
+      "sha256": "fb03b1438f6978528dadfdcb83f65b4e140ad8d73fd36f1eb69b032c9c0c80dc",
+      "bytes": 23616
     },
     {
       "path": "apps/desktop/core/rasathane/product/api.py",
@@ -2438,9 +2438,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/personal-agenda.js",
-      "source_sha256": "cb565af16982622bed0d230547890a29bb11555f3c83b1d05b11edc24d40a55f",
-      "sha256": "cb565af16982622bed0d230547890a29bb11555f3c83b1d05b11edc24d40a55f",
-      "bytes": 11757
+      "source_sha256": "729dfa2167f28296e5c2927ac76363effd1387f8bb1e85eba0ccd3c478ab317d",
+      "sha256": "729dfa2167f28296e5c2927ac76363effd1387f8bb1e85eba0ccd3c478ab317d",
+      "bytes": 12012
     },
     {
       "path": "apps/desktop/gui/ui/src/product.js",
@@ -3086,9 +3086,9 @@
     },
     {
       "path": "apps/desktop/tests/test_product_agenda.py",
-      "source_sha256": "5f3ef33a6593cf9b8d1067d0d1a0d42e2a6c6546c9a91b505b31403845326a51",
-      "sha256": "5f3ef33a6593cf9b8d1067d0d1a0d42e2a6c6546c9a91b505b31403845326a51",
-      "bytes": 16108
+      "source_sha256": "7ed80545bc19101660b360e30f5527552e2c6e05bf0572a09f24cef15e4eead1",
+      "sha256": "7ed80545bc19101660b360e30f5527552e2c6e05bf0572a09f24cef15e4eead1",
+      "bytes": 23775
     },
     {
       "path": "apps/desktop/tests/test_product_api.py",
@@ -4784,9 +4784,9 @@
     },
     {
       "path": "docs/urun/KISISEL-GUNDEM-KAYNAK-ASISTANI.md",
-      "source_sha256": "97d6cf85257e21d9995fa85d658b2ba3ae833a05056d1d43826d535abd089472",
-      "sha256": "97d6cf85257e21d9995fa85d658b2ba3ae833a05056d1d43826d535abd089472",
-      "bytes": 2873
+      "source_sha256": "08409c361cc45b3fe57f2e82595e6e09fc44f443f7359e8e6d7e09ec39860e77",
+      "sha256": "08409c361cc45b3fe57f2e82595e6e09fc44f443f7359e8e6d7e09ec39860e77",
+      "bytes": 3087
     },
     {
       "path": "docs/urun/LOGO.md",
