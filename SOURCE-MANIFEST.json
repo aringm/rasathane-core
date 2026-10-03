@@ -752,9 +752,9 @@
     },
     {
       "path": "apps/desktop/gui/electron/main.cjs",
-      "source_sha256": "2da539b769f5607acb15ed9c16dd7cfe46759be38aed72fa5468a622e44d5626",
-      "sha256": "2da539b769f5607acb15ed9c16dd7cfe46759be38aed72fa5468a622e44d5626",
-      "bytes": 26267
+      "source_sha256": "a16454def06748fcf6d8335157493c0e6d9a52f8976181085918a40538aaa4fd",
+      "sha256": "a16454def06748fcf6d8335157493c0e6d9a52f8976181085918a40538aaa4fd",
+      "bytes": 26149
     },
     {
       "path": "apps/desktop/gui/electron/model-catalog.json",
@@ -803,6 +803,18 @@
       "source_sha256": "8d571c4028bbd1c75976d1969c8c2b66dbb3450d9f8d5e7321b2cb470063f5b6",
       "sha256": "8d571c4028bbd1c75976d1969c8c2b66dbb3450d9f8d5e7321b2cb470063f5b6",
       "bytes": 11546
+    },
+    {
+      "path": "apps/desktop/gui/electron/smoke-evidence.cjs",
+      "source_sha256": "9382319054c1dc7f5033cc1077072bbf42f2642e9c3c073d7730790c621295f1",
+      "sha256": "9382319054c1dc7f5033cc1077072bbf42f2642e9c3c073d7730790c621295f1",
+      "bytes": 845
+    },
+    {
+      "path": "apps/desktop/gui/electron/smoke-evidence.test.cjs",
+      "source_sha256": "1477384f2e3b982535ced0ba86d12449c145f8b388782168a31e7968865db820",
+      "sha256": "1477384f2e3b982535ced0ba86d12449c145f8b388782168a31e7968865db820",
+      "bytes": 1778
     },
     {
       "path": "apps/desktop/gui/package.json",
@@ -4508,15 +4520,15 @@
     },
     {
       "path": "docs/urun/CALISMA-PLANI.md",
-      "source_sha256": "f862f283882fd05fd96da73ba7d8c122a3643180a0cc599d26dfc885b03bed70",
-      "sha256": "f862f283882fd05fd96da73ba7d8c122a3643180a0cc599d26dfc885b03bed70",
-      "bytes": 5756
+      "source_sha256": "e29b54a94779ddd5d59a31cfed69271ab2b3836120feb9401816c3d81c1d72d5",
+      "sha256": "e29b54a94779ddd5d59a31cfed69271ab2b3836120feb9401816c3d81c1d72d5",
+      "bytes": 9333
     },
     {
       "path": "docs/urun/INCELEME-VE-KABUL.md",
-      "source_sha256": "bfbd8304798d848f84781a1bb1a783a7340b3dc256797b962625f8c217d4c3b1",
-      "sha256": "bfbd8304798d848f84781a1bb1a783a7340b3dc256797b962625f8c217d4c3b1",
-      "bytes": 25921
+      "source_sha256": "d193df9e73bbfa95b094815ee683cda860e605411328c8bfd632cc36c23b7aee",
+      "sha256": "d193df9e73bbfa95b094815ee683cda860e605411328c8bfd632cc36c23b7aee",
+      "bytes": 36431
     },
     {
       "path": "docs/urun/MIMARI.md",
@@ -4544,9 +4556,9 @@
     },
     {
       "path": "docs/urun/YEREL-MODEL-PROFILLERI.md",
-      "source_sha256": "8d5e6031f34cd60187002f1ed08a2a784cbfe179ef2e321a46e025fc86968b8b",
-      "sha256": "8d5e6031f34cd60187002f1ed08a2a784cbfe179ef2e321a46e025fc86968b8b",
-      "bytes": 2530
+      "source_sha256": "ab349e9bfc5aa055504b9cd42e20ff6a1749b70f1d60bc493b15614e2b47c7cc",
+      "sha256": "ab349e9bfc5aa055504b9cd42e20ff6a1749b70f1d60bc493b15614e2b47c7cc",
+      "bytes": 5003
     },
     {
       "path": "scripts/export-source.py",

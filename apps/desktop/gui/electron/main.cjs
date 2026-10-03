@@ -10,6 +10,7 @@ const { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell, safe
 const { validateRequest, trustedSender, publicSourceURL } = require("./ipc-policy.cjs");
 const { createModelSetup } = require("./model-setup.cjs");
 const { createAccount } = require("./account.cjs");
+const { conservativeSearchClaims } = require("./smoke-evidence.cjs");
 
 const SCHEME = "rasathane";
 const APP_ORIGIN = `${SCHEME}://app`;
@@ -414,9 +415,7 @@ async function smokeAnaliz(pencere) {
               summary?.method !== "source_sentence_selection_and_model_summary" ||
               summary.layers?.kisa !== "translated_source_sentences" ||
               summary.layers?.orta !== "translated_source_sentences" ||
-              !Array.isArray(claims) || !claims.length ||
-              claims.some(claim => claim.karar !== "BELİRSİZ" || claim.guven !== 0 ||
-                claim.bagimsiz_dogrulama !== false || claim.kanit_turu !== "arama_ozeti")) {
+              !conservativeSearchClaims(claims)) {
             throw new Error("Genel kaynak yerel analiz yolu doğrulanamadı.");
           }
         } else if (result?.transkript_kaynak_dil !== "tr" || result.ceviri_durumu !== "atlandi" ||
