@@ -20,21 +20,41 @@
       <div class="login-card">
         <img src="/brand/rasathane-mark.svg" width="72" height="72" alt="" />
         <p class="login-eyebrow">MUHAKEME · RASATHANE</p>
-        <h1 id="giris-baslik">Araştırmaya kaldığınız yerden devam edin.</h1>
+        <h1 id="giris-baslik">Rasathane’ye giriş yapın.</h1>
         <p>
-          Kaynaklarınız, analizleriniz ve araştırma konuşmalarınız tek çalışma
-          alanında.
+          Muhakeme hesabınızla devam edin. E-posta adresinize göndereceğimiz
+          doğrulama koduyla giriş yapabilirsiniz; hesabınız yoksa oluşturulur.
         </p>
         <p id="giris-durum" role="status" aria-live="polite">
           Oturum kontrol ediliyor…
         </p>
-        <div class="form-actions">
-          <button id="giris-baslat" type="button" class="btn">
-            Muhakeme ile giriş yap
+        <form id="giris-email-form" class="login-form">
+          <label for="giris-email">E-posta adresiniz</label>
+          <input id="giris-email" type="email" autocomplete="email" inputmode="email" maxlength="254" placeholder="adiniz@ornek.com" required aria-describedby="giris-durum" />
+          <button id="giris-baslat" type="submit" class="btn" disabled>
+            Doğrulama kodu gönder
           </button>
-          <button id="giris-yenile" type="button" class="btn btn-ikincil">
-            Yeniden kontrol et
+        </form>
+        <form id="giris-kod-form" class="login-form" hidden>
+          <p id="giris-hedef" class="field-note"></p>
+          <label for="giris-kod">6 haneli doğrulama kodu</label>
+          <input id="giris-kod" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required aria-describedby="giris-durum giris-kod-suresi" />
+          <p id="giris-kod-suresi" class="field-note"></p>
+          <button id="giris-dogrula" type="submit" class="btn">Giriş yap</button>
+          <div class="form-actions">
+            <button id="giris-tekrar" type="button" class="btn btn-ikincil">Yeni kod gönder</button>
+            <button id="giris-degistir" type="button" class="btn btn-ikincil">E-postayı değiştir</button>
+          </div>
+        </form>
+        <div class="login-support">
+          <button id="giris-yenile" type="button" class="login-text-button">
+            Oturumu kontrol et
           </button>
+          <button id="giris-iptal" type="button" class="login-text-button" hidden>Giriş işlemini iptal et</button>
+        </div>
+        <div class="login-legal">
+          <button id="giris-kosullar" type="button" class="login-text-button">Kullanım koşulları</button>
+          <button id="giris-kvkk" type="button" class="login-text-button">Kişisel verilerin korunması</button>
         </div>
         <p class="field-note">
           Giriş zorunludur. Yerel çekirdek ücretsizdir; ücretli hizmet denemesi

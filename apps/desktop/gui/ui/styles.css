@@ -3029,6 +3029,38 @@ input[readonly] {
   border-top: 1px solid var(--cizgi);
   padding-top: 22px;
 }
+.login-form {
+  display: grid;
+  gap: 12px;
+}
+.login-form[hidden] { display: none; }
+.login-form input { width: 100%; min-height: 48px; }
+.login-form > .btn { min-height: 48px; }
+#giris-kod {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 26px;
+  letter-spacing: 0.3em;
+}
+#giris-hedef { overflow-wrap: anywhere; }
+.login-support, .login-legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin-top: 18px;
+}
+.login-legal { border-top: 1px solid var(--cizgi); padding-top: 16px; }
+.login-text-button {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--metin-ikincil);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.login-text-button:disabled { opacity: 0.55; cursor: default; }
 .chat-layout {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);

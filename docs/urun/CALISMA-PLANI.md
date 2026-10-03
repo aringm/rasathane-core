@@ -57,3 +57,18 @@ Yerel kurulum kabulü, eski kurulumların emekliliği ve installer/R2 readback'i
 Son imzalı Windows kurulumunun bağımsız analizi, içerik/byte incelemesi ve R2 tam readback'i geçti. Eski kurulumlar emekli edildi. Canlı üyelik/ödeme, yönetilen gündem producer işletimi, bağımsız insan review'u ve production yayını açık adımlardır; tamamlanma duyuruları bunların ardından yapılır. Fiziksel 8 GB cihaz testi yapılmadı.
 
 Installer 0.5.0: **1.332.628.288 byte**, SHA256 `8b353e1b2c61f1fd5f8d49aae249050bb506ca9db0446550a54705c3d9ef4bde`. Normal Windows kurulumundan gerçek UI → IPC → frozen analiz → kalıcı çıktı yolu geçti. Aynı dosya R2'den tamamen okunarak SHA ve boyut doğrulandı; üyelik/release flag açılmadı. Eski Gözlemevi/Radar bağımsız başlatıcıları yeni Rasathane'ye yönlenir; kaynak geçmişleri korunur.
+
+## 0.5.2 e-posta ile giriş düzeltmesi
+
+0.5.1 kurulumunda zorunlu giriş, haber özeti/ses ve araştırma konuşmaları yerel testlerden geçti. Gerçek kullanıcı girişinde canlı Muhakeme sunucusunun `rasathane-desktop` istemcisini henüz tanımadığı görüldü; önceki sentetik hesap testleri canlı giriş kabulü yerine geçmez.
+
+Yeni akış uygulama içinden e-posta ve altı haneli doğrulama kodu kullanır. Muhakeme BetterAuth kullanıcısı ve mevcut cihaz oturumu sözleşmesi korunur. Giriş kodu doğrulanmadan ürün yüzeyleri ve işlemleri açılmaz. Ücretsiz yerel çekirdek için ücretli servis aboneliği aranmaz.
+
+| Adım | Kabul koşulu |
+| --- | --- |
+| Sunucu | Aynı kullanıcıyı yeniden kullanma/oluşturma; kodun tek kullanımı, PKCE, yanlış kod ve eşzamanlı istek testleri |
+| Masaüstü | E-posta → kod → giriş; tekrar gönderme, süre dolması, iptal ve geç yanıtlar; main sürecinde güvenli oturum |
+| Ürün akışı | Kilitli ekran → kod → haber özeti/ses → araştırma → çıkış yolu; testteki sentetik mail servisi açıkça kaydedilir |
+| Yayın | PR incelemesi ve başarılı CI → güncel main üzerinden sunucu yayını → gerçek e-posta ile kullanıcı kabulü → masaüstü kurulumu |
+
+Canlı endpoint kabul edilmeden yeni masaüstü adayını kullanıcı kurulumu üzerine geçirmek tamamlanmış çözüm sayılmaz. Üyelik sunucusu private depoda kalır; açık çekirdek yalnız servis sözleşmesini ve masaüstü istemcisini içerir.

@@ -32,8 +32,8 @@
     },
     {
       "path": "AGENTS.md",
-      "source_sha256": "de853eb2040d4ff54cb11cc9a02cf4dd627e8f21e94408b272daa220788f870d",
-      "sha256": "592f5373e0b99fed1b10902079467ed1e1b8056d9e50222f8e6bf5c6ba71f099",
+      "source_sha256": "e27cf91c50301b3f6c1d4d618683d902fc1bd5120043fb1b599ca7e99504f239",
+      "sha256": "fe9c6966adfba4f34a6c8eb4537229a6920c6f2d30581ae3091b7930cd9db79b",
       "bytes": 3017
     },
     {
@@ -56,9 +56,9 @@
     },
     {
       "path": "README.md",
-      "source_sha256": "062da4be6a665e30f56f5f95726febd792a462fd8c5cd4fa712acb21b4d662a1",
-      "sha256": "062da4be6a665e30f56f5f95726febd792a462fd8c5cd4fa712acb21b4d662a1",
-      "bytes": 4190
+      "source_sha256": "27a3a737bae96cff634e347da8e1a0adbcc6cf21ef58b7a6caefd65924923969",
+      "sha256": "27a3a737bae96cff634e347da8e1a0adbcc6cf21ef58b7a6caefd65924923969",
+      "bytes": 4700
     },
     {
       "path": "apps/desktop/.env.example",
@@ -721,6 +721,12 @@
       "bytes": 7355
     },
     {
+      "path": "apps/desktop/gui/electron/account-email.test.cjs",
+      "source_sha256": "90bbaad6f8fa52041217ab9689c7b2695a799680d30243b7a97570eba8235219",
+      "sha256": "90bbaad6f8fa52041217ab9689c7b2695a799680d30243b7a97570eba8235219",
+      "bytes": 11772
+    },
+    {
       "path": "apps/desktop/gui/electron/account-flow.test.cjs",
       "source_sha256": "043c70a3863b6d170c2f332a22cee9a784befadc25533a93ef4ee839e1879046",
       "sha256": "043c70a3863b6d170c2f332a22cee9a784befadc25533a93ef4ee839e1879046",
@@ -728,9 +734,9 @@
     },
     {
       "path": "apps/desktop/gui/electron/account.cjs",
-      "source_sha256": "0d0d8ee910877b5baad0c2133913df90d2c0b5770d5d08d308cd7588fb7c76ac",
-      "sha256": "0d0d8ee910877b5baad0c2133913df90d2c0b5770d5d08d308cd7588fb7c76ac",
-      "bytes": 12114
+      "source_sha256": "dcb142d4d537a94bb77ed667000dc64040f04e2ccd743e9bf6e8d63796bcfa96",
+      "sha256": "dcb142d4d537a94bb77ed667000dc64040f04e2ccd743e9bf6e8d63796bcfa96",
+      "bytes": 18338
     },
     {
       "path": "apps/desktop/gui/electron/account.test.cjs",
@@ -776,9 +782,9 @@
     },
     {
       "path": "apps/desktop/gui/electron/main.cjs",
-      "source_sha256": "7ebd269f1d5340f6abd348a950c6df70816ef323f37e5a3601888336571d5f35",
-      "sha256": "7ebd269f1d5340f6abd348a950c6df70816ef323f37e5a3601888336571d5f35",
-      "bytes": 28829
+      "source_sha256": "af07fa5c5bf2c283e3080349f341852cf399ded02317e6634db31afd656378ac",
+      "sha256": "af07fa5c5bf2c283e3080349f341852cf399ded02317e6634db31afd656378ac",
+      "bytes": 29505
     },
     {
       "path": "apps/desktop/gui/electron/model-catalog.json",
@@ -812,9 +818,9 @@
     },
     {
       "path": "apps/desktop/gui/electron/preload.cjs",
-      "source_sha256": "0f249e20e0fde52d06185eafe8c1067a1487fee550b30c3e1d6c8620dc6f8531",
-      "sha256": "0f249e20e0fde52d06185eafe8c1067a1487fee550b30c3e1d6c8620dc6f8531",
-      "bytes": 1325
+      "source_sha256": "f7b398a85f2cc31f67d538262ed3232436b99aafd50b3bf252e5ca2ecdeeb127",
+      "sha256": "f7b398a85f2cc31f67d538262ed3232436b99aafd50b3bf252e5ca2ecdeeb127",
+      "bytes": 1814
     },
     {
       "path": "apps/desktop/gui/electron/sign-windows.cjs",
@@ -842,8 +848,8 @@
     },
     {
       "path": "apps/desktop/gui/package.json",
-      "source_sha256": "3d6aad74f22fc33ffd03fd14d802e27d445e5d48bd6245c90263c0d100b70148",
-      "sha256": "3d6aad74f22fc33ffd03fd14d802e27d445e5d48bd6245c90263c0d100b70148",
+      "source_sha256": "fd5e8a01fd668a810e85ee9e1d8f006cd63092a2bb691e58fc4b007d624e710c",
+      "sha256": "fd5e8a01fd668a810e85ee9e1d8f006cd63092a2bb691e58fc4b007d624e710c",
       "bytes": 4242
     },
     {
@@ -1022,15 +1028,15 @@
     },
     {
       "path": "apps/desktop/gui/tests/README.md",
-      "source_sha256": "af5747a7670490c4a7c654e5617b8f9b713bf4eeaed64b99757eaae9074a0bfe",
-      "sha256": "af5747a7670490c4a7c654e5617b8f9b713bf4eeaed64b99757eaae9074a0bfe",
-      "bytes": 1601
+      "source_sha256": "4ea2a975582b0cbd1e7a0970dbb291bfbc393b5302847670d85b84119474cab2",
+      "sha256": "4ea2a975582b0cbd1e7a0970dbb291bfbc393b5302847670d85b84119474cab2",
+      "bytes": 1757
     },
     {
       "path": "apps/desktop/gui/tests/product-flow.cjs",
-      "source_sha256": "5f091e5b5cd71af6b5ed4eb590d88a8ecd8238068c1ab3663168bb76a7ce0ad8",
-      "sha256": "5f091e5b5cd71af6b5ed4eb590d88a8ecd8238068c1ab3663168bb76a7ce0ad8",
-      "bytes": 10458
+      "source_sha256": "21091dd173764b0ce1b2f19d1e2a6bd061c372088634902fb8d2e5877ad60d0a",
+      "sha256": "21091dd173764b0ce1b2f19d1e2a6bd061c372088634902fb8d2e5877ad60d0a",
+      "bytes": 12891
     },
     {
       "path": "apps/desktop/gui/tests/qa-product-server.py",
@@ -1124,9 +1130,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/index.html",
-      "source_sha256": "095badf1f93f939b9e67abf1a2c243e4e8183292f33c086ed20fde5cf7cbc556",
-      "sha256": "095badf1f93f939b9e67abf1a2c243e4e8183292f33c086ed20fde5cf7cbc556",
-      "bytes": 41885
+      "source_sha256": "b91e3a6a88a6c620e0a4a8f5681481768e7ef55eb84df9b95bb72b7fb910abf0",
+      "sha256": "b91e3a6a88a6c620e0a4a8f5681481768e7ef55eb84df9b95bb72b7fb910abf0",
+      "bytes": 43442
     },
     {
       "path": "apps/desktop/gui/ui/lib/pdfjs/LICENSE",
@@ -2366,9 +2372,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/login-gate.js",
-      "source_sha256": "ac753d334d06e130e70c17e7a744a6485bd1acfee4f5c320fcb5b15c5676bebf",
-      "sha256": "ac753d334d06e130e70c17e7a744a6485bd1acfee4f5c320fcb5b15c5676bebf",
-      "bytes": 2683
+      "source_sha256": "37cfbf73c2649359a9785ae7056d86e3b536d2152523da299d54c16688f3234f",
+      "sha256": "37cfbf73c2649359a9785ae7056d86e3b536d2152523da299d54c16688f3234f",
+      "bytes": 7601
     },
     {
       "path": "apps/desktop/gui/ui/src/main.js",
@@ -2384,9 +2390,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/product.js",
-      "source_sha256": "ee2de26c51a0cde53c577237dfff939cb06342ac4e64d0d6898b8566c54577c3",
-      "sha256": "ee2de26c51a0cde53c577237dfff939cb06342ac4e64d0d6898b8566c54577c3",
-      "bytes": 54467
+      "source_sha256": "728938ea625a2bc3f3086ce32ecd0e0832715cb7ad09f37a7b5060bd9700a03d",
+      "sha256": "728938ea625a2bc3f3086ce32ecd0e0832715cb7ad09f37a7b5060bd9700a03d",
+      "bytes": 54327
     },
     {
       "path": "apps/desktop/gui/ui/src/record-provenance.js",
@@ -2402,9 +2408,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/styles.css",
-      "source_sha256": "864b83405c99690d13224043e6f5497e44741e241358bfdae7e774f5ccb5ae17",
-      "sha256": "864b83405c99690d13224043e6f5497e44741e241358bfdae7e774f5ccb5ae17",
-      "bytes": 65785
+      "source_sha256": "3c88ab061ea6aa70604844a2412ce558a0ec3a77c3f68cc92a0a9292f0075808",
+      "sha256": "3c88ab061ea6aa70604844a2412ce558a0ec3a77c3f68cc92a0a9292f0075808",
+      "bytes": 66578
     },
     {
       "path": "apps/desktop/gui/ui/tests/artifact-data.test.mjs",
@@ -2414,9 +2420,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/tests/login-gate.test.mjs",
-      "source_sha256": "cb9f04dd15a7da31fd6cae058270e47fa106457ac94fab66bd0159d863780b64",
-      "sha256": "cb9f04dd15a7da31fd6cae058270e47fa106457ac94fab66bd0159d863780b64",
-      "bytes": 3443
+      "source_sha256": "0c1fd8ef2bece76b5c227b97386de481b1e31cca70206921854bec217b10fba0",
+      "sha256": "0c1fd8ef2bece76b5c227b97386de481b1e31cca70206921854bec217b10fba0",
+      "bytes": 8372
     },
     {
       "path": "apps/desktop/gui/ui/tests/record-provenance.test.mjs",
@@ -2564,8 +2570,8 @@
     },
     {
       "path": "apps/desktop/pyproject.toml",
-      "source_sha256": "372d437fe30cd312e79007b5739620bbf2f0cf4185277a1078d1e50dfef382ed",
-      "sha256": "372d437fe30cd312e79007b5739620bbf2f0cf4185277a1078d1e50dfef382ed",
+      "source_sha256": "ccabd681e470218c874ca5a37a6b0008c1e902e9cbd9cd5e275e7dc42e146496",
+      "sha256": "ccabd681e470218c874ca5a37a6b0008c1e902e9cbd9cd5e275e7dc42e146496",
       "bytes": 3878
     },
     {
@@ -3152,8 +3158,8 @@
     },
     {
       "path": "apps/desktop/uv.lock",
-      "source_sha256": "18a4ffcf0ce31160f917c48d8793016158b2a5c0890b44bb2147f9a7e2f96ee0",
-      "sha256": "18a4ffcf0ce31160f917c48d8793016158b2a5c0890b44bb2147f9a7e2f96ee0",
+      "source_sha256": "b33b9c3a4f3ebb6ddfb1031c0cd70d6d327660af53359b359048d1f0d862b174",
+      "sha256": "b33b9c3a4f3ebb6ddfb1031c0cd70d6d327660af53359b359048d1f0d862b174",
       "bytes": 370814
     },
     {
@@ -4603,10 +4609,16 @@
       "bytes": 2252
     },
     {
+      "path": "docs/urun/0.5.2.md",
+      "source_sha256": "e6f69d7319a27b0b687c4e3f8b64795d991bd7c01bd9e14f48b2895a90a29306",
+      "sha256": "e6f69d7319a27b0b687c4e3f8b64795d991bd7c01bd9e14f48b2895a90a29306",
+      "bytes": 2642
+    },
+    {
       "path": "docs/urun/CALISMA-PLANI.md",
-      "source_sha256": "e29b54a94779ddd5d59a31cfed69271ab2b3836120feb9401816c3d81c1d72d5",
-      "sha256": "e29b54a94779ddd5d59a31cfed69271ab2b3836120feb9401816c3d81c1d72d5",
-      "bytes": 9333
+      "source_sha256": "cb1bf36248171944a2bc4535cb1a031d08f6930e071ec583f114891d1deb588e",
+      "sha256": "cb1bf36248171944a2bc4535cb1a031d08f6930e071ec583f114891d1deb588e",
+      "bytes": 10852
     },
     {
       "path": "docs/urun/INCELEME-VE-KABUL.md",

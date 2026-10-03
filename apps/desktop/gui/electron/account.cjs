@@ -26,11 +26,12 @@ function createAccount({ userData, safeStorage, openExternal, transport = fetch 
   try { deviceId = JSON.parse(fs.readFileSync(deviceFile, "utf8")).deviceId; } catch { /* ilk kullanım */ }
   if (!/^dev_[a-f0-9]{32}$/.test(deviceId || "")) { deviceId = `dev_${crypto.randomBytes(16).toString("hex")}`; fs.writeFileSync(deviceFile, JSON.stringify({ deviceId })); }
   let session = null; let status = "signed_out"; let error = null; let pendingServer = null; let pendingTimer = null; let epoch = 0; let refreshing = null; const listeners = new Set(); let expiryTimer = null;
+  let pendingEmail = null; let errorCode = null; let emailMode = false;
   if (safeStorage.isEncryptionAvailable()) {
     try { const candidate = JSON.parse(safeStorage.decryptString(fs.readFileSync(file))); if (validSession(candidate, deviceId) && Date.parse(candidate.refresh_sure_sonu) > Date.now()) { session = candidate; status = Date.parse(candidate.access_sure_sonu) > Date.now() ? "signed_in" : "expired"; } } catch { /* geçersiz/başka kullanıcı token'ı kullanılmaz */ }
   }
   function snapshot() {
-    return { state: status, error, scope: status === "signed_in" ? [...(session?.scope || [])] : [] };
+    return { state: status, error, scope: status === "signed_in" ? [...(session?.scope || [])] : [], ...(emailMode ? { errorCode, login: pendingEmail ? { email: pendingEmail.email, expiresAt: pendingEmail.expiresAt, resendAt: pendingEmail.resendAt } : null } : {}) };
   }
   function publish() { const value = snapshot(); for (const listener of listeners) listener(value); }
   function scheduleExpiry() {
@@ -42,12 +43,12 @@ function createAccount({ userData, safeStorage, openExternal, transport = fetch 
     expiryTimer = setTimeout(() => { status = "expired"; publish(); }, Math.min(remaining, 2147483647)); expiryTimer.unref();
   }
   function closePending() { if (pendingServer) pendingServer.close(); pendingServer = null; if (pendingTimer) clearTimeout(pendingTimer); pendingTimer = null; }
-  function clearSession() { epoch++; session = null; status = "signed_out"; if (expiryTimer) clearTimeout(expiryTimer); expiryTimer = null; if (fs.existsSync(file)) fs.unlinkSync(file); publish(); }
+  function clearSession() { epoch++; pendingEmail = null; error = null; errorCode = null; session = null; status = "signed_out"; if (expiryTimer) clearTimeout(expiryTimer); expiryTimer = null; if (fs.existsSync(file)) fs.unlinkSync(file); publish(); }
   function save(record) {
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Windows güvenli token deposu kullanılamıyor.");
     if (!validSession(record, deviceId)) throw new Error("Hesap oturumu Rasathane sözleşmesiyle uyumlu değil.");
     fs.writeFileSync(`${file}.tmp`, safeStorage.encryptString(JSON.stringify(record)), { mode: 0o600 }); fs.renameSync(`${file}.tmp`, file);
-    session = record; status = "signed_in"; error = null; scheduleExpiry(); publish();
+    session = record; pendingEmail = null; status = "signed_in"; error = null; errorCode = null; scheduleExpiry(); publish();
   }
   async function api(route, body, bearer) {
     const response = await transport(`${AUTH_ORIGIN}${route}`, { method: body ? "POST" : "GET", redirect: "error", signal: AbortSignal.timeout(20000),
@@ -59,12 +60,13 @@ function createAccount({ userData, safeStorage, openExternal, transport = fetch 
     let data = null; try { data = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch { /* hata sayfası token veya içerik olarak geri verilmez */ }
     if (!response.ok) {
       const problem = new Error(`Muhakeme hesabı isteği başarısız (${response.status}).`); problem.status = response.status; problem.code = data?.kod || data?.code || data?.error?.code;
+      const retryAfter = Number(response.headers.get("retry-after")); problem.retryAfter = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(Math.ceil(retryAfter), 3600) : 60;
       throw problem;
     }
     if (!data) throw new Error("Muhakeme hesabı yanıtı geçersiz."); return data;
   }
   async function accessToken() {
-    if (!session || status === "waiting") throw new Error("Muhakeme hesabına giriş gerekli.");
+    if (!session || !["signed_in", "expired"].includes(status)) throw new Error("Muhakeme hesabına giriş gerekli.");
     if (Date.parse(session.refresh_sure_sonu) <= Date.now()) { clearSession(); throw new Error("Muhakeme hesabına giriş gerekli."); }
     if (Date.parse(session.access_sure_sonu) <= Date.now() && status === "signed_in") { status = "expired"; publish(); }
     if (Date.parse(session.access_sure_sonu) <= Date.now() + 30000) {
@@ -92,6 +94,7 @@ function createAccount({ userData, safeStorage, openExternal, transport = fetch 
     }
   }
   async function start() {
+    pendingEmail = null; emailMode = false; errorCode = null;
     if (pendingServer) return { started: true };
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Windows güvenli token deposu kullanılamıyor.");
     const pair = pkcePair(); let redirectURI; let exchanged = false; const generation = ++epoch;
@@ -124,14 +127,70 @@ function createAccount({ userData, safeStorage, openExternal, transport = fetch 
     try { await openExternal(url.href); } catch (problem) { closePending(); status = "failed"; error = String(problem.message); publish(); throw problem; }
     return { started: true };
   }
+  function loginError(code, message, nextState = "failed") {
+    errorCode = code; error = message; status = nextState; publish(); return snapshot();
+  }
+  function emailFailure(problem, verifying) {
+    const waiting = pendingEmail?.challengeId && Date.parse(pendingEmail.expiresAt) > Date.now();
+    if (problem.code === "OTP_GECERSIZ") return loginError("wrong_code", "Doğrulama kodu yanlış. E-postanıza gelen 6 haneli kodu yeniden girin.", waiting ? "code_sent" : "failed");
+    if (["OTP_SURESI_DOLDU", "OTP_DENEME_SINIRI"].includes(problem.code)) {
+      if (pendingEmail) { pendingEmail.challengeId = null; pendingEmail.verifier = null; pendingEmail.expiresAt = new Date().toISOString(); }
+      return loginError("expired_code", problem.code === "OTP_DENEME_SINIRI" ? "Kod deneme sınırına ulaşıldı. Yeni bir kod isteyin." : "Kodun süresi doldu. Yeni bir kod isteyin.");
+    }
+    if (problem.status === 429 || problem.code === "HIZ_SINIRI") {
+      if (pendingEmail) { pendingEmail.resendAt = new Date(Date.now() + (problem.retryAfter || 60) * 1000).toISOString(); if (verifying) pendingEmail.verifyAfter = pendingEmail.resendAt; }
+      return loginError("rate_limited", "Çok sık deneme yapıldı. Sayaç tamamlandığında yeniden deneyin.", waiting ? "code_sent" : "failed");
+    }
+    if (["EMAIL_INVALID", "EMAIL_DISPOSABLE"].includes(problem.code)) return loginError("invalid_email", problem.code === "EMAIL_DISPOSABLE" ? "Geçici e-posta adresi kullanılamıyor. Kalıcı e-posta adresinizi girin." : "Geçerli bir e-posta adresi girin.");
+    return loginError("unavailable", verifying ? "Giriş tamamlanamadı. Bağlantınızı kontrol ederek yeniden deneyin." : "Doğrulama kodu gönderilemedi. Biraz sonra yeniden deneyin.", waiting ? "code_sent" : "failed");
+  }
+  async function sendLoginCode(value) {
+    emailMode = true;
+    if (["sending_code", "verifying_code"].includes(status)) return snapshot();
+    if (status === "signed_in") return snapshot();
+    if (typeof value !== "string" || value.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return loginError("invalid_email", "Geçerli bir e-posta adresi girin.");
+    const email = value.trim().toLowerCase();
+    if (pendingEmail && Date.parse(pendingEmail.resendAt) > Date.now()) return loginError("rate_limited", "Yeni kod istemek için sayaç tamamlanana kadar bekleyin.", pendingEmail.challengeId ? "code_sent" : "failed");
+    if (!safeStorage.isEncryptionAvailable()) return loginError("secure_storage", "Windows güvenli oturum deposu kullanılamıyor.");
+    closePending(); clearSession(); const generation = epoch; const pair = pkcePair();
+    pendingEmail = { email, verifier: pair.verifier, challengeId: null, expiresAt: null, resendAt: null };
+    status = "sending_code"; error = null; errorCode = null; publish();
+    try {
+      const result = await api("/api/auth/device/email/request", { client_id: CLIENT_ID, email, device_id: deviceId, code_challenge: pair.challenge, code_challenge_method: "S256" });
+      if (generation !== epoch) return snapshot();
+      if (!/^eotp_[A-Za-z0-9_-]{43}$/.test(result.challenge_id || "") || !Number.isFinite(Date.parse(result.expires_at)) || Date.parse(result.expires_at) <= Date.now() || Date.parse(result.expires_at) > Date.now() + 3600000 || !Number.isInteger(result.resend_after_seconds) || result.resend_after_seconds < 0 || result.resend_after_seconds > 3600) throw new Error("invalid challenge");
+      pendingEmail.challengeId = result.challenge_id; pendingEmail.expiresAt = result.expires_at; pendingEmail.resendAt = new Date(Date.now() + result.resend_after_seconds * 1000).toISOString();
+      status = "code_sent"; publish(); return snapshot();
+    } catch (problem) { if (generation !== epoch) return snapshot(); return emailFailure(problem, false); }
+  }
+  async function verifyLoginCode(code) {
+    emailMode = true;
+    if (["sending_code", "verifying_code"].includes(status) || status === "signed_in") return snapshot();
+    if (!pendingEmail?.challengeId || Date.parse(pendingEmail.expiresAt) <= Date.now()) return loginError("expired_code", "Kodun süresi doldu. Yeni bir kod isteyin.");
+    if (Date.parse(pendingEmail.verifyAfter) > Date.now()) return loginError("rate_limited", "Çok sık deneme yapıldı. Sayaç tamamlandığında yeniden deneyin.", "code_sent");
+    if (typeof code !== "string" || !/^\d{6}$/.test(code)) return loginError("wrong_code", "E-postanıza gelen 6 haneli kodu girin.", "code_sent");
+    const generation = epoch; const input = pendingEmail;
+    status = "verifying_code"; error = null; errorCode = null; publish();
+    try {
+      const record = await api("/api/auth/device/email/verify", { client_id: CLIENT_ID, email: input.email, device_id: deviceId, challenge_id: input.challengeId, code, code_verifier: input.verifier });
+      if (generation !== epoch) return snapshot();
+      if (Date.parse(record.access_sure_sonu) <= Date.now() || Date.parse(record.refresh_sure_sonu) <= Date.now()) throw new Error("expired session");
+      save(record); return snapshot();
+    } catch (problem) { if (generation !== epoch) return snapshot(); return emailFailure(problem, true); }
+  }
+  function cancelLogin() {
+    epoch++; closePending(); pendingEmail = null; error = null; errorCode = null; emailMode = true;
+    status = session ? (Date.parse(session.access_sure_sonu) > Date.now() && Date.parse(session.refresh_sure_sonu) > Date.now() ? "signed_in" : "expired") : "signed_out";
+    publish(); return snapshot();
+  }
   scheduleExpiry();
   function current(generation) {
     return generation === epoch && status === "signed_in" && !!session && Date.parse(session.access_sure_sonu) > Date.now() && Date.parse(session.refresh_sure_sonu) > Date.now();
   }
   return {
-    start, close: () => { closePending(); if (expiryTimer) clearTimeout(expiryTimer); listeners.clear(); },
+    start, sendLoginCode, verifyLoginCode, cancelLogin, close: () => { epoch++; pendingEmail = null; closePending(); if (expiryTimer) clearTimeout(expiryTimer); listeners.clear(); },
     status: () => { if (session && Date.parse(session.refresh_sure_sonu) <= Date.now()) clearSession(); else if (session && Date.parse(session.access_sure_sonu) <= Date.now() && status === "signed_in") { status = "expired"; publish(); } return snapshot(); },
-    checkSession: async () => { if (session && status !== "waiting") { try { await accessToken(); } catch { /* Son durum kilitli kalır; token veya ağ yanıtı renderer'a verilmez. */ } } return snapshot(); },
+    checkSession: async () => { if (session && ["signed_in", "expired"].includes(status)) { try { await accessToken(); } catch { /* Son durum kilitli kalır; token veya ağ yanıtı renderer'a verilmez. */ } } return snapshot(); },
     subscribe: listener => { listeners.add(listener); return () => listeners.delete(listener); },
     generation: () => epoch,
     isCurrent: current,

@@ -1,11 +1,12 @@
 // TEST HARNESS ONLY: account is synthetic; product API/TTS and source UI are real.
-const {app, BrowserWindow, ipcMain} = require('electron');
+const {app, BrowserWindow, ipcMain, safeStorage} = require('electron');
+const crypto = require('node:crypto');
 const fs=require('node:fs'), path=require('node:path'), cp=require('node:child_process');
 const root=path.resolve(__dirname,'../../../..');
 const run=path.join(root,'.local/urun',`ui-integration-${Date.now()}`); fs.mkdirSync(run,{recursive:true});
 app.setPath('userData',path.join(run,'electron-data')); app.disableHardwareAcceleration();
 const {validateRequest}=require(path.join(root,'apps/desktop/gui/electron/ipc-policy.cjs'));
-let child, win, signed=false; const receipt={test_auth:'synthetic harness only',database:path.join(run,'data'),checks:[],errors:[]};
+let child, win, account, gate; const receipt={test_auth:'real native account/PKCE/DPAPI with synthetic remote OTP transport; no live email',database:path.join(run,'data'),checks:[],errors:[]};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function wait(fn,limit=15000){let start=Date.now();while(Date.now()-start<limit){if(await fn())return;await sleep(150);}throw Error('Wait timed out');}
 function check(name,truth){receipt.checks.push({name,passed:!!truth});if(!truth)throw Error(name);}
@@ -19,13 +20,32 @@ app.whenReady().then(async()=>{
   const {port,workspace}=JSON.parse(fs.readFileSync(path.join(run,'server.json')));
   const origin=`http://127.0.0.1:${port}`;
   await wait(async()=>{try{return (await fetch(origin+'/gui/health')).ok;}catch{return false;}});
-  ipcMain.handle('rasathane:account-status',()=>({state:signed?'signed_in':'signed_out',scope:[]}));
-  ipcMain.handle('rasathane:open-account',()=>{signed=true;win.webContents.send('rasathane:account-change',{state:'signed_in',scope:[]});return {};});
-  ipcMain.handle('rasathane:sign-out',()=>{signed=false;win.webContents.send('rasathane:account-change',{state:'signed_out',scope:[]});return {signedOut:true,remoteRevoked:true};});
+  let requested;
+  account = require('../electron/account.cjs').createAccount({userData:app.getPath('userData'),safeStorage,openExternal:()=>{throw Error('Native email login must not open a browser');},transport:async(url, options)=>{
+    const input=JSON.parse(options.body || '{}');
+    if(url.endsWith('/email/request')){
+      requested=input;
+      return Response.json({challenge_id:'eotp_'+'a'.repeat(43),expires_at:new Date(Date.now()+300000).toISOString(),resend_after_seconds:60});
+    }
+    if(url.endsWith('/email/verify')){
+      check('native verification preserves email/device and PKCE',input.email===requested.email && input.device_id===requested.device_id && crypto.createHash('sha256').update(input.code_verifier).digest('base64url')===requested.code_challenge);
+      if(input.code!=='123456')return Response.json({code:'OTP_GECERSIZ'},{status:400});
+      return Response.json({schema_version:'1.1',device_id:input.device_id,durum:'aktif',session_id:'dses_'+'b'.repeat(16),access_token:'at_'+'c'.repeat(43),refresh_token:'rt_'+'d'.repeat(43),scope:['desktop','urun:rasathane'],access_sure_sonu:new Date(Date.now()+600000).toISOString(),refresh_sure_sonu:new Date(Date.now()+3600000).toISOString()});
+    }
+    if(url.endsWith('/revoke'))return Response.json({revoked:true});
+    throw Error('Unexpected synthetic auth route');
+  }});
+  gate=require('../electron/auth-gate.cjs').createAuthGate(account);
+  account.subscribe(state=>win?.webContents.send('rasathane:account-change',state));
+  ipcMain.handle('rasathane:account-status',()=>account.checkSession());
+  ipcMain.handle('rasathane:send-login-code',(_,email)=>account.sendLoginCode(email));
+  ipcMain.handle('rasathane:verify-login-code',(_,code)=>account.verifyLoginCode(code));
+  ipcMain.handle('rasathane:cancel-login',()=>account.cancelLogin());
+  ipcMain.handle('rasathane:sign-out',()=>account.signOut());
   ipcMain.handle('rasathane:setup-status',()=>({ready:true,state:'ready',models:[]}));
   ipcMain.handle('rasathane:entitlement',()=>({durum:'aktif',products:[]}));
   ipcMain.handle('rasathane:request',async(_,route,options)=>{
-   if(!signed)throw Error('Test authenticated boundary: login required');
+   await gate.run(async()=>true);
    const r=validateRequest(route,options);receipt.requests??=[];receipt.requests.push(r.route);
    const response=await fetch(origin+r.route,{method:r.method,body:r.body,headers:{'Content-Type':'application/json'}});
    const contentType=response.headers.get('content-type'); const bytes=Buffer.from(await response.arrayBuffer());
@@ -37,10 +57,17 @@ app.whenReady().then(async()=>{
   await win.loadURL(origin+'/index.html'); await sleep(400);
   check('logged out blocks product screens',await js(`document.body.classList.contains('session-locked') && document.querySelector('#app-main').inert && !document.querySelector('#giris-ekrani').hidden`));
   check('logged out sends no data requests',!receipt.requests?.length); await snap('01-locked');
-  await js(`localStorage.setItem('rasathane-setup-v1','complete');document.querySelector('#giris-baslat').click()`);
+  await js(`localStorage.setItem('rasathane-setup-v1','complete');document.querySelector('#giris-email').value='qa@example.com';document.querySelector('#giris-email-form').requestSubmit()`);
+  await wait(()=>js(`!document.querySelector('#giris-kod-form').hidden`));
+  check('sent code keeps product locked and resend waits',await js(`document.body.classList.contains('session-locked') && document.querySelector('#giris-tekrar').disabled`));
+  await snap('01b-code');
+  await js(`document.querySelector('#giris-kod').value='000000';document.querySelector('#giris-kod-form').requestSubmit()`);
+  await wait(()=>account.status().errorCode==='wrong_code');
+  check('wrong code keeps product locked without data requests',await js(`document.querySelector('#app-main').inert`) && !receipt.requests?.length);
+  await js(`document.querySelector('#giris-kod').value='123456';document.querySelector('#giris-kod-form').requestSubmit()`);
   await wait(()=>js(`document.querySelector('#akis-liste').textContent.includes('Sentetik QA haberi')`));
   await js(`for(const d of document.querySelectorAll('dialog[open]')) d.close();document.querySelector('[data-gorunum="akis"]').click()`);
-  check('synthetic login unlocks real feed',await js(`!document.body.classList.contains('session-locked')`));
+  check('native OTP login unlocks real feed and clears code',await js(`!document.body.classList.contains('session-locked') && !document.querySelector('#giris-kod').value`));
   await sleep(500);
   await js(`document.querySelector('.news-summary-control button').click()`);
   await wait(()=>js(`document.querySelector('.news-summary').textContent.includes('Başvuru süresi otuz gündür')`)); await snap('02-summary');
@@ -91,6 +118,6 @@ app.whenReady().then(async()=>{
    }
    receipt.owned_server_exited=child.exitCode!==null || child.signalCode!==null;
   }
-  fs.writeFileSync(path.join(run,'receipt.json'),JSON.stringify(receipt,null,2));console.log(JSON.stringify({run,ok:receipt.ok,failure:receipt.failure,checks:receipt.checks}));win?.destroy();app.exit(receipt.ok?0:1);
+  gate?.close();account?.close();fs.writeFileSync(path.join(run,'receipt.json'),JSON.stringify(receipt,null,2));console.log(JSON.stringify({run,ok:receipt.ok,failure:receipt.failure,checks:receipt.checks}));win?.destroy();app.exit(receipt.ok?0:1);
  }
 });

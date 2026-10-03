@@ -211,7 +211,7 @@ export function createProductUI({
   const accountLogin = el(
     "button",
     { id: "hesap-giris", type: "button", class: "btn" },
-    "Muhakeme ile giriş yap",
+    "E-posta ile giriş yap",
   );
   const accountRefresh = el(
     "button",
@@ -1347,9 +1347,9 @@ export function createProductUI({
         accountMessage(
           "Rasathane hesabı ve hizmet durumu sunucudan doğrulandı.",
         );
-      } else if (accountState === "waiting")
+      } else if (["sending_code", "code_sent", "verifying_code", "waiting"].includes(accountState))
         accountMessage(
-          "Tarayıcıda Muhakeme girişini tamamlayın. Hesap bağlanınca bu ekran yenilenir; deneme otomatik başlamaz.",
+          "Giriş ekranında e-postanıza gelen doğrulama kodunu girin. Deneme otomatik başlamaz.",
         );
       else if (accountState === "failed")
         accountMessage(
@@ -1390,15 +1390,9 @@ export function createProductUI({
   accountClose.addEventListener("click", () => accountDialog.close());
   accountDialog.addEventListener("close", () => clearTimeout(accountTimer));
   accountRefresh.addEventListener("click", refreshAccount);
-  accountLogin.addEventListener("click", async () => {
-    accountLogin.disabled = true;
-    try {
-      await window.rasathane.openAccount();
-      await refreshAccount();
-    } catch (error) {
-      accountMessage(errorMessage(error, "Hesap girişi başlatılamadı."), true);
-      accountControls();
-    }
+  accountLogin.addEventListener("click", () => {
+    accountDialog.close();
+    window.dispatchEvent(new Event("rasathane:focus-login"));
   });
   accountTrial.addEventListener("click", async () => {
     if (accountLoading || entitlement?.deneme_baslatilabilir !== true) return;

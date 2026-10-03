@@ -11,7 +11,9 @@
 | Konu takibi | Değişiklikleri kaydetme, yenileme aralığı ve hata/güncellik durumu |
 | Ayarlar | Kurulum sihirbazı, model kontrolü, çalışma klasörü ve Muhakeme hesabı |
 
-Yerel çekirdek **AGPL-3.0-or-later** lisansıyla ücretsizdir; ticari kullanım dahil AGPL hakları geçerlidir. Muhakeme hesabıyla sunulan yönetilen servisler için aylık toplam **49 TL** ve **14 günlük** deneme sözleşmesi ayrı yürütülür. Yerel özellikler üyelik olmadan çalışır. Marka ve üçüncü taraf model lisansları: [NOTICE](NOTICE.md).
+Yerel çekirdek **AGPL-3.0-or-later** lisansıyla ücretsizdir; ticari kullanım dahil AGPL hakları geçerlidir. Masaüstü uygulamasında Muhakeme hesabıyla giriş zorunludur; yerel özellikler ücretli abonelik gerektirmez. Yönetilen servisler için aylık toplam **49 TL** ve **14 günlük** deneme sözleşmesi ayrı yürütülür. Marka ve üçüncü taraf model lisansları: [NOTICE](NOTICE.md).
+
+Giriş, uygulama içinde e-posta ve altı haneli doğrulama koduyla yapılır. Muhakeme'deki mevcut kullanıcı yeniden kullanılır; yeni kullanıcı doğrulama sonrasında aynı hesap sisteminde oluşturulur. Kod ve cihaz doğrulama bilgileri bellekte, oturum token'ları yalnız Electron main sürecinde Windows güvenli deposunda tutulur. Yeni giriş akışının kullanılabilmesi için Muhakeme sunucusunda karşılık gelen endpoint'lerin yayımlanması gerekir.
 
 ## Kaynak ve geliştirme
 

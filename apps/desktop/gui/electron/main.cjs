@@ -143,6 +143,15 @@ function installBridge() {
   ipcMain.handle("rasathane:open-account", async event => {
     check(event); return account.start();
   });
+  ipcMain.handle("rasathane:send-login-code", (event, email) => { check(event); return account.sendLoginCode(email); });
+  ipcMain.handle("rasathane:verify-login-code", (event, code) => { check(event); return account.verifyLoginCode(code); });
+  ipcMain.handle("rasathane:cancel-login", event => { check(event); return account.cancelLogin(); });
+  ipcMain.handle("rasathane:open-login-document", async (event, document) => {
+    check(event);
+    if (!["terms", "privacy"].includes(document)) throw new Error("Belge seçimi geçersiz.");
+    await shell.openExternal(`https://www.muhakeme.ai/${document === "terms" ? "kosullar" : "kvkk"}`);
+    return { opened: true };
+  });
   ipcMain.handle("rasathane:account-status", event => { check(event); return account.checkSession(); });
   ipcMain.handle("rasathane:entitlement", async event => { check(event); return account.entitlement(); });
   ipcMain.handle("rasathane:start-trial", async event => { check(event); return account.startTrial(); });
