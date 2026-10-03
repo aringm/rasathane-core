@@ -26,6 +26,12 @@ arşivdeki bir haberin özetini ayrıca başlatabilir. Cache içerik hash'iyle
 ilişkilidir. Eski bültenlerin gösteriminde Türkçe özet kullanılabilir; özgün
 snapshot, kişisel değerlendirme kanıtı ve özet kanıtı birbirinden ayrıdır.
 
+Akış cache ve işlem durumunu sayfa başına toplu okur. Ölçülen 200 haberlik
+arşiv sayfası yaklaşık 3,23 saniyeden 0,20 saniyeye indi; bu ölçüm genel donanım
+performans garantisi değildir. Örtüşen yenilemeler aynı isteği paylaşır, arama
+değişirse son filtre uygulanır. Kaynak değişince eski özet geçersizleşir;
+sayfadan çıkan kartın gecikmiş ses yanıtı oynatılmaz.
+
 Web adapter HTML yanında gerçek PDF byte imzasını tanır. PDF metin katmanı
 yerel `pypdf[fonts]` ile okunur; sayfa sayıları, metin hash'i, kaynak byte hash'i,
 OCR yapılmadığı ve kısmi okuma nedenleri UI ve dosyalarda bulunur. PDF indirmesi

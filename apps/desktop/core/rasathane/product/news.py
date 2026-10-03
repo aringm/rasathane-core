@@ -101,8 +101,11 @@ def display_summary(store: ProductStore, article: dict[str, Any]) -> dict[str, A
         "ORDER BY created_at DESC LIMIT 1",
         (article["id"], signature),
     )
-    if jobs:
-        job = jobs[0]
+    return _with_summary_job(result, jobs[0] if jobs else None)
+
+
+def _with_summary_job(result: dict[str, Any], job: dict[str, Any] | None) -> dict[str, Any]:
+    if job is not None:
         result["job_id"] = job["id"]
         if job["status"] in {"queued", "running", "cancel_requested"}:
             result.update(status="pending", label="Türkçe özet hazırlanıyor")
@@ -114,6 +117,55 @@ def display_summary(store: ProductStore, article: dict[str, Any]) -> dict[str, A
                 notice="Türkçe özet hazırlanamadı. Yeniden denemek için Özetle düğmesini kullanın.",
             )
     return result
+
+
+def display_summaries(
+    store: ProductStore, articles: list[dict[str, Any]]
+) -> dict[str, dict[str, Any]]:
+    """Sayfanın cache ve iş durumunu iki toplu sorguda okur; hiçbir iş başlatmaz."""
+    if not articles:
+        return {}
+    signatures = {article["id"]: article_input_hash(article) for article in articles}
+    placeholders = ",".join("?" for _ in signatures)
+    cached = {
+        row["article_id"]: row["payload"]
+        for row in store.rows(
+            f"SELECT article_id,input_hash,payload FROM article_summaries "
+            f"WHERE article_id IN ({placeholders})",
+            tuple(signatures),
+        )
+        if row["input_hash"] == signatures[row["article_id"]]
+    }
+    results = {
+        article["id"]: dict(cached[article["id"]])
+        if article["id"] in cached
+        else _saved_summary(article)
+        for article in articles
+    }
+    pending_ids = [
+        item_id
+        for item_id, result in results.items()
+        if item_id not in cached
+        and result["status"] != "ready"
+        and result["text_scope"] != "official_metadata"
+    ]
+    if pending_ids:
+        placeholders = ",".join("?" for _ in pending_ids)
+        jobs = store.rows(
+            "SELECT id,status,error,json_extract(request,'$.article_id') AS article_id,"
+            "json_extract(request,'$.input_hash') AS input_hash FROM jobs "
+            "WHERE kind='article_summary' AND json_extract(request,'$.article_id') "
+            f"IN ({placeholders}) ORDER BY created_at DESC",
+            tuple(pending_ids),
+        )
+        seen = set()
+        for job in jobs:
+            item_id = job["article_id"]
+            if item_id in seen or job["input_hash"] != signatures[item_id]:
+                continue
+            seen.add(item_id)
+            _with_summary_job(results[item_id], job)
+    return results
 
 
 class _PlainText(HTMLParser):

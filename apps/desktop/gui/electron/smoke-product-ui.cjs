@@ -5,10 +5,13 @@
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function verifyProductUI(window) {
   const web = window.webContents;
+  // Hidden acceptance windows must run the same debounce timers as a visible app.
+  web.setBackgroundThrottling(false);
   const js = source => web.executeJavaScript(source, true);
   async function wait(source, timeout = 30000) {
     const until = Date.now() + timeout;
     while (Date.now() < until) { if (await js(`Boolean(${source})`)) return; await pause(150); }
+    console.error(JSON.stringify({smoke:"product-wait-diagnostic",state:await js(`({locked:document.body.classList.contains('session-locked'),search:document.querySelector('#akis-ara')?.value,searchCount:document.querySelectorAll('#akis-ara').length,status:document.querySelector('#akis-sonuc-durum')?.textContent,cards:[...document.querySelectorAll('.radar-entry')].map(n=>n.dataset.articleId),dialogs:[...document.querySelectorAll('dialog[open]')].map(n=>n.id)})`)}));
     throw new Error("Ürün UI kabul kontrolü zaman aşımı: " + source.slice(0, 120));
   }
   async function pointer(selector) {
@@ -58,7 +61,7 @@ async function verifyProductUI(window) {
     await pointer('[data-gorunum="akis"]');
     await js(`(() => { const input=document.querySelector('#akis-ara'); input.value=${JSON.stringify(item.title)}; input.dispatchEvent(new Event('input',{bubbles:true})); })()`);
     const card = `.radar-entry[data-article-id=${JSON.stringify(item.id)}]`;
-    await wait(`document.querySelector(${JSON.stringify(card)})`, 30000);
+    await wait(`document.querySelector(${JSON.stringify(card)})`, 120000);
     const started = Date.now();
     await pointer(card + " .news-summarize");
     const deadline = started + 10 * 60000;

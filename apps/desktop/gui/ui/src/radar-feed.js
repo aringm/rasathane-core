@@ -2,6 +2,8 @@ import { categoryLabel } from "./source-manager.js";
 
 export function createRadarFeed({ $, el, api, news, bulletin, renderRecord, onSources }) {
   let sources = [], offset = 0, total = 0, epoch = 0, timer, summaryTimer, selectedCategory = "", locked = false;
+  let loadingPromise = null, queuedLoad = null, activeLoad = null, renderedKey = null;
+  let records = new Map();
   const pageSize = 25;
   const list = $("akis-liste");
   const search = el("input", { id: "akis-ara", type: "search", maxlength: 200, placeholder: "Haber başlığı veya özette ara", "aria-label": "Akışta ara" });
@@ -32,23 +34,63 @@ export function createRadarFeed({ $, el, api, news, bulletin, renderRecord, onSo
     if (search.value.trim()) params.set("query", search.value.trim());
     return `/articles?${params}`;
   }
-  async function load() {
-    if (locked) return;
-    const generation = ++epoch;
-    if (offset === 0) bulletin.updateItems([]);
+  function inputIdentity(item) { return JSON.stringify([item.title, item.summary, item.url, item.provenance]); }
+  function changedInput(record, item) {
+    if (record.input !== inputIdentity(item)) return true;
+    const before = record.item.summary_display, after = item.summary_display;
+    return before?.status === "ready" && after?.status === "ready" && before.source_hash && after.source_hash && before.source_hash !== after.source_hash;
+  }
+  function updateRecord(record, item) {
+    const ready = record.item.summary_display;
+    Object.assign(record.item, item);
+    if (ready?.status === "ready" && item.summary_display?.status !== "ready") record.item.summary_display = ready;
+    record.row.querySelector(".radar-entry-excerpt").textContent = articlePreview(record.item);
+    record.row.querySelector("h3").textContent = record.item.summary_display?.title || item.title || "Başlıksız içerik";
+  }
+  function load() {
+    if (locked) return Promise.resolve();
+    const page = filters(pageSize, offset), candidates = offset === 0 ? filters(200, 0) : null;
+    const key = `${page}|${candidates || ""}`;
+    const latest = queuedLoad || activeLoad;
+    if (latest?.key === key && latest.generation === epoch) return loadingPromise;
+    queuedLoad = { key, page, candidates, start: offset, generation: ++epoch };
+    if (loadingPromise) return loadingPromise;
+    loadingPromise = (async () => {
+      while (queuedLoad && !locked) {
+        activeLoad = queuedLoad; queuedLoad = null;
+        await fetchPage(activeLoad);
+      }
+    })().finally(() => { loadingPromise = null; activeLoad = null; });
+    return loadingPromise;
+  }
+  async function fetchPage(snapshot) {
+    const { generation, key, start } = snapshot;
     previous.disabled = next.disabled = true;
     list.setAttribute("aria-busy", "true"); status.classList.remove("status-error");
     status.textContent = "Haberler yükleniyor…";
     try {
-      const [data, candidates] = await Promise.all([
-        api(filters(pageSize, offset)), offset === 0 ? api(filters(200, 0)) : Promise.resolve(null),
+      const replies = await Promise.allSettled([
+        api(snapshot.page), snapshot.candidates ? api(snapshot.candidates) : Promise.resolve(null),
       ]);
+      const failed = replies.find(reply => reply.status === "rejected");
+      if (failed) throw failed.reason;
+      const [data, candidates] = replies.map(reply => reply.value);
       if (generation !== epoch || locked) return;
       total = data.total ?? data.items?.length ?? 0;
-      if (offset && !data.items?.length && total) { offset = 0; void load(); return; }
-      news.stopAll();
+      if (start && !data.items?.length && total) { offset = 0; void load(); return; }
+      if (renderedKey !== null && renderedKey !== key) { news.stopAll(); for (const record of records.values()) record.control.dispose?.(); records.clear(); }
+      renderedKey = key;
       if (candidates) bulletin.updateItems(candidates.items || []);
-      list.replaceChildren(...(data.items?.length ? data.items.map(item => {
+      const retained = new Map();
+      const nodes = data.items?.length ? data.items.map(item => {
+        const existing = records.get(item.id);
+        if (existing && changedInput(existing, item)) existing.control.dispose?.();
+        if (existing && !changedInput(existing, item)) {
+          // Keep the controls and their running summary/audio operation attached.
+          updateRecord(existing, item);
+          retained.set(item.id, existing);
+          return existing.node;
+        }
         const details = el("article", { class: "radar-entry", "data-article-id": item.id });
         const row = el("div", { class: "radar-entry-heading" },
           el("div", { class: "radar-entry-meta" }, el("span", { class: "radar-source-name" }, item.source_name || sources.find(s => s.id === item.source_id)?.name || "Kayıtlı kaynak"),
@@ -58,23 +100,40 @@ export function createRadarFeed({ $, el, api, news, bulletin, renderRecord, onSo
           el("p", { class: "radar-entry-excerpt" }, articlePreview(item)));
         const body = el("div", { class: "radar-entry-body" });
         details.append(row, body);
-        body.append(renderRecord(item, result => {
+        const control = renderRecord(item, result => {
           item.summary_display = result;
           if (result.url) item.url = result.url;
           row.querySelector(".radar-entry-excerpt").textContent = articlePreview(item);
           row.querySelector("h3").textContent = result.title || item.title || "Başlıksız içerik";
-        }));
+        });
+        body.append(control);
+        retained.set(item.id, { item, row, control, node: details, input: inputIdentity(item) });
         return details;
       }) : [el("div", { class: "radar-empty" }, el("h3", {}, "Bu filtrede haber bulunamadı"),
         el("p", {}, "Tüm tarihleri veya başka bir kaynağı seçin. Yeni haber almak için Akışı yenile düğmesini kullanın."),
-        el("button", { type: "button", class: "btn btn-ikincil", onclick: () => { search.value = ""; source.value = ""; period.value = "0"; selectedCategory = ""; offset = 0; categories(); void load(); } }, "Filtreleri temizle"))]));
+        el("button", { type: "button", class: "btn btn-ikincil", onclick: () => { search.value = ""; source.value = ""; period.value = "0"; selectedCategory = ""; offset = 0; categories(); void load(); } }, "Filtreleri temizle"))];
+      for (const [id, record] of records) if (!retained.has(id)) record.control.dispose?.();
+      for (const child of [...list.children]) if (!nodes.includes(child)) child.remove();
+      nodes.forEach((node, index) => {
+        const before = list.children[index] || null;
+        if (before === node) return;
+        // moveBefore preserves media playback/focus when reordered within the list.
+        if (node.parentElement === list && list.moveBefore) list.moveBefore(node, before);
+        else list.insertBefore(node, before);
+      });
+      records = retained;
       scheduleSummaryRefresh(data.items || [], generation);
       status.textContent = total ? `${offset + 1}–${Math.min(offset + pageSize, total)} / ${total.toLocaleString("tr-TR")} haber` : "0 haber";
       previous.disabled = offset === 0; next.disabled = offset + pageSize >= total;
     } catch (error) {
       if (generation !== epoch || locked) return;
       status.textContent = `Akış yüklenemedi: ${error.message}`; status.classList.add("status-error");
-      list.replaceChildren(el("button", { type: "button", class: "btn btn-ikincil", onclick: () => void load() }, "Yeniden dene"));
+      const retry = el("button", { type: "button", class: "btn btn-ikincil", onclick: () => void load() }, "Yeniden dene");
+      if (renderedKey === key && records.size) status.append(retry);
+      else {
+        for (const record of records.values()) record.control.dispose?.();
+        records.clear(); renderedKey = null; list.replaceChildren(retry);
+      }
     } finally { if (generation === epoch) list.removeAttribute("aria-busy"); }
   }
   function scheduleSummaryRefresh(items, generation) {
@@ -85,11 +144,10 @@ export function createRadarFeed({ $, el, api, news, bulletin, renderRecord, onSo
       try {
         const data = await api(filters(pageSize, offset));
         if (locked || generation !== epoch) return;
+        if ((data.items || []).some(item => records.has(item.id) && changedInput(records.get(item.id), item))) { void load(); return; }
         for (const item of data.items || []) {
-          const card = [...list.querySelectorAll(".radar-entry")].find(node => node.dataset.articleId === item.id);
-          if (!card) continue;
-          card.querySelector(".radar-entry-excerpt").textContent = articlePreview(item);
-          card.querySelector("h3").textContent = item.summary_display?.title || item.title || "Başlıksız içerik";
+          const record = records.get(item.id);
+          if (record) updateRecord(record, item);
         }
         scheduleSummaryRefresh(data.items || [], generation);
       } catch { if (!locked && generation === epoch) summaryTimer = setTimeout(() => scheduleSummaryRefresh(items, generation), 10000); }
@@ -107,10 +165,10 @@ export function createRadarFeed({ $, el, api, news, bulletin, renderRecord, onSo
       if (sources.some(item => item.id === selected)) source.value = selected;
       categories();
       sourceOverview.textContent = `${sources.filter(item => item.enabled).length} kaynak takipte · ${sources.filter(item => item.last_error).length} kaynak kontrol bekliyor`;
-      void load();
+      return load();
     },
     filterSource(id) { source.value = id; selectedCategory = ""; offset = 0; categories(); void load(); },
-    reset() { locked = true; epoch++; clearTimeout(timer); clearTimeout(summaryTimer); offset = 0; sources = []; news.stopAll(); list.replaceChildren(); status.textContent = sourceOverview.textContent = ""; },
+    reset() { locked = true; epoch++; queuedLoad = null; clearTimeout(timer); clearTimeout(summaryTimer); offset = 0; sources = []; for (const record of records.values()) record.control.dispose?.(); records.clear(); renderedKey = null; news.stopAll(); list.replaceChildren(); status.textContent = sourceOverview.textContent = ""; },
   };
 }
 

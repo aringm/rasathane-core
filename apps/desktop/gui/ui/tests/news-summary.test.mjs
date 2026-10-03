@@ -98,3 +98,32 @@ test("a digest that applies the returned summary inline avoids a duplicate text 
   assert.equal(node.children[1].hidden, true);
   assert.equal(node.children[0].children.length, 4);
 });
+
+test("disposing one queued card discards its private response without cancelling a neighboring card", async t => {
+  const d = dom(), replies = new Map(), applied = [];
+  const controller = createNewsSummary({ ...d,
+    api: path => new Promise(resolve => replies.set(path, resolve)), request: async () => {},
+  });
+  t.after(() => controller.stopAll());
+  const first = controller.control({ id: "first" }, { onSummary: () => applied.push("first") });
+  const second = controller.control({ id: "second" }, { onSummary: () => applied.push("second") });
+  const a = first.children[0].children[1].fire("click"), b = second.children[0].children[1].fire("click");
+  first.dispose();
+  for (const resolve of replies.values()) resolve({ status: "ready", language: "tr", summary: "Türkçe metin" });
+  await Promise.all([a, b]);
+  assert.deepEqual(applied, ["second"]);
+  assert.equal(first.children[1].children[0].children.length, 0);
+});
+
+test("a removed card cannot autoplay a late speech response", async t => {
+  let release, started;
+  const waiting = new Promise(resolve => { release = resolve; });
+  const begun = new Promise(resolve => { started = resolve; });
+  const f = fixture(t, { request: async () => { started(); return waiting; } });
+  const speaking = f.actionRow.children[2].fire("click");
+  await begun; f.node.dispose(); release(new Response(new Blob(["wav"]), { status: 200 }));
+  await speaking;
+  const audio = f.output.queryAll("audio")[0];
+  assert.notEqual(audio.played, true);
+  assert.equal(audio.src, undefined);
+});

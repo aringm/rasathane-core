@@ -146,9 +146,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/news.py",
-      "source_sha256": "7ee5cbe76ae709a53762d41d1b84dc38e0704cc0f492d435c9849c591e9f572d",
-      "sha256": "7ee5cbe76ae709a53762d41d1b84dc38e0704cc0f492d435c9849c591e9f572d",
-      "bytes": 10562
+      "source_sha256": "4dc1814880baaab603b3d83f628f51d481116305f9cb3d4716a7c5419580c5b9",
+      "sha256": "4dc1814880baaab603b3d83f628f51d481116305f9cb3d4716a7c5419580c5b9",
+      "bytes": 12559
     },
     {
       "path": "apps/desktop/core/rasathane/product/research_chat.py",
@@ -176,9 +176,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/store.py",
-      "source_sha256": "7261bb080dcaa03881ea865bf56220b7fb2d68abfc36ade17dd63382835c4639",
-      "sha256": "7261bb080dcaa03881ea865bf56220b7fb2d68abfc36ade17dd63382835c4639",
-      "bytes": 66399
+      "source_sha256": "b6518613da6ac5b38b3d82be5d090dcdd26aa494c8c2df663a69cd7cf5052be8",
+      "sha256": "b6518613da6ac5b38b3d82be5d090dcdd26aa494c8c2df663a69cd7cf5052be8",
+      "bytes": 66446
     },
     {
       "path": "apps/desktop/core/rasathane/product/web.py",
@@ -896,9 +896,9 @@
     },
     {
       "path": "apps/desktop/gui/electron/smoke-product-ui.cjs",
-      "source_sha256": "bfacc9dc57241b1323c8663124738a8854ebf39ca44a747a1c038b1d6098721c",
-      "sha256": "bfacc9dc57241b1323c8663124738a8854ebf39ca44a747a1c038b1d6098721c",
-      "bytes": 12893
+      "source_sha256": "6689a31e7f4231c517bfb2588995db76c9bca36a556143be964a559171f6b2cc",
+      "sha256": "6689a31e7f4231c517bfb2588995db76c9bca36a556143be964a559171f6b2cc",
+      "bytes": 13486
     },
     {
       "path": "apps/desktop/gui/package.json",
@@ -2456,9 +2456,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/news-summary.js",
-      "source_sha256": "a42f66ef2ea266e1acc2c9605713a505ecc35a3b17ee14f3731442bb32dbde2e",
-      "sha256": "a42f66ef2ea266e1acc2c9605713a505ecc35a3b17ee14f3731442bb32dbde2e",
-      "bytes": 6381
+      "source_sha256": "f50022a69ac4e10a3d47ca5443f46a54482857f1eebc9b8d5ae851107a292865",
+      "sha256": "f50022a69ac4e10a3d47ca5443f46a54482857f1eebc9b8d5ae851107a292865",
+      "bytes": 6626
     },
     {
       "path": "apps/desktop/gui/ui/src/personal-agenda.js",
@@ -2480,9 +2480,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/radar-feed.js",
-      "source_sha256": "85ea497a813a6827786726a4fb6e1dcedbdfca51327b7c04ab92848dadf32a97",
-      "sha256": "85ea497a813a6827786726a4fb6e1dcedbdfca51327b7c04ab92848dadf32a97",
-      "bytes": 8832
+      "source_sha256": "25d09e6bb2d1b58a980307be6bc446c52e1d9b23cb8b1c587eb4d7d11840ccaa",
+      "sha256": "25d09e6bb2d1b58a980307be6bc446c52e1d9b23cb8b1c587eb4d7d11840ccaa",
+      "bytes": 12241
     },
     {
       "path": "apps/desktop/gui/ui/src/record-provenance.js",
@@ -2546,15 +2546,21 @@
     },
     {
       "path": "apps/desktop/gui/ui/tests/news-summary.test.mjs",
-      "source_sha256": "abd0d6b70b007d9c44f3e31409e064c0ba0ac8148e057f7403c3877c7ba9b3d3",
-      "sha256": "abd0d6b70b007d9c44f3e31409e064c0ba0ac8148e057f7403c3877c7ba9b3d3",
-      "bytes": 6585
+      "source_sha256": "4ae636602031c4b683101d20609fdcf2a6dab4dd2ca5b04b1ae34e581100bde4",
+      "sha256": "4ae636602031c4b683101d20609fdcf2a6dab4dd2ca5b04b1ae34e581100bde4",
+      "bytes": 8155
     },
     {
       "path": "apps/desktop/gui/ui/tests/personal-agenda.test.mjs",
       "source_sha256": "51bcac5111af1bd5ac0f02aa7c5d79cf30a736722d0ad1c9ee049a66ecab81d4",
       "sha256": "51bcac5111af1bd5ac0f02aa7c5d79cf30a736722d0ad1c9ee049a66ecab81d4",
       "bytes": 8617
+    },
+    {
+      "path": "apps/desktop/gui/ui/tests/radar-feed.test.mjs",
+      "source_sha256": "31ad163f5d0de27e138c7bc367590d4b4c3c9d2a8e5cbf8370539d50ab96fd57",
+      "sha256": "31ad163f5d0de27e138c7bc367590d4b4c3c9d2a8e5cbf8370539d50ab96fd57",
+      "bytes": 10854
     },
     {
       "path": "apps/desktop/gui/ui/tests/record-provenance.test.mjs",
@@ -2774,9 +2780,9 @@
     },
     {
       "path": "apps/desktop/tests/test_article_enrichment.py",
-      "source_sha256": "ef3986a1ebe356b4d07e76b8748233eb235b68fa4a55cd50a4f37bb004cd4c4d",
-      "sha256": "ef3986a1ebe356b4d07e76b8748233eb235b68fa4a55cd50a4f37bb004cd4c4d",
-      "bytes": 14463
+      "source_sha256": "1c44a6a208efbf431e857afcfde01117b4a41d1cea9f7f960e8549bae57634b9",
+      "sha256": "1c44a6a208efbf431e857afcfde01117b4a41d1cea9f7f960e8549bae57634b9",
+      "bytes": 16986
     },
     {
       "path": "apps/desktop/tests/test_asr.py",
@@ -4820,9 +4826,9 @@
     },
     {
       "path": "docs/urun/AKIS-PDF-0.8.1.md",
-      "source_sha256": "2d5e0db2319c5569c227bb12b0607906b4d0d4c80911c3bacd9dd8af7d831f54",
-      "sha256": "2d5e0db2319c5569c227bb12b0607906b4d0d4c80911c3bacd9dd8af7d831f54",
-      "bytes": 3033
+      "source_sha256": "0930e4a4080f8e898ccb0c74bc6c8b06b803f9f1ae633964392dd681b8caf8b5",
+      "sha256": "0930e4a4080f8e898ccb0c74bc6c8b06b803f9f1ae633964392dd681b8caf8b5",
+      "bytes": 3436
     },
     {
       "path": "docs/urun/BULTEN-ARASTIRMA.md",

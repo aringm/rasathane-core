@@ -803,10 +803,11 @@ class ProductStore:
                 [*params, limit, offset],
             )
             items = [item for row in rows if (item := self.decoded(row)) is not None]
-        from rasathane.product.news import display_summary
+        from rasathane.product.news import display_summaries
 
+        summaries = display_summaries(self, items)
         for item in items:
-            item["summary_display"] = display_summary(self, item)
+            item["summary_display"] = summaries[item["id"]]
             item["url"] = item["summary_display"]["url"]
         return {"items": items, "total": total, "limit": limit, "offset": offset}
 

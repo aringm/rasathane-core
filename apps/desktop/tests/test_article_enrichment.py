@@ -355,3 +355,64 @@ def test_projection_refreshes_empty_history_without_replacing_agenda_assessment_
     assert item["relevance_reason"] == saved["items"][0]["relevance_reason"]
     assert projected["method"] == "keyword_match" and projected["summary_method"] == "local_model"
     assert store.get_bulletin(saved["id"]) == saved
+
+
+def test_batched_page_preserves_cache_hash_and_latest_job_status_with_two_queries(
+    store, monkeypatch
+):
+    states = ["queued", "running", "failed", "completed", "stale", "ready", "turkish", "official"]
+    store.add_articles(
+        None,
+        [
+            {
+                "id": state,
+                "title": "Model experiment",
+                "url": f"https://example.org/{state}",
+                "summary": TR if state == "turkish" else BODY,
+                "published_at": now(),
+                "provenance": {
+                    "text_scope": "official_metadata" if state == "official" else "feed_excerpt"
+                },
+            }
+            for state in states
+        ],
+    )
+    for state in states[:5]:
+        article = store.rows("SELECT * FROM articles WHERE id=?", (state,))[0]
+        request = {"article_id": state, "input_hash": news.article_input_hash(article)}
+        job = store.enqueue("article_summary", request)
+        store.update_job(job["id"], "failed", error="Önceki deneme başarısız")
+        latest = store.enqueue("article_summary", request)
+        store.update_job(
+            latest["id"],
+            state if state != "stale" else "running",
+            error="Yeni deneme başarısız" if state == "failed" else None,
+        )
+        if state == "stale":
+            with store.connection() as conn:
+                conn.execute(
+                    "UPDATE articles SET summary=summary || ' Changed source.' WHERE id=?", (state,)
+                )
+    article_enrichment.enrich_article(
+        store, "ready", lambda: None, lambda url: {"url": url, "body": BODY}, evaluation
+    )
+    articles = store.list_articles(limit=200)
+    expected = {a["id"]: news.display_summary(store, a) for a in articles}
+    observed = []
+    original_rows = store.rows
+
+    def rows(sql, params=()):
+        observed.append(sql)
+        return original_rows(sql, params)
+
+    monkeypatch.setattr(store, "rows", rows)
+    page = store.article_page(limit=200)
+    actual = {a["id"]: a["summary_display"] for a in page["items"]}
+    assert actual == expected
+    assert len(observed) == 2
+    assert sum("FROM jobs" in sql for sql in observed) == 1
+    assert actual["queued"]["status"] == actual["running"]["status"] == "pending"
+    assert actual["failed"]["status"] == "failed"
+    assert actual["ready"]["summary"] == TR
+    assert actual["stale"]["status"] == "not_prepared" and "job_id" not in actual["stale"]
+    assert news.display_summaries(store, []) == {}
