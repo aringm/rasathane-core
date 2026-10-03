@@ -1,3 +1,5 @@
+import { createResearchChat } from "./research-chat.js";
+import { createNewsSummary } from "./news-summary.js";
 // Birleşik ürünün gerçek kayıtları. Dış metinler yalnız güvenli DOM helper'ıyla yazılır.
 import { recordDate } from "./record-provenance.js";
 
@@ -11,6 +13,8 @@ export function createProductUI({
   onSettings,
 }) {
   let state = null;
+  let unlocked = false;
+  let authEpoch = 0;
   let activeWorkspace = null;
   let currentView = "akis";
   let lastSuccess = null;
@@ -271,7 +275,7 @@ export function createProductUI({
   const settingsAccountNotice = el(
     "p",
     { class: "field-note" },
-    "Hesap bağlantısı yerel çalışma için zorunlu değildir.",
+    "Rasathane ekranlarını kullanmak için Muhakeme hesabınıza giriş yapın.",
   );
   const settingsAccountButton = el(
     "button",
@@ -299,6 +303,8 @@ export function createProductUI({
     return typeof value === "string" ? value.slice(0, 350) : fallback;
   };
   async function api(path, { method = "GET", body } = {}) {
+    if (!unlocked) throw new Error("Devam etmek için giriş yapın.");
+    const epoch = authEpoch;
     if (
       body !== undefined &&
       new TextEncoder().encode(JSON.stringify(body)).byteLength > 8192
@@ -317,6 +323,7 @@ export function createProductUI({
           }),
     });
     const data = await response.json().catch(() => null);
+    if (!unlocked || epoch !== authEpoch) throw new Error("Oturum kapandı.");
     if (!response.ok)
       throw new Error(
         errorMessage(
@@ -445,6 +452,7 @@ export function createProductUI({
     );
   }
   function renderFeed() {
+    news.stopAll();
     const sources = state?.sources || [];
     const selected = feedSource.value;
     feedSource.replaceChildren(
@@ -468,13 +476,16 @@ export function createProductUI({
       ...(items.length
         ? items.slice(0, feedVisible).map((item) =>
             record(item, {
-              action:
+              action: el(
+                "div",
+                { class: "news-actions" },
+                news.control(item),
                 safeURL(item.url) &&
-                item.analysis_supported !== false &&
-                item.provenance?.analysis_supported !== false &&
-                !["official_metadata", "managed_summary"].includes(
-                  item.provenance?.text_scope,
-                )
+                  item.analysis_supported !== false &&
+                  item.provenance?.analysis_supported !== false &&
+                  !["official_metadata", "managed_summary"].includes(
+                    item.provenance?.text_scope,
+                  )
                   ? el(
                       "button",
                       {
@@ -490,6 +501,7 @@ export function createProductUI({
                       "Analize al",
                     )
                   : null,
+              ),
             }),
           )
         : [
@@ -899,6 +911,7 @@ export function createProductUI({
     applyTheme(settings.theme || "system");
   }
   async function load() {
+    if (!unlocked) return;
     if (loadingPromise) {
       await loadingPromise;
       return load();
@@ -1018,74 +1031,10 @@ export function createProductUI({
     onAnalysis(result);
     await load();
   }
+  const research = createResearchChat({ $, el, api, waitJob, sourceLink });
+  const news = createNewsSummary({ el, api, request });
   function renderResearch(result) {
-    if (typeof result.query === "string")
-      $("arastir-sorgu").value = result.query;
-    if (
-      result.workspace_id &&
-      [...$("arastir-alan").options].some(
-        (option) => option.value === result.workspace_id,
-      )
-    )
-      $("arastir-alan").value = result.workspace_id;
-    else $("arastir-alan").value = "";
-    $("arastir-web").checked =
-      !!state?.settings?.web_enabled &&
-      result.provider !== "local" &&
-      result.status !== "local_only";
-    const local = result.local_results || [],
-      web = result.web_results || [];
-    const section = (title, items, none) =>
-      el(
-        "section",
-        {},
-        el("h2", {}, title),
-        el(
-          "div",
-          { class: "record-list" },
-          ...(items.length
-            ? items.map((item) =>
-                record(item, {
-                  action: item.content_hash
-                    ? el(
-                        "details",
-                        { class: "source-provenance" },
-                        el("summary", {}, "Kaynak kaydı"),
-                        el("p", {}, `Kaynak kimliği: ${item.source_id || "—"}`),
-                        el("p", {}, `Sürüm: ${item.version_id || "—"}`),
-                        el("p", {}, `İçerik hash'i: ${item.content_hash}`),
-                        el(
-                          "p",
-                          {},
-                          `Edinim durumu: ${item.fetch_status || "—"}`,
-                        ),
-                      )
-                    : null,
-                }),
-              )
-            : [empty(none)]),
-        ),
-      );
-    $("arastir-sonuc").replaceChildren(
-      section(
-        "Yerel bulgular",
-        local,
-        "Yerel kayıtlarda bu sorguyla eşleşen sonuç yok.",
-      ),
-      section(
-        "Web kaynakları",
-        web,
-        result.status === "local_only" || result.provider === "local"
-          ? "Bu araştırmada web araması kullanılmadı."
-          : "Web aramasında kaynak bulunamadı.",
-      ),
-    );
-    const errors = result.errors || [];
-    message(
-      $("arastir-durum"),
-      `${local.length} yerel bulgu, ${web.length} web kaynağı.${errors.length ? " Bazı kaynaklara ulaşılamadı: " + errors.map((error) => errorMessage(error)).join(" ") : ""}`,
-      errors.length > 0,
-    );
+    research.showResult(result);
   }
   async function submit(form, status, action) {
     const button = form.querySelector('button[type="submit"]');
@@ -1204,24 +1153,6 @@ export function createProductUI({
       $("not-govde").value = "";
       message($("not-sonuc"), "Not kaydedildi.");
       await loadNotes();
-    });
-  });
-  $("arastir-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-    submit(event.currentTarget, $("arastir-durum"), async () => {
-      $("arastir-sonuc").replaceChildren();
-      const workspace = $("arastir-alan").value || null;
-      const job = await api("/research", {
-        method: "POST",
-        body: {
-          query: $("arastir-sorgu").value.trim(),
-          workspace_id: workspace,
-          web: $("arastir-web").checked,
-        },
-      });
-      const result = await waitJob(job, $("arastir-durum"));
-      renderResearch(result || {});
-      await load();
     });
   });
   $("konu-form").addEventListener("submit", (event) => {
@@ -1430,7 +1361,7 @@ export function createProductUI({
         );
       else if (accountState === "signed_out")
         accountMessage(
-          "Muhakeme hesabına giriş yapılmadı. Yerel çekirdek kullanılabilir; yönetilen hizmet için hesabınızı bağlayın.",
+          "Muhakeme hesabına giriş yapılmadı. Ekranları kullanmak için giriş yapın.",
         );
       else accountMessage("Hesap bağlantısının durumu okunamadı.", true);
     } catch (error) {
@@ -1441,7 +1372,7 @@ export function createProductUI({
         accountState = "unknown";
       }
       accountMessage(
-        `${errorMessage(error, "Hesap durumu doğrulanamadı.")} Yerel kayıtlarınız kullanılmaya devam eder.`,
+        `${errorMessage(error, "Hesap durumu doğrulanamadı.")} Hesap durumunu yeniden kontrol edin.`,
         true,
       );
     } finally {
@@ -1676,11 +1607,36 @@ export function createProductUI({
     .addEventListener("change", () => {
       if (state?.settings?.theme === "system") applyTheme("system");
     });
-  modelStatus();
   return {
+    unlock() {
+      unlocked = true;
+      modelStatus();
+      research.refreshHistory();
+    },
+    lock() {
+      unlocked = false;
+      authEpoch++;
+      state = null;
+      lastSuccess = null;
+      activeWorkspace = null;
+      clearTimeout(modelTimer);
+      pendingJobs.clear();
+      research.reset();
+      news.stopAll();
+      for (const id of [
+        "akis-liste",
+        "kaynak-liste",
+        "not-liste",
+        "konu-liste",
+        "calisma-alanlar",
+      ])
+        $(id).replaceChildren();
+    },
     load,
     analyze,
     viewChanged(view) {
+      if (!unlocked) return;
+      if (view === "arastir") research.refreshHistory();
       currentView = view;
       if (view === "calisma") loadNotes();
       if ((view === "akis" || view === "konular") && !pendingJobs.size) load();

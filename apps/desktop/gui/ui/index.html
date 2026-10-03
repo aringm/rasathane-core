@@ -5,13 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; connect-src 'self' http://127.0.0.1:8765 http://127.0.0.1:8766 http://127.0.0.1:8767 http://127.0.0.1:8768; font-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; frame-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'"
+      content="default-src 'self'; script-src 'self'; connect-src 'self' http://127.0.0.1:8765 http://127.0.0.1:8766 http://127.0.0.1:8767 http://127.0.0.1:8768; media-src 'self' blob:; font-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; frame-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <title>Rasathane — Takip, analiz ve araştırma</title>
     <link rel="icon" href="/brand/rasathane-mark.svg" />
     <link rel="stylesheet" href="/styles.css?v=urun-1" />
   </head>
-  <body>
+  <body class="session-locked">
+    <section
+      id="giris-ekrani"
+      class="login-screen"
+      aria-labelledby="giris-baslik"
+    >
+      <div class="login-card">
+        <img src="/brand/rasathane-mark.svg" width="72" height="72" alt="" />
+        <p class="login-eyebrow">MUHAKEME · RASATHANE</p>
+        <h1 id="giris-baslik">Araştırmaya kaldığınız yerden devam edin.</h1>
+        <p>
+          Kaynaklarınız, analizleriniz ve araştırma konuşmalarınız tek çalışma
+          alanında.
+        </p>
+        <p id="giris-durum" role="status" aria-live="polite">
+          Oturum kontrol ediliyor…
+        </p>
+        <div class="form-actions">
+          <button id="giris-baslat" type="button" class="btn">
+            Muhakeme ile giriş yap
+          </button>
+          <button id="giris-yenile" type="button" class="btn btn-ikincil">
+            Yeniden kontrol et
+          </button>
+        </div>
+        <p class="field-note">
+          Giriş zorunludur. Yerel çekirdek ücretsizdir; ücretli hizmet denemesi
+          ayrıca başlatılır.
+        </p>
+      </div>
+    </section>
     <svg
       class="sprite"
       aria-hidden="true"
@@ -618,45 +648,61 @@
             </p>
           </div>
         </div>
-        <form id="arastir-form" class="kart product-form">
-          <div class="satir">
-            <div class="alan buyume">
-              <label for="arastir-sorgu">Araştırma konusu</label
-              ><input
+        <div class="chat-layout">
+          <aside class="chat-sidebar" aria-label="Araştırma konuşmaları">
+            <button type="button" class="btn btn-ikincil" id="arastir-yeni">
+              Yeni konuşma
+            </button>
+            <div id="arastir-gecmis" class="chat-history"></div>
+          </aside>
+          <div class="chat-main">
+            <div
+              id="arastir-sonuc"
+              class="chat-messages"
+              role="log"
+              aria-label="Araştırma mesajları"
+              aria-live="polite"
+            ></div>
+            <div
+              id="arastir-durum"
+              class="product-status"
+              role="status"
+              aria-live="polite"
+            >
+              Bir soru sorun; yanıtın dayandığı kaynakları birlikte inceleyin.
+            </div>
+            <form id="arastir-form" class="chat-composer">
+              <label for="arastir-sorgu" class="field-note">Mesajınız</label>
+              <textarea
                 id="arastir-sorgu"
-                type="text"
                 required
                 maxlength="500"
-                placeholder="Araştırmak istediğiniz soruyu yazın"
-                autocomplete="off"
-              />
-            </div>
-            <div class="alan">
-              <label for="arastir-alan">Çalışma alanı</label
-              ><select id="arastir-alan">
-                <option value="">Tüm yerel kayıtlar</option>
-              </select>
-            </div>
-            <button class="btn" id="arastir-btn" type="submit">Araştır</button>
+                rows="3"
+                placeholder="Bir konu sorun veya önceki sorunuza devam edin…"
+              ></textarea>
+              <div class="chat-options">
+                <div class="alan">
+                  <label for="arastir-alan">Çalışma alanı</label
+                  ><select id="arastir-alan">
+                    <option value="">Tüm yerel kayıtlar</option>
+                  </select>
+                </div>
+                <label class="check-line"
+                  ><input id="arastir-web" type="checkbox" />Web’de de
+                  ara</label
+                >
+                <button class="btn" id="arastir-btn" type="submit">
+                  Gönder ↑
+                </button>
+              </div>
+              <p class="field-note">
+                Web’e yalnız bu mesajdaki sorgu gönderilir. Önceki konuşmalar ve
+                yerel notlar cihazda kalır. Enter ile gönderin, Shift+Enter ile
+                satır ekleyin.
+              </p>
+            </form>
           </div>
-          <label class="check-line"
-            ><input id="arastir-web" type="checkbox" />Web kaynaklarını da
-            ara</label
-          >
-          <p class="field-note">
-            Web araması seçildiğinde yalnız yazdığınız sorgu arama sağlayıcısına
-            gider. Yerel notlarınız sorguya eklenmez.
-          </p>
-        </form>
-        <div
-          id="arastir-durum"
-          class="product-status"
-          role="status"
-          aria-live="polite"
-        >
-          Bir konu girerek yerel kitaplığınızda aramaya başlayın.
         </div>
-        <div id="arastir-sonuc" class="research-layout"></div>
       </section>
       <section
         id="gorunum-calisma"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import tomllib
 from pathlib import Path
 
 KOK = Path(__file__).resolve().parents[1]
@@ -8,7 +9,8 @@ KOK = Path(__file__).resolve().parents[1]
 
 def test_electron_surumu_ve_nsis_paket_sozlesmesi():
     paket = json.loads((KOK / "gui/package.json").read_text(encoding="utf-8"))
-    assert paket["version"] == "0.5.0"
+    engine = tomllib.loads((KOK / "pyproject.toml").read_text(encoding="utf-8"))
+    assert paket["version"] == engine["project"]["version"]
     assert paket["main"] == "electron/main.cjs"
     assert paket["devDependencies"]["electron"] == "43.7.7"
     assert paket["devDependencies"]["electron-builder"] == "26.15.3"

@@ -21,7 +21,7 @@ Bu kayıt kaynak kodu incelemesini, bellek içinde çalıştırılan doğrulamal
 
 Bağımsız doğrulama fiziksel dosya ve socket kullanmadan, gerçek `account.cjs` kodunun bellek içi filesystem/HTTP transport ile çalıştırılmasıyla yapıldı. Gerçek sunucu saf fonksiyonları kullanıldı. Authorize, exchange/refresh, tek refresh, revoke/204, iptal callback'i ve terminal `401` temizliği geçti. Bu ölçüm production DB transaction'ını, gerçek OTP gönderimini veya canlı kullanıcının tarayıcı onayını çalıştırmadı.
 
-Ücretli hizmet aylık **KDV dahil toplam 49 TL**; ödeme dönemliktir, otomatik kart tahsilatı uygulanmaz. **14 günlük deneme** yalnız explicit `POST /api/lisans/v2/deneme` ile başlar. Hesap sayfası veya hak durumu GET'i deneme açmaz. Rasathane diğer Muhakeme ürünlerini kapsamaz; onların kapsam zinciri Rasathane'yi kapsamaz. Açık yerel çekirdek hesabı veya ücretli hakkı bulunmadan kullanılabilir.
+Ücretli hizmet aylık **KDV dahil toplam 49 TL**; ödeme dönemliktir, otomatik kart tahsilatı uygulanmaz. **14 günlük deneme** yalnız explicit `POST /api/lisans/v2/deneme` ile başlar. Hesap sayfası veya hak durumu GET'i deneme açmaz. Rasathane diğer Muhakeme ürünlerini kapsamaz; onların kapsam zinciri Rasathane'yi kapsamaz. 0.5.1 itibarıyla masaüstü ekranları için Muhakeme hesabına giriş zorunludur. Yerel çekirdek ücretsizdir; ücretli hizmet hakkı, giriş zorunluluğundan ayrı kontrol edilir.
 
 ### Hesap kabulünde kalanlar
 

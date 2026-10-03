@@ -56,3 +56,53 @@ test("eski lisans isteğinin geç 401 yanıtı yeni girişi silemez", async () =
     assert.equal(fs.existsSync(path.join(h.userData, "account.enc")), true);
   } finally { release(); h.close(); }
 });
+
+
+test("diskteki süresi dolmuş access token giriş durumu oluşturmaz; refresh başarısızsa kilit korunur", async () => {
+  const userData = fs.mkdtempSync(path.join(os.tmpdir(), "rasathane-expired-"));
+  const deviceId = "dev_" + "a".repeat(32);
+  fs.writeFileSync(path.join(userData, "device.json"), JSON.stringify({ deviceId }));
+  fs.writeFileSync(path.join(userData, "account.enc"), JSON.stringify(record(deviceId, true)));
+  const account = createAccount({ userData, safeStorage, openExternal: async () => {}, transport: async () => { throw new Error("offline"); } });
+  try {
+    assert.equal(account.status().state, "expired");
+    assert.equal((await account.checkSession()).state, "expired");
+    await assert.rejects(account.requireSession());
+  } finally { account.close(); fs.rmSync(userData, { recursive: true }); }
+});
+
+test("geçersiz refresh süresi olan disk oturumu hesap ekranını açmaz", async () => {
+  const userData = fs.mkdtempSync(path.join(os.tmpdir(), "rasathane-refresh-expired-"));
+  const deviceId = "dev_" + "a".repeat(32); const value = record(deviceId);
+  value.refresh_sure_sonu = new Date(Date.now() - 1000).toISOString();
+  fs.writeFileSync(path.join(userData, "device.json"), JSON.stringify({ deviceId }));
+  fs.writeFileSync(path.join(userData, "account.enc"), JSON.stringify(value));
+  const account = createAccount({ userData, safeStorage, openExternal: async () => {} });
+  try { assert.equal(account.status().state, "signed_out"); await assert.rejects(account.requireSession(), /giriş gerekli/); }
+  finally { account.close(); fs.rmSync(userData, { recursive: true }); }
+});
+
+test("hesap olayı yalnız durum ve scope taşır; canlı token süresi dolunca kilitlenir", async () => {
+  const h = harness(async (url, request) => {
+    const value = record(JSON.parse(request.body).device_id); value.access_sure_sonu = new Date(Date.now() + 60).toISOString(); return Response.json(value);
+  });
+  const states = []; const unsub = h.account.subscribe(state => states.push(state));
+  try {
+    await h.account.start(); await fetch(h.callback());
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(h.account.status().state, "expired");
+    assert.ok(states.some(value => value.state === "expired"));
+    for (const value of states) assert.deepEqual(Object.keys(value).sort(), ["error", "scope", "state"]);
+  } finally { unsub(); h.close(); }
+});
+
+test("giriş beklerken reddedilen ürün isteği PKCE dönüşünü geçersiz kılmaz", async () => {
+  const h = harness(async (_url, request) => Response.json(record(JSON.parse(request.body).device_id)));
+  try {
+    await h.account.start();
+    await assert.rejects(h.account.requireSession(), /giriş gerekli/);
+    assert.equal(h.account.status().state, "waiting");
+    assert.equal((await fetch(h.callback())).status, 200);
+    assert.equal(h.account.status().state, "signed_in");
+  } finally { h.close(); }
+});

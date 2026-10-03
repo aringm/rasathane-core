@@ -10,6 +10,7 @@ const { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell, safe
 const { validateRequest, trustedSender, publicSourceURL } = require("./ipc-policy.cjs");
 const { createModelSetup } = require("./model-setup.cjs");
 const { createAccount } = require("./account.cjs");
+const { createAuthGate } = require("./auth-gate.cjs");
 const { conservativeSearchClaims } = require("./smoke-evidence.cjs");
 
 const SCHEME = "rasathane";
@@ -46,37 +47,54 @@ let kapaniyor = false;
 const sessionToken = crypto.randomBytes(32).toString("hex");
 let modelSetup;
 let account;
+let authGate;
 
 function userSettings() {
   try { return JSON.parse(fs.readFileSync(path.join(app.getPath("userData"), "desktop-settings.json"), "utf8")); }
   catch { return {}; }
 }
 
+let sidecarSessionUpdates = Promise.resolve();
+function configureSidecarSession(accessToken, lease = null) {
+  const update = sidecarSessionUpdates.catch(() => {}).then(async () => {
+    lease?.assertCurrent();
+    const response = await fetch(`http://127.0.0.1:${sidecarPort}/api/product/service-session`, {
+      method: "POST", redirect: "error", signal: lease ? AbortSignal.any([lease.signal, AbortSignal.timeout(20000)]) : AbortSignal.timeout(5000),
+      headers: { "Content-Type": "application/json", Origin: APP_ORIGIN, "X-Rasathane-Session": sessionToken }, body: JSON.stringify({ access_token: accessToken }),
+    });
+    await response.body?.cancel();
+    if (!response.ok) throw new Error("Hesap bağlantısı yerel motora aktarılamadı.");
+    lease?.assertCurrent();
+  });
+  sidecarSessionUpdates = update;
+  return update;
+}
+async function clearSidecarSession() {
+  try { await configureSidecarSession(null); } catch { /* sidecar kapalıysa bellek de yoktur */ }
+}
+
 function installBridge() {
   function check(event) {
     if (!trustedSender(event, anaPencere)) throw new Error("İstek kaynağı izinli değil.");
   }
-  ipcMain.handle("rasathane:request", async (event, route, options) => {
+  const protectedHandle = (channel, handler) => ipcMain.handle(channel, (event, ...args) => {
+    check(event); return authGate.run(lease => handler(lease, event, ...args));
+  });
+  protectedHandle("rasathane:request", async (lease, event, route, options) => {
     check(event);
     const request = validateRequest(route, options);
     // Hosted kaynak takibi için token yalnız main → loopback belleğine geçer.
     // Renderer allowlist bu dahili endpoint'i içermez; token JSON response'a girmez.
-    if (request.method === "POST" && /^\/api\/rasathane\/sources\/[^/]+\/refresh$/.test(request.route)) {
-      let accessToken = null;
-      if (account.status().state === "signed_in") { try { accessToken = await account.serviceAccessToken(); } catch { /* kamu kaynakları hesap olmadan da yenilenir */ } }
-      const configured = await fetch(`http://127.0.0.1:${sidecarPort}/api/product/service-session`, {
-        method: "POST", redirect: "error", signal: AbortSignal.timeout(20000),
-        headers: { "Content-Type": "application/json", Origin: APP_ORIGIN, "X-Rasathane-Session": sessionToken },
-        body: JSON.stringify({ access_token: accessToken }),
-      });
-      if (!configured.ok) throw new Error("Kaynak servisi hesap bağlantısı kurulamadı.");
-      await configured.body?.cancel();
+    {
+      const accessToken = await account.serviceAccessToken();
+      lease.assertCurrent();
+      await configureSidecarSession(accessToken, lease);
     }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 120000);
     try {
       const response = await fetch(`http://127.0.0.1:${sidecarPort}${request.route}`, {
-        method: request.method, body: request.body, redirect: "error", signal: controller.signal,
+        method: request.method, body: request.body, redirect: "error", signal: AbortSignal.any([controller.signal, lease.signal]),
         headers: { "Content-Type": "application/json", Origin: APP_ORIGIN, "X-Rasathane-Session": sessionToken },
       });
       const cap = 8 * 1024 * 1024;
@@ -91,9 +109,10 @@ function installBridge() {
       return { ok: response.ok, status: response.status, contentType, data: null, base64: buffer.toString("base64") };
     } finally { clearTimeout(timer); }
   });
-  ipcMain.handle("rasathane:select-workspace", async event => {
+  protectedHandle("rasathane:select-workspace", async (lease, event) => {
     check(event);
     const result = await dialog.showOpenDialog(anaPencere, { title: "Rasathane çalışma alanı", properties: ["openDirectory", "createDirectory"] });
+    lease.assertCurrent();
     if (result.canceled || !result.filePaths[0]) return { cancelled: true };
     const selected = path.resolve(result.filePaths[0]);
     const settingsPath = path.join(app.getPath("userData"), "desktop-settings.json");
@@ -102,39 +121,40 @@ function installBridge() {
     fs.renameSync(`${settingsPath}.tmp`, settingsPath);
     return { cancelled: false, path: selected, restartRequired: true };
   });
-  ipcMain.handle("rasathane:export-data", async (event, workspaceId) => {
+  protectedHandle("rasathane:export-data", async (lease, event, workspaceId) => {
     check(event);
     if (workspaceId !== null && (typeof workspaceId !== "string" || !/^[a-f0-9]{32}$/.test(workspaceId))) throw new Error("Çalışma alanı kimliği geçersiz.");
     const choice = await dialog.showSaveDialog(anaPencere, { title: "Rasathane verisini dışa aktar", defaultPath: path.join(app.getPath("documents"), "rasathane-calisma-alani.json"), filters: [{ name: "JSON", extensions: ["json"] }] });
+    lease.assertCurrent();
     if (choice.canceled || !choice.filePath) return { cancelled: true };
     const file = path.resolve(choice.filePath); const temporary = `${file}.${crypto.randomBytes(8).toString("hex")}.partial`;
     let handle;
     try {
-      const response = await fetch(`http://127.0.0.1:${sidecarPort}/api/rasathane/export${workspaceId ? `?workspace_id=${encodeURIComponent(workspaceId)}` : ""}`, { redirect: "error", signal: AbortSignal.timeout(120000), headers: { Origin: APP_ORIGIN, "X-Rasathane-Session": sessionToken } });
+      await configureSidecarSession(await account.serviceAccessToken(), lease);
+      const response = await fetch(`http://127.0.0.1:${sidecarPort}/api/rasathane/export${workspaceId ? `?workspace_id=${encodeURIComponent(workspaceId)}` : ""}`, { redirect: "error", signal: AbortSignal.any([lease.signal, AbortSignal.timeout(120000)]), headers: { Origin: APP_ORIGIN, "X-Rasathane-Session": sessionToken } });
       if (!response.ok || !response.body || !response.headers.get("content-type")?.includes("application/json")) throw new Error("Dışa aktarma yanıtı alınamadı.");
+      lease.assertCurrent();
       handle = await fs.promises.open(temporary, "wx", 0o600); let bytes = 0; const hash = crypto.createHash("sha256");
-      for await (const chunk of response.body) { bytes += chunk.length; if (bytes > 256 * 1024 * 1024) throw new Error("Dışa aktarma boyutu 256 MB sınırını aştı; çalışma alanını seçerek yeniden deneyin."); hash.update(chunk); await handle.writeFile(chunk); }
-      await handle.sync(); await handle.close(); handle = null; await fs.promises.rename(temporary, file);
+      for await (const chunk of response.body) { lease.assertCurrent(); bytes += chunk.length; if (bytes > 256 * 1024 * 1024) throw new Error("Dışa aktarma boyutu 256 MB sınırını aştı; çalışma alanını seçerek yeniden deneyin."); hash.update(chunk); await handle.writeFile(chunk); }
+      await handle.sync(); await handle.close(); handle = null; lease.assertCurrent(); await fs.promises.rename(temporary, file);
       return { saved: true, path: file, bytes, sha256: hash.digest("hex") };
     } finally { if (handle) await handle.close(); if (fs.existsSync(temporary)) await fs.promises.unlink(temporary); }
   });
   ipcMain.handle("rasathane:open-account", async event => {
     check(event); return account.start();
   });
-  ipcMain.handle("rasathane:account-status", event => { check(event); return account.status(); });
+  ipcMain.handle("rasathane:account-status", event => { check(event); return account.checkSession(); });
   ipcMain.handle("rasathane:entitlement", async event => { check(event); return account.entitlement(); });
   ipcMain.handle("rasathane:start-trial", async event => { check(event); return account.startTrial(); });
   ipcMain.handle("rasathane:sign-out", async event => {
-    check(event); const result = await account.signOut();
-    try { const response = await fetch(`http://127.0.0.1:${sidecarPort}/api/product/service-session`, { method: "POST", redirect: "error", signal: AbortSignal.timeout(5000), headers: { "Content-Type": "application/json", Origin: APP_ORIGIN, "X-Rasathane-Session": sessionToken }, body: JSON.stringify({ access_token: null }) }); await response.body?.cancel(); } catch { /* sidecar kapalıysa bellek de yoktur */ }
-    return result;
+    check(event); return account.signOut();
   });
-  ipcMain.handle("rasathane:setup-status", async event => {
+  protectedHandle("rasathane:setup-status", async (lease, event) => {
     check(event); bootIz("model kontrolü başladı");
     const result = await modelSetup.inspect(); bootIz(`model kontrolü bitti: ${result.ready}`); return result;
   });
-  ipcMain.handle("rasathane:open-source", async (event, url) => { check(event); await shell.openExternal(publicSourceURL(url)); return { opened: true }; });
-  ipcMain.handle("rasathane:install-models", async event => { check(event); return modelSetup.start(); });
+  protectedHandle("rasathane:open-source", async (lease, event, url) => { check(event); await shell.openExternal(publicSourceURL(url)); return { opened: true }; });
+  protectedHandle("rasathane:install-models", async (lease, event) => { check(event); return modelSetup.start(); });
 }
 
 function bootIz(metin) {
@@ -354,14 +374,36 @@ async function pencereOlustur(port) {
 }
 
 async function smokeDogrula(pencere) {
+  const initialAccount = await account.checkSession();
+  if (SMOKE_ANALYSIS && initialAccount.state !== "signed_in") throw new Error("Analiz smoke testi için doğrulanmış Muhakeme girişi gerekli; test modu giriş zorunluluğunu kaldırmaz.");
   const son = Date.now() + 90_000;
   while (Date.now() < son) {
     const durum = await pencere.webContents.executeJavaScript(`(() => ({
       motor: document.getElementById('motor-cip')?.dataset?.durum || '',
+      locked: document.body.classList.contains('session-locked'),
+      loginVisible: document.getElementById('giris-ekrani')?.hidden === false,
+      privateInert: [...document.querySelectorAll('.topbar,.app-sidebar,#app-main,.app-skip')].every(node => node.inert),
       baslik: document.title,
       kaynakSayisi: document.querySelectorAll('#kaynak-listesi [data-kaynak]').length
     }))()`);
-    if (durum.motor === "hazir") {
+    if (initialAccount.state !== "signed_in" && durum.locked && durum.loginVisible && durum.privateInert) {
+      const rejected = await pencere.webContents.executeJavaScript(`(async () => {
+        const actions = [
+          () => window.rasathane.request('/api/rasathane/state'),
+          () => window.rasathane.setupStatus(),
+          () => window.rasathane.installModels(),
+          () => window.rasathane.selectWorkspace(),
+          () => window.rasathane.exportData(null),
+          () => window.rasathane.openSource('https://www.resmigazete.gov.tr/'),
+        ];
+        const results = await Promise.allSettled(actions.map(action => action()));
+        return results.map(result => result.status === 'rejected' && String(result.reason?.message).includes('giriş gerekli'));
+      })()`);
+      if (!durum.baslik.startsWith("Rasathane") || rejected.length !== 6 || rejected.some(value => !value)) throw new Error("Girişsiz ürün IPC engeli doğrulanamadı.");
+      console.log(JSON.stringify({ smoke: "renderer-login-lock", authenticated: false, privateScreensInert: true, blockedOperations: rejected.length }));
+      return;
+    }
+    if (durum.motor === "hazir" && initialAccount.state === "signed_in") {
       if (!durum.baslik.startsWith("Rasathane") || durum.kaynakSayisi !== 6) {
         throw new Error(`Arayüz smoke doğrulaması başarısız: ${JSON.stringify(durum)}`);
       }
@@ -495,6 +537,16 @@ if (!tekOrnek) {
       bootIz("app ready");
       prepareMotor();
       account = createAccount({ userData: app.getPath("userData"), safeStorage, openExternal: url => shell.openExternal(url) });
+      authGate = createAuthGate(account);
+      account.subscribe(state => {
+        if (anaPencere && !anaPencere.isDestroyed()) anaPencere.webContents.send("rasathane:account-change", state);
+        if (state.state === "signed_in") {
+          void authGate.run(async lease => configureSidecarSession(await account.serviceAccessToken(), lease)).catch(() => {});
+        } else {
+          modelSetup.cancel();
+          void clearSidecarSession();
+        }
+      });
       installBridge();
       await protocol.handle(SCHEME, arayuzYaniti);
       bootIz("protocol hazır");
@@ -531,7 +583,7 @@ if (!tekOrnek) {
     if (BrowserWindow.getAllWindows().length === 0) void pencereOlustur(sidecarPort);
   });
   app.on("window-all-closed", () => app.quit());
-  app.on("before-quit", () => { account?.close(); sidecarDurdur(); });
+  app.on("before-quit", () => { authGate?.close(); account?.close(); modelSetup?.cancel(); sidecarDurdur(); });
   app.on("will-quit", sidecarDurdur);
   process.on("exit", sidecarDurdur);
 }

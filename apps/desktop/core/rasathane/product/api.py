@@ -40,6 +40,7 @@ class Analysis(Input):
 class Research(Input):
     query: str = Field(min_length=1, max_length=500)
     workspace_id: str | None = Field(default=None, max_length=64)
+    conversation_id: str | None = Field(default=None, min_length=1, max_length=64)
     web: StrictBool = True
 
 
@@ -98,6 +99,9 @@ def register_routes(mcp: FastMCP) -> None:
         try:
             body = await _input(request, ServiceSession)
             set_service_session(body.get("access_token"))
+            await run_in_threadpool(
+                get_service().set_native_authenticated, body.get("access_token") is not None
+            )
             return JSONResponse({"configured": body.get("access_token") is not None})
         except (ValidationError, ValueError):
             return JSONResponse({"error": "Hesap oturum girdisi geçersiz."}, status_code=422)
@@ -120,6 +124,9 @@ def register_routes(mcp: FastMCP) -> None:
                     "library": lambda: store.library(brief=True),
                     "sources": store.list_feeds,
                     "articles": store.list_articles,
+                    "conversations": lambda: store.list_conversations(
+                        request.query_params.get("workspace_id")
+                    ),
                 }
                 if resource in lists:
                     return JSONResponse({"items": await run_in_threadpool(lists[resource])})
@@ -205,6 +212,17 @@ def register_routes(mcp: FastMCP) -> None:
             return JSONResponse({"error": "Kimlik geçersiz."}, status_code=400)
         service = get_service()
         try:
+            if resource == "articles" and action in {"summary", "speech"}:
+                from rasathane.product.news import speak_article, summarize_article
+
+                if action == "summary":
+                    return JSONResponse(
+                        await run_in_threadpool(summarize_article, service.store, item_id)
+                    )
+                audio = await run_in_threadpool(speak_article, service.store, item_id)
+                return Response(
+                    audio, media_type="audio/wav", headers={"Cache-Control": "no-store"}
+                )
             if resource == "jobs" and action == "cancel":
                 return JSONResponse(await run_in_threadpool(service.store.cancel, item_id))
             if resource == "topics" and action == "refresh":
@@ -230,6 +248,22 @@ def register_routes(mcp: FastMCP) -> None:
             return JSONResponse({"error": "Uç bulunamadı."}, status_code=404)
         except ValueError as exc:
             return JSONResponse({"error": str(exc)[:300]}, status_code=400)
+
+    @mcp.custom_route("/api/rasathane/conversations/{item_id}", methods=["GET", "OPTIONS"])
+    async def product_conversation(request: Request) -> Response:
+        if request.method == "OPTIONS":
+            return Response(status_code=204)
+        try:
+            return JSONResponse(
+                await run_in_threadpool(
+                    get_service().store.get_conversation,
+                    request.path_params["item_id"],
+                    before=request.query_params.get("before"),
+                    page_size=50,
+                )
+            )
+        except ValueError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=404)
 
     @mcp.custom_route("/api/rasathane/jobs/{item_id}", methods=["GET", "OPTIONS"])
     async def product_job(request: Request) -> Response:

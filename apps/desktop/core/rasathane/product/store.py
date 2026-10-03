@@ -105,6 +105,14 @@ class ProductStore:
                 CREATE TABLE IF NOT EXISTS migration_ledger(
                     fingerprint TEXT PRIMARY KEY,imported_at TEXT NOT NULL,source TEXT NOT NULL,
                     counts TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS conversations(
+                    id TEXT PRIMARY KEY,workspace_id TEXT REFERENCES workspaces(id),
+                    title TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS research_turns(
+                    id TEXT PRIMARY KEY,conversation_id TEXT NOT NULL REFERENCES conversations(id),
+                    job_id TEXT NOT NULL UNIQUE REFERENCES jobs(id),created_at TEXT NOT NULL);
+                CREATE INDEX IF NOT EXISTS research_turns_conversation
+                    ON research_turns(conversation_id,created_at);
             """)
             if version < 2:
                 self._rebuild_index(conn)
@@ -507,12 +515,169 @@ class ProductStore:
             "cancel_requested": 0,
         }
         with self.connection() as conn:
+            if kind == "research":
+                # A turn, conversation and queued job commit together. Its durable job
+                # owns status/result, so cancellation and crash recovery cannot diverge.
+                conn.execute("BEGIN IMMEDIATE")
+                request = dict(request)
+                conversation_id = request.get("conversation_id")
+                if conversation_id:
+                    conversation = conn.execute(
+                        "SELECT * FROM conversations WHERE id=?", (conversation_id,)
+                    ).fetchone()
+                    if conversation is None:
+                        raise ValueError("Konuşma bulunamadı.")
+                    if request.get("workspace_id") not in (None, conversation["workspace_id"]):
+                        raise ValueError("Konuşmanın çalışma alanı değiştirilemez.")
+                    request["workspace_id"] = conversation["workspace_id"]
+                    if conn.execute(
+                        "SELECT 1 FROM research_turns t JOIN jobs j ON j.id=t.job_id "
+                        "WHERE t.conversation_id=? AND j.status IN "
+                        "('queued','running','cancel_requested')",
+                        (conversation_id,),
+                    ).fetchone():
+                        raise ValueError("Önceki yanıtın tamamlanmasını bekleyin.")
+                else:
+                    conversation_id = uuid.uuid4().hex
+                    self._require_workspace(conn, request.get("workspace_id"))
+                    conn.execute(
+                        "INSERT INTO conversations VALUES(?,?,?,?,?)",
+                        (
+                            conversation_id,
+                            request.get("workspace_id"),
+                            str(request["query"]).strip()[:120],
+                            item["created_at"],
+                            item["created_at"],
+                        ),
+                    )
+                request.update(conversation_id=conversation_id, turn_id=uuid.uuid4().hex)
+                item["request"] = json_text(request)
             conn.execute(
                 "INSERT INTO jobs VALUES(:id,:kind,:status,:stage,:request,:result,:error,"
                 ":created_at,:updated_at,:cancel_requested)",
                 item,
             )
+            if kind == "research":
+                conn.execute(
+                    "INSERT INTO research_turns VALUES(?,?,?,?)",
+                    (
+                        request["turn_id"],
+                        request["conversation_id"],
+                        item["id"],
+                        item["created_at"],
+                    ),
+                )
+                conn.execute(
+                    "UPDATE conversations SET updated_at=? WHERE id=?",
+                    (
+                        item["created_at"],
+                        request["conversation_id"],
+                    ),
+                )
         return self.get_job(item["id"])
+
+    def list_conversations(self, workspace_id: str | None = None) -> list[dict[str, Any]]:
+        return self.rows(
+            "SELECT * FROM conversations"
+            + (" WHERE workspace_id=?" if workspace_id else "")
+            + " ORDER BY updated_at DESC LIMIT 100",
+            (workspace_id,) if workspace_id else (),
+        )
+
+    def get_conversation(
+        self, conversation_id: str, *, before: str | None = None, page_size: int | None = None
+    ) -> dict[str, Any]:
+        conversations = self.rows("SELECT * FROM conversations WHERE id=?", (conversation_id,))
+        if not conversations:
+            raise ValueError("Konuşma bulunamadı.")
+        messages = []
+        where = "t.conversation_id=?"
+        params: tuple[Any, ...] = (conversation_id,)
+        if before is not None:
+            cursor = self.rows(
+                "SELECT created_at,job_id FROM research_turns WHERE id=? AND conversation_id=?",
+                (before, conversation_id),
+            )
+            if not cursor:
+                raise ValueError("Konuşma sayfa imleci geçersiz.")
+            where += " AND (t.created_at,j.id)<(?,?)"
+            params += (cursor[0]["created_at"], cursor[0]["job_id"])
+        fields = "j.*"
+        if page_size is not None:
+            from rasathane.product.research_chat import CHAT_RESULT_FIELDS
+
+            page_size = max(1, min(50, page_size))
+            # Project in SQLite before decoding: historical fetched bodies can be
+            # megabytes per turn and must not be loaded just to reopen chat.
+            projection = ",".join(
+                f"'{key}',json_extract(j.result,'$.{key}')" for key in CHAT_RESULT_FIELDS
+            )
+            fields = (
+                f"j.id,j.status,j.error,j.created_at,j.request,json_object({projection}) AS result"
+            )
+        jobs = self.rows(
+            f"SELECT {fields},t.id AS turn_id FROM research_turns t JOIN jobs j ON j.id=t.job_id "
+            f"WHERE {where} ORDER BY t.created_at DESC,j.id DESC"
+            + (" LIMIT ?" if page_size else ""),
+            (*params, page_size + 1) if page_size else params,
+        )
+        has_more = page_size is not None and len(jobs) > page_size
+        jobs = jobs[:page_size] if page_size is not None else jobs
+        jobs.reverse()
+        for job in jobs:
+            common = {
+                "job_id": job["id"],
+                "turn_id": job["turn_id"],
+                "created_at": job["created_at"],
+            }
+            messages.append(
+                {
+                    **common,
+                    "id": job["turn_id"] + ":user",
+                    "role": "user",
+                    "content": job["request"]["query"],
+                    "status": "completed",
+                }
+            )
+            result = job["result"] or {}
+            if page_size is not None:
+                from rasathane.product.research_chat import compact_chat_result
+
+                result = compact_chat_result(result)
+            messages.append(
+                {
+                    **common,
+                    "id": job["turn_id"] + ":assistant",
+                    "role": "assistant",
+                    "content": result.get("answer") or job["error"] or "",
+                    "status": job["status"],
+                    "result": result,
+                }
+            )
+        return {
+            **conversations[0],
+            "messages": messages,
+            "next_before": jobs[0]["turn_id"] if has_more else None,
+        }
+
+    def cancel_pending_jobs(self) -> None:
+        with self.connection() as conn:
+            conn.execute(
+                "UPDATE jobs SET status=CASE WHEN status='queued' THEN 'cancelled' "
+                "ELSE 'cancel_requested' END,cancel_requested=1,updated_at=? "
+                "WHERE status IN ('queued','running','cancel_requested')",
+                (now(),),
+            )
+
+    def latest_conversation_citations(self, conversation_id: str) -> list[dict[str, Any]]:
+        with self.connection() as conn:
+            row = conn.execute(
+                "SELECT json_extract(j.result,'$.citations') FROM research_turns t "
+                "JOIN jobs j ON j.id=t.job_id WHERE t.conversation_id=? AND j.status='completed' "
+                "ORDER BY t.created_at DESC,j.id DESC LIMIT 1",
+                (conversation_id,),
+            ).fetchone()
+        return json.loads(row[0]) if row and row[0] else []
 
     def get_job(self, job_id: str) -> dict[str, Any]:
         rows = self.rows("SELECT * FROM jobs WHERE id=?", (job_id,))
@@ -696,6 +861,13 @@ class ProductStore:
             ),
             (workspace_id,) if workspace_id else (),
         )
+        payload["conversations"] = [
+            self.get_conversation(row["id"])
+            for row in self.rows(
+                "SELECT id FROM conversations" + (" WHERE workspace_id=?" if workspace_id else ""),
+                (workspace_id,) if workspace_id else (),
+            )
+        ]
         if not workspace_id:
             for table in ("feeds", "articles", "topics", "topic_hits", "jobs", "migration_ledger"):
                 payload[table] = self.rows(f"SELECT * FROM {table}")

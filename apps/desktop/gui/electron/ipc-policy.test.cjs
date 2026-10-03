@@ -4,6 +4,12 @@ const assert = require("node:assert/strict");
 const { validateRequest, trustedSender } = require("./ipc-policy.cjs");
 
 test("dar API sözleşmesi ve tek iş iptali", () => {
+  assert.equal(validateRequest("/api/rasathane/conversations").method, "GET");
+  assert.equal(validateRequest("/api/rasathane/conversations/abc123").method, "GET");
+  for (const action of ["summary", "speech"]) {
+    assert.equal(validateRequest(`/api/rasathane/articles/abc123/${action}`, { method: "POST", body: {} }).method, "POST");
+    assert.throws(() => validateRequest(`/api/rasathane/articles/abc123/${action}`));
+  }
   assert.deepEqual(validateRequest("/api/rasathane/jobs/job_123/cancel", { method: "POST", body: {} }), { route: "/api/rasathane/jobs/job_123/cancel", method: "POST", body: "{}" });
   assert.equal(validateRequest("/gui/dosya?ad=06.pdf&klasor=test").method, "GET");
   assert.equal(validateRequest("/api/rasathane/jobs/abc123").method, "GET");

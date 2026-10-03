@@ -8,6 +8,7 @@ const JSON_ROUTES = new Map([
   ["/gui/dosya", ["GET"]],
   ["/api/rasathane/state", ["GET"]], ["/api/rasathane/analysis", ["POST"]],
   ["/api/rasathane/jobs", ["GET"]], ["/api/rasathane/workspaces", ["GET", "POST"]],
+  ["/api/rasathane/conversations", ["GET"]],
   ["/api/rasathane/notes", ["GET", "POST"]], ["/api/rasathane/research", ["POST"]],
   ["/api/rasathane/topics", ["GET", "POST"]], ["/api/rasathane/library", ["GET"]],
   ["/api/rasathane/settings", ["GET", "POST"]], ["/api/rasathane/export", ["GET"]],
@@ -21,7 +22,7 @@ function validateRequest(route, options = {}) {
   if (!options || typeof options !== "object" || Array.isArray(options)) throw new Error("Geçersiz istek.");
   if (Object.keys(options).some(key => !["method", "body"].includes(key))) throw new Error("İzin verilmeyen istek alanı.");
   const method = options.method || "GET";
-  const methods = JSON_ROUTES.get(url.pathname) || (/^\/api\/rasathane\/jobs\/[a-zA-Z0-9_-]+$/.test(url.pathname) ? ["GET"] : /^\/api\/rasathane\/(jobs\/[a-zA-Z0-9_-]+\/cancel|(topics|sources)\/[a-zA-Z0-9_-]+\/refresh)$/.test(url.pathname) ? ["POST"] : []);
+  const methods = JSON_ROUTES.get(url.pathname) || (/^\/api\/rasathane\/(jobs|conversations)\/[a-zA-Z0-9_-]+$/.test(url.pathname) ? ["GET"] : /^\/api\/rasathane\/(articles\/[a-zA-Z0-9_-]+\/(summary|speech)|jobs\/[a-zA-Z0-9_-]+\/cancel|(topics|sources)\/[a-zA-Z0-9_-]+\/refresh)$/.test(url.pathname) ? ["POST"] : []);
   if (!methods.includes(method)) throw new Error("Bu API işlemi izinli değil.");
   if (method === "GET" && options.body !== undefined) throw new Error("GET gövdesi desteklenmiyor.");
   const body = options.body === undefined ? undefined : JSON.stringify(options.body);

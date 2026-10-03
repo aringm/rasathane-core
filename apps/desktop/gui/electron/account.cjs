@@ -25,17 +25,29 @@ function createAccount({ userData, safeStorage, openExternal, transport = fetch 
   let deviceId;
   try { deviceId = JSON.parse(fs.readFileSync(deviceFile, "utf8")).deviceId; } catch { /* ilk kullanım */ }
   if (!/^dev_[a-f0-9]{32}$/.test(deviceId || "")) { deviceId = `dev_${crypto.randomBytes(16).toString("hex")}`; fs.writeFileSync(deviceFile, JSON.stringify({ deviceId })); }
-  let session = null; let status = "signed_out"; let error = null; let pendingServer = null; let pendingTimer = null; let epoch = 0; let refreshing = null;
+  let session = null; let status = "signed_out"; let error = null; let pendingServer = null; let pendingTimer = null; let epoch = 0; let refreshing = null; const listeners = new Set(); let expiryTimer = null;
   if (safeStorage.isEncryptionAvailable()) {
-    try { const candidate = JSON.parse(safeStorage.decryptString(fs.readFileSync(file))); if (validSession(candidate, deviceId)) { session = candidate; status = "signed_in"; } } catch { /* geçersiz/başka kullanıcı token'ı kullanılmaz */ }
+    try { const candidate = JSON.parse(safeStorage.decryptString(fs.readFileSync(file))); if (validSession(candidate, deviceId) && Date.parse(candidate.refresh_sure_sonu) > Date.now()) { session = candidate; status = Date.parse(candidate.access_sure_sonu) > Date.now() ? "signed_in" : "expired"; } } catch { /* geçersiz/başka kullanıcı token'ı kullanılmaz */ }
+  }
+  function snapshot() {
+    return { state: status, error, scope: status === "signed_in" ? [...(session?.scope || [])] : [] };
+  }
+  function publish() { const value = snapshot(); for (const listener of listeners) listener(value); }
+  function scheduleExpiry() {
+    if (expiryTimer) clearTimeout(expiryTimer);
+    expiryTimer = null;
+    if (!session) return;
+    const remaining = Math.min(Date.parse(session.access_sure_sonu), Date.parse(session.refresh_sure_sonu)) - Date.now();
+    if (remaining <= 0) { if (Date.parse(session.refresh_sure_sonu) <= Date.now()) clearSession(); else { status = "expired"; publish(); } return; }
+    expiryTimer = setTimeout(() => { status = "expired"; publish(); }, Math.min(remaining, 2147483647)); expiryTimer.unref();
   }
   function closePending() { if (pendingServer) pendingServer.close(); pendingServer = null; if (pendingTimer) clearTimeout(pendingTimer); pendingTimer = null; }
-  function clearSession() { epoch++; session = null; status = "signed_out"; if (fs.existsSync(file)) fs.unlinkSync(file); }
+  function clearSession() { epoch++; session = null; status = "signed_out"; if (expiryTimer) clearTimeout(expiryTimer); expiryTimer = null; if (fs.existsSync(file)) fs.unlinkSync(file); publish(); }
   function save(record) {
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Windows güvenli token deposu kullanılamıyor.");
     if (!validSession(record, deviceId)) throw new Error("Hesap oturumu Rasathane sözleşmesiyle uyumlu değil.");
     fs.writeFileSync(`${file}.tmp`, safeStorage.encryptString(JSON.stringify(record)), { mode: 0o600 }); fs.renameSync(`${file}.tmp`, file);
-    session = record; status = "signed_in"; error = null;
+    session = record; status = "signed_in"; error = null; scheduleExpiry(); publish();
   }
   async function api(route, body, bearer) {
     const response = await transport(`${AUTH_ORIGIN}${route}`, { method: body ? "POST" : "GET", redirect: "error", signal: AbortSignal.timeout(20000),
@@ -52,7 +64,9 @@ function createAccount({ userData, safeStorage, openExternal, transport = fetch 
     if (!data) throw new Error("Muhakeme hesabı yanıtı geçersiz."); return data;
   }
   async function accessToken() {
-    if (!session || Date.parse(session.refresh_sure_sonu) <= Date.now()) { clearSession(); throw new Error("Muhakeme hesabına giriş gerekli."); }
+    if (!session || status === "waiting") throw new Error("Muhakeme hesabına giriş gerekli.");
+    if (Date.parse(session.refresh_sure_sonu) <= Date.now()) { clearSession(); throw new Error("Muhakeme hesabına giriş gerekli."); }
+    if (Date.parse(session.access_sure_sonu) <= Date.now() && status === "signed_in") { status = "expired"; publish(); }
     if (Date.parse(session.access_sure_sonu) <= Date.now() + 30000) {
       if (!refreshing) {
         const generation = epoch; const token = session.refresh_token;
@@ -71,7 +85,7 @@ function createAccount({ userData, safeStorage, openExternal, transport = fetch 
   }
   async function authorized(route, body) {
     const generation = epoch;
-    try { return await api(route, body, await accessToken()); }
+    try { const result = await api(route, body, await accessToken()); if (generation !== epoch) throw new Error("Hesap oturumu kapatıldı."); return result; }
     catch (problem) {
       if (problem.status === 401 && generation === epoch) clearSession();
       throw problem;
@@ -81,14 +95,14 @@ function createAccount({ userData, safeStorage, openExternal, transport = fetch 
     if (pendingServer) return { started: true };
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Windows güvenli token deposu kullanılamıyor.");
     const pair = pkcePair(); let redirectURI; let exchanged = false; const generation = ++epoch;
-    status = "waiting"; error = null;
+    status = "waiting"; error = null; publish();
     pendingServer = http.createServer(async (request, response) => {
       let callback;
       try { if (!request.url?.startsWith("/")) throw new Error(); callback = new URL(request.url, redirectURI); }
       catch { response.writeHead(400); response.end("Gecersiz hesap donusu."); return; }
       if (request.method !== "GET" || callback.pathname !== "/cihaz/geri-donus" || callback.searchParams.get("state") !== pair.state || exchanged) { response.writeHead(400); response.end("Gecersiz hesap donusu."); return; }
       if (callback.searchParams.has("error")) {
-        if (generation === epoch) { status = session ? "signed_in" : "signed_out"; error = "Hesap bağlantısı iptal edildi."; closePending(); }
+        if (generation === epoch) { status = session ? (Date.parse(session.access_sure_sonu) > Date.now() && Date.parse(session.refresh_sure_sonu) > Date.now() ? "signed_in" : "expired") : "signed_out"; error = "Hesap bağlantısı iptal edildi."; closePending(); publish(); }
         response.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" }); response.end("Hesap bağlantısı iptal edildi. Rasathane'ye dönebilirsiniz."); return;
       }
       const code = callback.searchParams.get("code");
@@ -98,21 +112,30 @@ function createAccount({ userData, safeStorage, openExternal, transport = fetch 
         const record = await api("/api/auth/device/exchange", { client_id: CLIENT_ID, code, code_verifier: pair.verifier, device_id: deviceId, redirect_uri: redirectURI });
         if (generation !== epoch) throw new Error("Hesap bağlantısı iptal edildi."); save(record);
         response.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" }); response.end("Rasathane hesabı bağlandı. Uygulamaya dönebilirsiniz.");
-      } catch (problem) { if (generation === epoch) { error = String(problem.message); status = "failed"; } response.writeHead(502); response.end("Hesap baglanamadi. Rasathane'de yeniden deneyin."); }
+      } catch (problem) { if (generation === epoch) { error = String(problem.message); status = "failed"; publish(); } response.writeHead(502); response.end("Hesap baglanamadi. Rasathane'de yeniden deneyin."); }
       finally { if (generation === epoch) closePending(); }
     });
     try { await new Promise((resolve, reject) => { pendingServer.once("error", reject); pendingServer.listen(0, "127.0.0.1", resolve); }); }
-    catch (problem) { closePending(); status = "failed"; error = "Hesap dönüş bağlantısı açılamadı."; throw problem; }
+    catch (problem) { closePending(); status = "failed"; error = "Hesap dönüş bağlantısı açılamadı."; publish(); throw problem; }
     const address = pendingServer.address(); redirectURI = `http://127.0.0.1:${address.port}/cihaz/geri-donus`;
     const url = new URL("/hesap/cihaz-yetkilendir", AUTH_ORIGIN);
     for (const [key, value] of Object.entries({ response_type: "code", client_id: CLIENT_ID, scope: "desktop", redirect_uri: redirectURI, code_challenge: pair.challenge, code_challenge_method: "S256", state: pair.state, device_id: deviceId })) url.searchParams.set(key, value);
-    pendingTimer = setTimeout(() => { closePending(); if (status === "waiting") { status = "failed"; error = "Hesap bağlantısı zaman aşımına uğradı. Yeniden deneyin."; } }, 300000); pendingTimer.unref();
-    try { await openExternal(url.href); } catch (problem) { closePending(); status = "failed"; error = String(problem.message); throw problem; }
+    pendingTimer = setTimeout(() => { closePending(); if (status === "waiting") { status = "failed"; error = "Hesap bağlantısı zaman aşımına uğradı. Yeniden deneyin."; publish(); } }, 300000); pendingTimer.unref();
+    try { await openExternal(url.href); } catch (problem) { closePending(); status = "failed"; error = String(problem.message); publish(); throw problem; }
     return { started: true };
   }
+  scheduleExpiry();
+  function current(generation) {
+    return generation === epoch && status === "signed_in" && !!session && Date.parse(session.access_sure_sonu) > Date.now() && Date.parse(session.refresh_sure_sonu) > Date.now();
+  }
   return {
-    start, close: closePending,
-    status: () => ({ state: status, error, scope: session?.scope || [] }),
+    start, close: () => { closePending(); if (expiryTimer) clearTimeout(expiryTimer); listeners.clear(); },
+    status: () => { if (session && Date.parse(session.refresh_sure_sonu) <= Date.now()) clearSession(); else if (session && Date.parse(session.access_sure_sonu) <= Date.now() && status === "signed_in") { status = "expired"; publish(); } return snapshot(); },
+    checkSession: async () => { if (session && status !== "waiting") { try { await accessToken(); } catch { /* Son durum kilitli kalır; token veya ağ yanıtı renderer'a verilmez. */ } } return snapshot(); },
+    subscribe: listener => { listeners.add(listener); return () => listeners.delete(listener); },
+    generation: () => epoch,
+    isCurrent: current,
+    requireSession: async () => { const generation = epoch; await accessToken(); if (!current(generation)) throw new Error("Muhakeme hesabına giriş gerekli."); return generation; },
     entitlement: async () => authorized("/api/lisans/v2/durum"),
     startTrial: async () => authorized("/api/lisans/v2/deneme", { urun: "rasathane", idempotency_key: crypto.randomUUID() }),
     serviceAccessToken: accessToken, // yalnız main; preload ve renderer'a açılmaz

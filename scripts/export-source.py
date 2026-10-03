@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED = ("apps/desktop/core/", "apps/desktop/mcp/", "apps/desktop/tests/", "apps/desktop/eval/",
-           "apps/desktop/gui/electron/", "apps/desktop/gui/scripts/", "apps/desktop/gui/ui/", "apps/desktop/gui/src-tauri/icons/",
+           "apps/desktop/gui/electron/", "apps/desktop/gui/scripts/", "apps/desktop/gui/tests/", "apps/desktop/gui/ui/", "apps/desktop/gui/src-tauri/icons/",
            "apps/desktop/gui/src-tauri/src/", "apps/desktop/gui/src-tauri/capabilities/",
            "apps/desktop/infra/", "apps/radar/apps/", "apps/radar/packages/", "apps/radar/tests/",
            "apps/radar/alembic/", "apps/web/src/", "apps/web/public/", "apps/web/scripts/", "apps/web/.github/", "docs/urun/", "scripts/", ".github/")

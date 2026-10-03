@@ -1,3 +1,5 @@
+import { createLoginGate } from "./login-gate.js";
+let loginGate;
 import { createProductUI } from "./product.js";
 import {
   renderArtifact,
@@ -47,6 +49,8 @@ document.addEventListener("click", async (event) => {
 // Electron'da renderer yalnız dar preload sözleşmesini kullanır. Doğrudan fetch,
 // yalnız loopback browser preview'da kullanılabilir; paketli UI fail-closed kalır.
 async function sidecarFetch(url, options = {}) {
+  if (!loginGate?.allowed()) throw new Error("Devam etmek için giriş yapın.");
+  const sessionGeneration = loginGate.generation();
   const target = new URL(url, SIDECAR);
   if (target.origin !== SIDECAR)
     throw new Error("İzinli yerel servis dışında istek reddedildi.");
@@ -62,6 +66,8 @@ async function sidecarFetch(url, options = {}) {
         ...(body === undefined ? {} : { body }),
       },
     );
+    if (!loginGate.allowed() || sessionGeneration !== loginGate.generation())
+      throw new Error("Oturum kapandı; yanıt gösterilmedi.");
     const bytes = response.base64
       ? Uint8Array.from(atob(response.base64), (c) => c.charCodeAt(0))
       : JSON.stringify(response.data ?? null);
@@ -369,6 +375,7 @@ async function sidecarHazirla(deneme = 120) {
   btn.disabled = true;
   btn.setAttribute("aria-disabled", "true");
   for (let i = 0; i < deneme; i++) {
+    if (!loginGate?.allowed()) return;
     try {
       const r = await sidecarFetch(`${SIDECAR}/gui/health`, { method: "GET" });
       if (r.ok) {
@@ -1346,6 +1353,7 @@ const GORUNUMLER = [
   "ayarlar",
 ];
 function setGorunum(ad) {
+  if (!loginGate?.allowed()) return;
   if (ad === "kutuphane") ad = "calisma";
   if (!GORUNUMLER.includes(ad)) ad = "akis";
   for (const g of GORUNUMLER) {
@@ -1773,36 +1781,26 @@ const productUI = createProductUI({
     kurulumDurumu();
   },
 });
-productUI.load();
+loginGate = createLoginGate({
+  $,
+  onUnlock: () => {
+    productUI.unlock();
+    sidecarHazirla();
+  },
+  onLock: () => {
+    productUI.lock();
+    clearAllArtifacts();
+    veri = null;
+    kutuphaneVeri = [];
+    kutuphaneYuklendi = false;
+    for (const audio of document.querySelectorAll("audio")) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    }
+    window.location.reload();
+  },
+});
 window.addEventListener("beforeunload", () => {
   clearAllArtifacts();
 });
-
-// Demo modu (?demo=github|arxiv|reddit|huggingface|web|youtube): sidecar olmadan bütün ana
-// akışları çalıştırır. Üretim veri yolu ayrı kalır; dış web içeriği iframe'e yüklenmez.
-const demoParametreleri = new URLSearchParams(location.search);
-if (
-  !window.rasathane &&
-  ["127.0.0.1", "localhost"].includes(location.hostname) &&
-  demoParametreleri.has("demo")
-) {
-  import("./demo-veri.js?v=20260710").then((m) => {
-    demoAktif = true;
-    demoPaket = m;
-    const istenen = demoParametreleri.get("demo") || "youtube";
-    const tur = Object.hasOwn(m.DEMO_VERILERI, istenen) ? istenen : "youtube";
-    urlEl.value = m.DEMO_URLLER[tur];
-    kaynakAlgisiniGuncelle();
-    veri = m.demoVerisi(tur);
-    setMotor("hazir", "Demo modu");
-    btn.disabled = false;
-    btn.setAttribute("aria-disabled", "false");
-    modelleriHazirla();
-    kurulumDurumu();
-    onboardingKontrol();
-    setGorunum("analiz");
-    render(veri);
-  });
-} else {
-  sidecarHazirla();
-}

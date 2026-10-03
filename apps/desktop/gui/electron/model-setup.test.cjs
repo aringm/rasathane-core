@@ -21,3 +21,20 @@ test("paralel model kontrolleri aynı checksum işini paylaşır", async () => {
     assert.notEqual(setup.inspect(), first);
   } finally { fs.rmSync(root, { recursive: true }); }
 });
+
+test("çıkış model indirmesini iptal eder ve tamamlanmış model oluşturmaz", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "rasathane-model-cancel-"));
+  let started; const ready = new Promise(resolve => { started = resolve; });
+  const setup = createModelSetup(root, {
+    models: [{ name: "fixture.gguf", bytes: 3, sha256: "0".repeat(64), url: "https://hf.co/fixture", license: "test" }],
+    transport: async (_url, { signal }) => new Promise((_resolve, reject) => {
+      signal.addEventListener("abort", () => reject(new Error("İndirme iptal edildi.")), { once: true }); started(signal);
+    }),
+  });
+  try {
+    setup.start(); const signal = await ready; setup.cancel(); assert.equal(signal.aborted, true);
+    for (let i = 0; i < 20 && (await setup.inspect()).state !== "failed"; i++) await new Promise(resolve => setTimeout(resolve, 5));
+    assert.equal((await setup.inspect()).state, "failed");
+    assert.equal(fs.existsSync(path.join(root, "modeller", "fixture.gguf")), false);
+  } finally { setup.cancel(); fs.rmSync(root, { recursive: true }); }
+});

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import atexit
+import os
 import threading
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -8,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from rasathane.product.connectors import fetch_feed, muhakeme_configured
+from rasathane.product.research_chat import answer_from_sources, local_results
 from rasathane.product.store import ProductStore
 from rasathane.product.web import (
     SearchProvider,
@@ -44,6 +46,7 @@ class ProductService:
         self._wake = threading.Event()
         self._worker: threading.Thread | None = None
         self._run_lock = threading.Lock()
+        self._native_authenticated = threading.Event()
         if autostart:
             self.ensure_official_feeds()
             self.store.recover_interrupted()
@@ -95,6 +98,19 @@ class ProductService:
         self._wake.set()
         return job
 
+    def set_native_authenticated(self, authenticated: bool) -> None:
+        if authenticated:
+            self._native_authenticated.set()
+            self._wake.set()
+        else:
+            self._native_authenticated.clear()
+            self.store.cancel_pending_jobs()
+
+    def _session_ready(self) -> bool:
+        # CLI/test mode has no native session. Packaged workers stay idle until
+        # Electron main has refreshed and supplied a valid account access token.
+        return not os.environ.get("RASATHANE_SESSION_TOKEN") or self._native_authenticated.is_set()
+
     def _loop(self) -> None:
         while not self._stop.is_set():
             if not self.run_once():
@@ -109,6 +125,8 @@ class ProductService:
             self._worker.join(timeout=2)
 
     def _schedule(self) -> None:
+        if not self._session_ready():
+            return
         settings = self.store.settings()
         minutes = settings["topic_refresh_minutes"]
         if not minutes or not settings["web_enabled"]:
@@ -169,6 +187,8 @@ class ProductService:
                 self.submit("refresh", {"topic_id": topic["id"]})
 
     def run_once(self) -> bool:
+        if not self._session_ready():
+            return False
         if not self._run_lock.acquire(blocking=False):
             return False
         job = None
@@ -178,7 +198,11 @@ class ProductService:
                 return False
 
             def cancelled() -> bool:
-                return self._stop.is_set() or self.store.get_job(job["id"])["cancel_requested"]
+                return (
+                    self._stop.is_set()
+                    or not self._session_ready()
+                    or self.store.get_job(job["id"])["cancel_requested"]
+                )
 
             def check() -> None:
                 if cancelled():
@@ -206,6 +230,13 @@ class ProductService:
                 self.store.add_analysis(job["id"], result)
             elif job["kind"] == "research":
                 result = self._research(request, check, progress)
+                progress("answer_compose")
+                previous = []
+                conversation_id = request.get("conversation_id")
+                if conversation_id:
+                    previous = self.store.latest_conversation_citations(conversation_id)
+                result.update(answer_from_sources(result, previous))
+                result.update(conversation_id=conversation_id, turn_id=request.get("turn_id"))
             elif job["kind"] == "refresh":
                 topic = next(
                     (row for row in self.store.list_topics() if row["id"] == request["topic_id"]),
@@ -271,7 +302,7 @@ class ProductService:
         result: dict[str, Any] = {
             "query": query,
             "workspace_id": workspace_id,
-            "local_results": self.store.search(query, workspace_id),
+            "local_results": local_results(self.store, query, workspace_id),
             "web_results": [],
             "provider": "local",
             "status": "completed",
@@ -331,6 +362,7 @@ class ProductService:
                     "title": hit.get("title") or url,
                     "url": url,
                     "excerpt": hit.get("excerpt", ""),
+                    "body": body,
                     "source_id": saved["source_id"],
                     "version_id": saved["version_id"],
                     "content_hash": saved["content_hash"],

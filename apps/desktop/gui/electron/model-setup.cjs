@@ -26,6 +26,7 @@ function safeDownloadURL(value) {
 function createModelSetup(root, { models: specifications = catalog, transport = fetch } = {}) {
   let status = { state: "idle", received: 0, total: 0, model: null, error: null };
   let pending = null;
+  let controller = null;
   let inspecting = null;
   const verified = new Map();
   async function inspectFiles() {
@@ -51,17 +52,19 @@ function createModelSetup(root, { models: specifications = catalog, transport = 
     }
     return inspecting;
   }
-  async function install() {
+  async function install(signal) {
+    signal.throwIfAborted();
     fs.mkdirSync(path.join(root, "modeller"), { recursive: true });
     const disk = fs.statfsSync(root);
     if (disk.bavail * disk.bsize < specifications.reduce((sum, item) => sum + item.bytes, 0) + 512 * 1024 * 1024) throw new Error("Model kurulumu için en az 3,5 GB boş disk alanı gerekli.");
     for (const item of specifications) {
+      signal.throwIfAborted();
       const target = path.join(root, "modeller", item.name);
       if (fs.existsSync(target) && fs.statSync(target).size === item.bytes && await sha256(target) === item.sha256) continue;
       status = { state: "downloading", received: 0, total: item.bytes, model: item.name, error: null };
       let url = safeDownloadURL(item.url); let response;
       for (let count = 0; count < 8; count++) {
-        response = await transport(url, { redirect: "manual", signal: AbortSignal.timeout(3600000) });
+        response = await transport(url, { redirect: "manual", signal: AbortSignal.any([signal, AbortSignal.timeout(3600000)]) });
         if (response.status >= 300 && response.status < 400) {
           const next = response.headers.get("location"); await response.body?.cancel();
           if (!next) throw new Error("Model yönlendirme hedefi eksik.");
@@ -74,6 +77,7 @@ function createModelSetup(root, { models: specifications = catalog, transport = 
       const hash = crypto.createHash("sha256");
       try {
         for await (const chunk of response.body) {
+          signal.throwIfAborted();
           status.received += chunk.length;
           if (status.received > item.bytes) throw new Error("Model boyutu beklenenden büyük.");
           hash.update(chunk); await handle.writeFile(chunk);
@@ -81,15 +85,18 @@ function createModelSetup(root, { models: specifications = catalog, transport = 
       } finally { await handle.close(); }
       if (status.received !== item.bytes || hash.digest("hex") !== item.sha256) throw new Error("Model SHA256 doğrulaması başarısız. Analiz için kullanılmadı.");
       if (fs.statSync(partial).size !== item.bytes || await sha256(partial) !== item.sha256) throw new Error("Diske yazılan model SHA256 doğrulaması başarısız.");
+      signal.throwIfAborted();
       await fs.promises.rename(partial, target);
     }
     status.state = "completed"; status.error = null;
   }
   return {
     inspect,
+    cancel: () => { controller?.abort(); },
     start: () => {
       if (!pending) {
-        pending = install().catch(error => { status.state = "failed"; status.error = String(error.message); }).finally(() => { pending = null; });
+        controller = new AbortController();
+        pending = install(controller.signal).catch(error => { status.state = "failed"; status.error = String(error.message); }).finally(() => { pending = null; controller = null; });
       }
       return { started: true };
     },

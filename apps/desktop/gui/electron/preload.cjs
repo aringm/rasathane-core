@@ -8,6 +8,12 @@ contextBridge.exposeInMainWorld("rasathane", Object.freeze({
   setupStatus: () => ipcRenderer.invoke("rasathane:setup-status"),
   installModels: () => ipcRenderer.invoke("rasathane:install-models"),
   openSource: (url) => ipcRenderer.invoke("rasathane:open-source", url),
+  onAccountChange: listener => {
+    if (typeof listener !== "function") throw new TypeError("Hesap dinleyicisi geçersiz.");
+    const receive = (_event, value) => listener({ state: value.state, error: value.error, scope: [...(value.scope || [])] });
+    ipcRenderer.on("rasathane:account-change", receive);
+    return () => ipcRenderer.removeListener("rasathane:account-change", receive);
+  },
   accountStatus: () => ipcRenderer.invoke("rasathane:account-status"),
   entitlement: () => ipcRenderer.invoke("rasathane:entitlement"),
   startTrial: () => ipcRenderer.invoke("rasathane:start-trial"),
