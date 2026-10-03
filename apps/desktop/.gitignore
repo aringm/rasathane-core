@@ -1,0 +1,84 @@
+# --- Python / uv ---
+.local/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+!/gui/ui/lib/pdfjs/build/
+/gui/ui/lib/pdfjs/build/*
+!/gui/ui/lib/pdfjs/build/pdf.mjs
+!/gui/ui/lib/pdfjs/build/pdf.worker.mjs
+*.spec
+*.spec.bak
+
+# --- uv ---
+# uv.lock is committed on purpose (reproducible builds)
+
+# --- Node / Tauri ---
+node_modules/
+gui/src-tauri/target/
+gui/src-tauri/gen/
+gui/src-tauri/binaries/
+gui/dist/
+gui/dist-electron/
+gui/.vite/
+
+# --- PyInstaller sidecar output ---
+infra/dist/
+infra/build/
+*.sidecar.exe
+
+# --- Gömülü llama.cpp motoru (llama-server.exe + GB'larca GGUF) — fetch-motor.ps1 indirir ---
+infra/vendor/
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Local data / models / caches ---
+models/
+*.gguf
+*.onnx
+eval/real_docs/*
+!eval/real_docs/.gitkeep
+eval/results/
+
+# --- LangGraph / checkpoints ---
+*.sqlite
+*.sqlite3
+checkpoints/
+
+# --- Arize Phoenix local traces ---
+.phoenix/
+phoenix_data/
+
+# --- Geçici / test repro çıktıları (analiz oto-commit'i repo'ya sızdırmasın) ---
+tmp/
+_index/
+Youtube Analizleri/
+Rasathane Gözlemleri/
+Rasathane  Gözlemevi/
+.artifacts/
+
+# --- Claude Code yerel araçları (önizleme launch.json vb. — proje teslimatı değil) ---
+.claude/
+
+# --- OS ---
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Tauri icon — mobil/kullanılmayan platformlar (Windows masaüstü ürünü; repo şişmesin)
+gui/src-tauri/icons/android/
+gui/src-tauri/icons/ios/
+
+# Sürüm installer binary'leri büyük — git'e girmez; kayıt releases/RELEASES.md'de
+releases/*.exe
+releases/*.zip
+releases/*.blockmap

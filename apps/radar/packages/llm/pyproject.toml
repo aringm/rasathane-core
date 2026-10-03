@@ -1,0 +1,22 @@
+[project]
+name = "rasathane-llm"
+version = "0.1.0"
+description = "LLM helpers — Ollama embeddings + codex/gemini CLI subprocess wrappers"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "structlog>=24.4",
+    "tenacity>=9.0",
+    "httpx>=0.27",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llm"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/llm/prompts/short_summary.md" = "llm/prompts/short_summary.md"
+"src/llm/prompts/daily_brief.md" = "llm/prompts/daily_brief.md"
+"src/llm/prompts/long_summary.md" = "llm/prompts/long_summary.md"

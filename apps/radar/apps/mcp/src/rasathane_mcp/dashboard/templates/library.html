@@ -1,0 +1,482 @@
+{% extends "_base.html" %}
+{% set active = "library" %}
+{% block title %}Rasathane · Kütüphane{% endblock %}
+
+{% block content %}
+<style>
+    /* Phase 32-v.3: Otomatik tag pill'leri */
+    .lib-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem;
+        margin: .5rem 0 .65rem;
+    }
+    .tag-pill {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text2);
+        padding: .15rem .65rem;
+        border-radius: 999px;
+        font-family: var(--font-mono);
+        font-size: .68rem;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .tag-pill:hover {
+        color: var(--gold-text);
+        border-color: var(--gold-border);
+        background: var(--gold-dim);
+    }
+    .tag-pill.active {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+        color: var(--bg);
+        border-color: transparent;
+        font-weight: 600;
+    }
+</style>
+<header class="page-header">
+    <div class="heading">
+        <p class="eyebrow">Kütüphane</p>
+        <h1>Kaydettiklerin</h1>
+        <p class="subtitle">
+            Akıştan ya da gündemden işaretlediğin makaleler ve brief'ler burada.
+            İçerik kayıt anında dondurulur, kaynak silinse bile burada kalır.
+        </p>
+    </div>
+</header>
+
+<section class="block" x-data="libraryView()" x-init="init()">
+    <div class="library-bar">
+        <div class="filter-pills">
+            <button :class="{ active: type === 'all' }" @click="setType('all')">Tümü</button>
+            <button :class="{ active: type === 'article' }" @click="setType('article')">Makaleler</button>
+            <button :class="{ active: type === 'brief' }" @click="setType('brief')">Gündem</button>
+            <button :class="{ active: type === 'deep_analysis' }"
+                    @click="setType('deep_analysis')">Analizler</button>
+        </div>
+        <input class="search" type="search" placeholder="Notlarda + içerikte ara…"
+               x-model="q" @input.debounce.500ms="reload()">
+        <span style="color: var(--text3); font-family: var(--font-mono); font-size: .78rem;"
+              x-text="total + ' kayıt'"></span>
+        <a href="/plans" class="btn-go-plans" title="Kaydedilenlerden yapılacaklar listesi üret">
+            ✨ Yapılacaklar
+        </a>
+    </div>
+
+    <template x-if="loading && items.length === 0">
+        <div class="empty-state">
+            <p style="color: var(--text2);">Yükleniyor…</p>
+        </div>
+    </template>
+
+    <template x-if="!loading && items.length === 0">
+        <div class="empty-state">
+            <p style="color: var(--text2); margin: 0;">
+                <strong style="color: var(--text);">Henüz kaydedilmiş bir şey yok.</strong>
+            </p>
+            <p style="color: var(--text3); font-size: .82rem; margin: .35rem 0 0;">
+                Akıştaki bir makaleye veya gündeme bookmark simgesinden tıklayarak
+                buraya ekleyebilirsin.
+            </p>
+        </div>
+    </template>
+
+    <template x-for="item in items" :key="item.id">
+        <article class="lib-card glass"
+                 :class="{ 'dead-link': item.is_dead_link, 'expanded': expandedId === item.id }">
+            <div class="lib-meta">
+                <span class="lib-type" x-text="typeLabel(item.item_type)"></span>
+                <span x-text="formatDate(item.saved_at)"></span>
+                <template x-if="item.snapshot_meta?.category">
+                    <span x-text="item.snapshot_meta.category"></span>
+                </template>
+                <template x-if="item.snapshot_meta?.source_name">
+                    <span x-text="'· ' + item.snapshot_meta.source_name"></span>
+                </template>
+                <template x-if="item.snapshot_meta?.channel">
+                    <span x-text="'· ' + item.snapshot_meta.channel"></span>
+                </template>
+            </div>
+            <h3 class="lib-title">
+                <template x-if="item.item_type === 'article' && item.snapshot_meta?.url">
+                    <a :href="item.snapshot_meta.url" target="_blank" rel="noopener"
+                       @click.stop
+                       x-text="item.snapshot_meta.title || '(başlıksız)'"></a>
+                </template>
+                <template x-if="item.item_type === 'brief'">
+                    <span x-text="'Gündem · ' + (item.snapshot_meta?.date || '')"></span>
+                </template>
+                <template x-if="item.item_type === 'deep_analysis'">
+                    <span x-text="item.snapshot_meta?.title || 'Analiz'"></span>
+                </template>
+            </h3>
+
+            <!-- Phase 19-iv: modern not editör — textarea + autosave -->
+            <div class="lib-note-wrap">
+                <label class="lib-note-label">
+                    <span>Notlar</span>
+                    <span class="autosave-status"
+                          x-show="noteStatus[item.id]"
+                          x-text="noteStatus[item.id]"></span>
+                </label>
+                <textarea class="lib-note-input"
+                          rows="2"
+                          placeholder="Bu içerikten aklında ne var? Markdown kullanabilirsin…"
+                          x-model="noteDraft[item.id]"
+                          @input.debounce.800ms="autosaveNote(item)"></textarea>
+            </div>
+
+            <!-- Phase 19-iii: tam metin expand -->
+            <template x-if="expandedId !== item.id">
+                <p class="lib-preview" x-text="item.snapshot_preview"></p>
+            </template>
+            <template x-if="expandedId === item.id">
+                <div class="lib-full" x-html="renderMarkdown(fullMd[item.id] || '')"></div>
+            </template>
+
+            <!-- Phase 17/18 deep_analysis için artifact linkleri -->
+            <template x-if="item.item_type === 'deep_analysis' && item.snapshot_meta">
+                <div class="lib-deep-links">
+                    <template x-if="item.snapshot_meta.audio_url">
+                        <a :href="item.snapshot_meta.audio_url" target="_blank">🔊 Sesli özet</a>
+                    </template>
+                    <template x-if="item.snapshot_meta.mindmap_url">
+                        <!-- Phase 28-v cache-bust -->
+                        <a :href="item.snapshot_meta.mindmap_url + '?v=' + (item.saved_at || Date.now())"
+                           target="_blank">🧠 Zihin haritası</a>
+                    </template>
+                    <template x-if="item.snapshot_meta.url">
+                        <a :href="item.snapshot_meta.url" target="_blank" rel="noopener">↗ Kaynak</a>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Phase 32-v.3: Otomatik tagleme — etiketler pill olarak -->
+            <template x-if="item.snapshot_meta && Array.isArray(item.snapshot_meta.tags) && item.snapshot_meta.tags.length > 0">
+                <div class="lib-tags">
+                    <template x-for="tag in item.snapshot_meta.tags" :key="tag">
+                        <button class="tag-pill"
+                                :class="{ active: activeTag === tag }"
+                                @click="filterByTag(tag)"
+                                x-text="tag"
+                                :title="`'${tag}' etiketli kayıtları filtrele`"></button>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Phase 28-iv: sesli özet (her library item için) -->
+            <template x-if="audioState[item.id]?.status === 'done'">
+                <div class="lib-audio">
+                    <audio controls preload="metadata"
+                           :src="audioState[item.id].audio_url"
+                           style="width: 100%; max-width: 480px;">
+                    </audio>
+                </div>
+            </template>
+            <template x-if="audioState[item.id]?.status === 'in_progress' || audioState[item.id]?.status === 'generating'">
+                <div class="lib-audio-pending">
+                    <span>🔊 Sesli özet hazırlanıyor…</span>
+                    <span class="lib-audio-elapsed"
+                          x-text="(audioElapsed[item.id] || 0) + ' sn'"></span>
+                </div>
+            </template>
+            <template x-if="audioState[item.id]?.status === 'failed'">
+                <div class="lib-audio-error" x-text="audioState[item.id].detail || 'Hata oluştu'"></div>
+            </template>
+
+            <div class="lib-actions">
+                <button class="lib-toggle"
+                        @click="toggleExpand(item)"
+                        x-text="expandedId === item.id ? '▲ Daralt' : '▼ Tam metni göster'"></button>
+                <template x-if="!audioState[item.id] || audioState[item.id].status === 'not_generated' || audioState[item.id].status === 'failed'">
+                    <button class="lib-audio-btn" @click="triggerLibraryAudio(item)">
+                        🔊 Sesli özet üret
+                    </button>
+                </template>
+                <button class="lib-delete" @click="confirmDelete(item)">Çıkar</button>
+            </div>
+        </article>
+    </template>
+
+    <button class="more" x-show="hasMore" @click="loadMore()" :disabled="loading">
+        <span x-text="loading ? 'Yükleniyor…' : 'Daha fazla göster ↓'"></span>
+    </button>
+</section>
+
+<script>
+const TYPE_LABELS = {
+    article: "Makale",
+    brief: "Gündem",
+    deep_analysis: "Analiz",
+};
+
+function libraryView() {
+    return {
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 50,
+        hasMore: false,
+        loading: false,
+        type: "all",
+        q: "",
+        // Phase 19-iii/iv: expanded full content + modern note editor state
+        expandedId: null,
+        fullMd: {},        // {item_id: snapshot_md}
+        noteDraft: {},     // {item_id: note in editor}
+        noteStatus: {},    // {item_id: "Kaydediliyor…" | "Kayıtlı"}
+        noteSaveTimers: {},
+        // Phase 28-iv: kütüphane sesli özet state
+        audioState: {},    // {item_id: {status, audio_url?, detail?}}
+        audioPollers: {},  // {item_id: setInterval id}
+        audioStartedAt: {},
+        audioElapsed: {},  // {item_id: seconds}
+        audioElapsedTimers: {},
+        // Phase 32-v.3: tag filter
+        activeTag: "",
+        filterByTag(tag) {
+            this.activeTag = this.activeTag === tag ? "" : tag;
+            // Tag = arama query'sine ekle (basit reuse)
+            this.q = this.activeTag;
+            this.offset = 0;
+            this.load();
+        },
+
+        async init() {
+            // URL state restore (?type=article&q=AYM)
+            const params = new URLSearchParams(window.location.search);
+            this.type = params.get("type") || "all";
+            this.q = params.get("q") || "";
+            await this.load();
+        },
+        async load() {
+            this.loading = true;
+            this.offset = 0;
+            this.items = [];
+            await this.fetchPage();
+        },
+        async loadMore() {
+            this.offset += this.limit;
+            await this.fetchPage();
+        },
+        async reload() { await this.load(); },
+        async fetchPage() {
+            this.loading = true;
+            const p = new URLSearchParams({ offset: this.offset, limit: this.limit });
+            if (this.type !== "all") p.set("type", this.type);
+            if (this.q) p.set("q", this.q);
+            this.syncUrl();
+            try {
+                const r = await fetch("/api/library?" + p.toString());
+                const body = await r.json();
+                this.items = [...this.items, ...body.items];
+                this.total = body.total;
+                this.hasMore = body.has_more;
+                // Hydrate noteDraft for new items (server-side note → editor)
+                for (const it of body.items) {
+                    if (this.noteDraft[it.id] === undefined) {
+                        this.noteDraft[it.id] = it.note || "";
+                    }
+                }
+                // Phase 28-iv: audio durumu paralel hydrate
+                this.hydrateAudioStates(body.items);
+            } finally {
+                this.loading = false;
+            }
+        },
+        async hydrateAudioStates(items) {
+            // Her item için /api/library/{id}/audio status endpoint'i
+            await Promise.all(
+                items.map(async (it) => {
+                    if (this.audioState[it.id]) return;  // zaten biliniyorsa atla
+                    try {
+                        const r = await fetch(`/api/library/${it.id}/audio`);
+                        if (r.ok) this.audioState[it.id] = await r.json();
+                    } catch (_) {}
+                })
+            );
+        },
+        async triggerLibraryAudio(item) {
+            this.audioState[item.id] = { status: "generating" };
+            this.audioStartedAt[item.id] = Date.now();
+            this.audioElapsed[item.id] = 0;
+            this.audioElapsedTimers[item.id] = setInterval(() => {
+                this.audioElapsed[item.id] = Math.floor(
+                    (Date.now() - this.audioStartedAt[item.id]) / 1000
+                );
+            }, 1000);
+            try {
+                const r = await fetch(`/api/library/${item.id}/audio`, { method: "POST" });
+                if (!r.ok) {
+                    this.audioState[item.id] = {
+                        status: "failed",
+                        detail: "Tetiklenemedi (HTTP " + r.status + ")",
+                    };
+                    clearInterval(this.audioElapsedTimers[item.id]);
+                    return;
+                }
+                const body = await r.json();
+                if (body.status === "already_exists") {
+                    this.audioState[item.id] = body;
+                    clearInterval(this.audioElapsedTimers[item.id]);
+                    return;
+                }
+                // queued → polling 3 sn
+                this.audioPollers[item.id] = setInterval(async () => {
+                    try {
+                        const pr = await fetch(`/api/library/${item.id}/audio`);
+                        if (!pr.ok) return;
+                        const pbody = await pr.json();
+                        if (pbody.status === "done") {
+                            this.audioState[item.id] = pbody;
+                            clearInterval(this.audioPollers[item.id]);
+                            clearInterval(this.audioElapsedTimers[item.id]);
+                        } else if (pbody.status === "failed") {
+                            this.audioState[item.id] = pbody;
+                            clearInterval(this.audioPollers[item.id]);
+                            clearInterval(this.audioElapsedTimers[item.id]);
+                        }
+                    } catch (_) {}
+                }, 3000);
+                // Hard ceiling: 5 dk
+                setTimeout(() => {
+                    if (this.audioState[item.id]?.status === "in_progress" ||
+                        this.audioState[item.id]?.status === "generating") {
+                        clearInterval(this.audioPollers[item.id]);
+                        clearInterval(this.audioElapsedTimers[item.id]);
+                        this.audioState[item.id] = {
+                            status: "failed",
+                            detail: "Üretim 5 dakikayı aştı",
+                        };
+                    }
+                }, 5 * 60 * 1000);
+            } catch (e) {
+                this.audioState[item.id] = { status: "failed", detail: String(e) };
+                clearInterval(this.audioElapsedTimers[item.id]);
+            }
+        },
+        syncUrl() {
+            const p = new URLSearchParams();
+            if (this.type !== "all") p.set("type", this.type);
+            if (this.q) p.set("q", this.q);
+            const qs = p.toString();
+            const url = qs ? "/library?" + qs : "/library";
+            window.history.replaceState({}, "", url);
+        },
+        setType(t) {
+            this.type = t;
+            this.load();
+        },
+        // Phase 19-iv: autosave-driven modern note editor
+        async autosaveNote(item) {
+            const draft = (this.noteDraft[item.id] || "").trim();
+            const note = draft || null;
+            // No-op if same as server-side
+            if ((item.note || "") === (note || "")) return;
+            this.noteStatus[item.id] = "Kaydediliyor…";
+            try {
+                const r = await fetch("/api/library/" + item.id, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ note }),
+                });
+                if (r.ok) {
+                    item.note = note;
+                    this.noteStatus[item.id] = "Kayıtlı";
+                    setTimeout(() => { this.noteStatus[item.id] = ""; }, 2000);
+                } else {
+                    this.noteStatus[item.id] = "Kaydedilemedi";
+                }
+            } catch (_) {
+                this.noteStatus[item.id] = "Bağlantı hatası";
+            }
+        },
+        // Phase 19-iii: full content expand
+        async toggleExpand(item) {
+            if (this.expandedId === item.id) {
+                this.expandedId = null;
+                return;
+            }
+            this.expandedId = item.id;
+            // Lazy load full snapshot_md (her açışta yeniden değil, cache'le)
+            if (!this.fullMd[item.id]) {
+                try {
+                    const r = await fetch("/api/library/" + item.id);
+                    if (r.ok) {
+                        const body = await r.json();
+                        this.fullMd[item.id] = body.snapshot_md || "";
+                    }
+                } catch (_) {
+                    this.fullMd[item.id] = "_(içerik yüklenemedi)_";
+                }
+            }
+        },
+        typeLabel(t) {
+            return TYPE_LABELS[t] || t;
+        },
+        renderMarkdown(text) {
+            // Reuse pattern from index.html briefPanel.renderMarkdown.
+            if (!text) return "";
+            const escape = (s) => s.replace(/[&<>"']/g, (m) => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;",
+                '"': "&quot;", "'": "&#39;"
+            }[m]));
+            const inline = (s) => {
+                let out = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+                out = out.replace(
+                    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+                    (_m, label, url) =>
+                        `<a href="${url}" target="_blank" rel="noopener">${label}</a>`,
+                );
+                return out;
+            };
+            const lines = text.split("\n");
+            let html = ""; let inList = false;
+            for (const raw of lines) {
+                const line = raw.trimEnd();
+                if (line.startsWith("### ")) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h3>${escape(line.slice(4))}</h3>`;
+                } else if (line.startsWith("## ")) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h2>${escape(line.slice(3))}</h2>`;
+                } else if (line.startsWith("# ")) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h2>${escape(line.slice(2))}</h2>`;
+                } else if (line.startsWith("- ")) {
+                    if (!inList) { html += "<ul>"; inList = true; }
+                    html += `<li>${inline(escape(line.slice(2)))}</li>`;
+                } else if (line === "") {
+                    if (inList) { html += "</ul>"; inList = false; }
+                } else {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<p>${inline(escape(line))}</p>`;
+                }
+            }
+            if (inList) html += "</ul>";
+            return html;
+        },
+        async confirmDelete(item) {
+            if (!confirm("Kütüphaneden çıkarılsın mı?")) return;
+            try {
+                const r = await fetch("/api/library/" + item.id, { method: "DELETE" });
+                if (r.ok) {
+                    this.items = this.items.filter((i) => i.id !== item.id);
+                    this.total = Math.max(0, this.total - 1);
+                }
+            } catch (_) {
+                alert("Silme başarısız");
+            }
+        },
+        formatDate(iso) {
+            if (!iso) return "—";
+            const d = new Date(iso);
+            return d.toLocaleString("tr-TR", {
+                day: "2-digit", month: "2-digit", year: "numeric",
+                hour: "2-digit", minute: "2-digit",
+            });
+        },
+    };
+}
+</script>
+{% endblock %}

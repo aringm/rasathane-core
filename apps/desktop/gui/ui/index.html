@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; connect-src 'self' http://127.0.0.1:8765 http://127.0.0.1:8766 http://127.0.0.1:8767 http://127.0.0.1:8768; media-src 'self' blob:; font-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; frame-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Rasathane — Takip, analiz ve araştırma</title>
+    <link rel="icon" href="/brand/rasathane-mark.svg" />
+    <link rel="stylesheet" href="/styles.css?v=urun-1" />
+    <link rel="stylesheet" href="/radar.css" />
+    <link rel="stylesheet" href="/workspace.css" />
+  </head>
+  <body class="session-locked">
+    <section
+      id="giris-ekrani"
+      class="login-screen"
+      aria-labelledby="giris-baslik"
+    >
+      <div class="login-card">
+        <img src="/brand/rasathane-mark.svg" width="72" height="72" alt="" />
+        <p class="login-eyebrow">MUHAKEME · RASATHANE</p>
+        <h1 id="giris-baslik">Rasathane’ye giriş yapın.</h1>
+        <p>
+          Muhakeme hesabınızla devam edin. E-posta adresinize göndereceğimiz
+          doğrulama koduyla giriş yapabilirsiniz; hesabınız yoksa oluşturulur.
+        </p>
+        <p id="giris-durum" role="status" aria-live="polite">
+          Oturum kontrol ediliyor…
+        </p>
+        <form id="giris-email-form" class="login-form">
+          <label for="giris-email">E-posta adresiniz</label>
+          <input id="giris-email" type="email" autocomplete="email" inputmode="email" maxlength="254" placeholder="adiniz@ornek.com" required aria-describedby="giris-durum" />
+          <button id="giris-baslat" type="submit" class="btn" disabled>
+            Doğrulama kodu gönder
+          </button>
+        </form>
+        <form id="giris-kod-form" class="login-form" hidden>
+          <p id="giris-hedef" class="field-note"></p>
+          <label for="giris-kod">6 haneli doğrulama kodu</label>
+          <input id="giris-kod" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required aria-describedby="giris-durum giris-kod-suresi" />
+          <p id="giris-kod-suresi" class="field-note"></p>
+          <button id="giris-dogrula" type="submit" class="btn">Giriş yap</button>
+          <div class="form-actions">
+            <button id="giris-tekrar" type="button" class="btn btn-ikincil">Yeni kod gönder</button>
+            <button id="giris-degistir" type="button" class="btn btn-ikincil">E-postayı değiştir</button>
+          </div>
+        </form>
+        <div class="login-support">
+          <button id="giris-yenile" type="button" class="login-text-button">
+            Oturumu kontrol et
+          </button>
+          <button id="giris-iptal" type="button" class="login-text-button" hidden>Giriş işlemini iptal et</button>
+        </div>
+        <div class="login-legal">
+          <button id="giris-kosullar" type="button" class="login-text-button">Kullanım koşulları</button>
+          <button id="giris-kvkk" type="button" class="login-text-button">Kişisel verilerin korunması</button>
+        </div>
+        <p class="field-note">
+          Giriş zorunludur. Yerel çekirdek ücretsizdir; ücretli hizmet denemesi
+          ayrıca başlatılır.
+        </p>
+      </div>
+    </section>
+    <a class="app-skip" href="#app-main">İçeriğe atla</a>
+    <header class="topbar">
+      <span class="wordmark"
+        ><img
+          src="/brand/rasathane-mark.svg"
+          width="36"
+          height="36"
+          alt=""
+        />Rasathane</span
+      ><span class="topbar-description">Takip, analiz ve araştırma</span
+      ><span class="durum-grup"
+        ><span
+          class="mini-cip arama-cip gizli"
+          id="arama-cip"
+          role="status"
+          aria-live="polite"
+          title="Web arama servisi"
+        ></span
+        ><span
+          class="mini-cip ner-cip gizli"
+          id="ner-cip"
+          role="status"
+          aria-live="polite"
+          title="Kişisel veri koruması"
+        ></span
+        ><span
+          class="motor-cip"
+          id="motor-cip"
+          data-durum="baslatiliyor"
+          role="status"
+          aria-live="polite"
+          ><span class="nokta" aria-hidden="true"></span
+          ><span id="motor-metin">Motor başlatılıyor…</span></span
+        ></span
+      >
+      <div class="header-navigation">
+      <nav
+        class="sekmeler app-nav"
+        role="tablist"
+        aria-orientation="horizontal"
+        aria-label="Çalışma görünümleri"
+      >
+        <button
+          class="sekme"
+          id="sekme-akis"
+          type="button"
+          role="tab"
+          data-gorunum="akis"
+          aria-controls="gorunum-akis"
+          aria-selected="true"
+          tabindex="0"
+        >
+          <span aria-hidden="true">◷</span>Akış</button
+        ><button
+          class="sekme"
+          id="sekme-analiz"
+          type="button"
+          role="tab"
+          data-gorunum="analiz"
+          aria-controls="gorunum-analiz"
+          aria-selected="false"
+          tabindex="-1"
+        >
+          <span aria-hidden="true">◈</span>Analiz</button
+        ><button
+          class="sekme"
+          id="sekme-arastir"
+          type="button"
+          role="tab"
+          data-gorunum="arastir"
+          aria-controls="gorunum-arastir"
+          aria-selected="false"
+          tabindex="-1"
+        >
+          <span aria-hidden="true">⌕</span>Araştır</button
+        >
+        <button class="sekme" id="sekme-kaynaklar" type="button" role="tab" data-gorunum="kaynaklar" aria-controls="gorunum-kaynaklar" aria-selected="false" tabindex="-1"><span aria-hidden="true">▥</span>Kaynaklar</button>
+      </nav>
+      <div class="header-actions">
+      <button type="button" class="btn btn-ikincil header-settings" id="header-ayarlar">Ayarlar</button>
+      <div class="profile-card">
+        <div id="profil-menu" class="profile-menu" role="menu" aria-label="Hesap ve ayarlar" hidden>
+          <div class="profile-menu-heading"><strong id="profil-menu-ad">Muhakeme hesabı</strong><span id="profil-menu-plan">Rasathane</span></div>
+          <button type="button" role="menuitem" id="hesap-ac">Hesap ve plan</button>
+          <button type="button" role="menuitem" id="profil-ayarlar">Ayarlar</button>
+          <div class="profile-menu-divider"></div>
+          <button type="button" role="menuitem" id="profil-cikis">Çıkış yap</button>
+        </div>
+        <button type="button" id="profil-ac" class="profile-trigger" aria-haspopup="menu" aria-controls="profil-menu" aria-expanded="false">
+          <span id="profil-avatar" class="profile-avatar" aria-hidden="true">M</span>
+          <span class="profile-meta"><strong id="profil-ad">Muhakeme hesabı</strong><span id="profil-plan">Hesap ve ayarlar</span></span>
+          <span aria-hidden="true">⌄</span>
+        </button>
+      </div>
+      </div>
+      </div>
+    </header>
+    <main class="app-main" id="app-main">
+      <section
+        id="gorunum-akis"
+        role="tabpanel"
+        aria-labelledby="sekme-akis"
+        tabindex="0"
+      >
+        <div class="page-heading">
+          <div>
+            <h1>Akış</h1>
+            <p>Güncel haberler, sizin için öne çıkanlar.</p>
+          </div>
+          <div class="form-actions"><button class="btn btn-ikincil" id="akis-yenile" type="button">Kayıtları yenile</button><button class="btn" id="kaynak-kontrol-btn" type="button">Akışı yenile</button></div>
+        </div>
+        <div
+          class="product-status"
+          id="urun-durum"
+          role="status"
+          aria-live="polite"
+        >
+          Yerel kayıtlar yükleniyor…
+        </div>
+        <div class="feed-layout">
+          <section class="feed-main" aria-labelledby="akis-icerik-baslik">
+            <div class="radar-stream-heading"><h2 id="akis-icerik-baslik">Son haberler</h2><button class="source-feed-link" id="akis-kaynaklar-git" type="button"><span id="akis-kaynak-ozet">Takip kaynakları</span></button></div>
+            <div id="akis-liste" class="record-list"></div>
+          </section>
+
+        </div>
+      </section>
+      <section id="gorunum-kaynaklar" class="gizli" role="tabpanel" aria-labelledby="sekme-kaynaklar" tabindex="0">
+        <div class="page-heading"><div><h1>Kaynaklar</h1><p>Haber kaynaklarını düzenleyin, kategorilere ayırın ve takibi yönetin.</p></div><div class="form-actions"><button id="kaynaklar-yenile" class="btn btn-ikincil" type="button">Listeyi yenile</button><button id="kaynaklar-kontrol" class="btn btn-ikincil" type="button">Tümünü kontrol et</button><button id="kaynak-ekle-ac" class="btn" type="button">Kaynak ekle</button></div></div>
+        <div id="kaynak-yonetimi"><div id="kaynak-liste" class="source-table-scroll"></div></div>
+      </section>
+      <div
+        id="gorunum-analiz"
+        class="gizli"
+        role="tabpanel"
+        aria-labelledby="sekme-analiz"
+        tabindex="0"
+      >
+        <div class="page-heading">
+          <div>
+            <h1>Analiz</h1>
+            <p>
+              Bir bağlantıyı kaynakları ve işlem kaydıyla ayrıntılı inceleyin.
+            </p>
+          </div>
+        </div>
+        <!-- 0. Onboarding şeridi — tam özellik hazır değilse yapılandırmaya yönlendirir -->
+        <div
+          class="serit onboarding gizli"
+          id="onboarding-serit"
+          role="status"
+          aria-live="polite"
+        >
+          <img class="marka" src="/brand/rasathane-mark.svg" width="22" height="22" alt="" />
+          <div class="onboarding-metin">
+            <div class="baslik">Rasathane'ye hoş geldiniz</div>
+            <div class="alt" id="onboarding-alt">
+              Başlamadan önce birkaç ayar gerekiyor.
+            </div>
+          </div>
+          <button class="btn" id="onboarding-btn" type="button">
+            Ayarları aç
+          </button>
+        </div>
+        <!-- Kaynak spektrumu: desteklenen adaptörleri tek bakışta gösteren yapısal imza. -->
+        <section
+          class="kaynak-spektrumu"
+          aria-labelledby="kaynak-spektrumu-baslik"
+        >
+          <div class="spektrum-bas">
+            <h2 id="kaynak-spektrumu-baslik">Desteklenen kaynaklar</h2>
+            <span>Bağlantıdan otomatik tanınır</span>
+          </div>
+          <ul id="kaynak-listesi">
+            <li data-kaynak="youtube">
+              <span class="kaynak-kodu" aria-hidden="true">YT</span
+              ><span>YouTube</span>
+            </li>
+            <li data-kaynak="github">
+              <span class="kaynak-kodu" aria-hidden="true">GH</span
+              ><span>GitHub</span>
+            </li>
+            <li data-kaynak="arxiv">
+              <span class="kaynak-kodu" aria-hidden="true">AX</span
+              ><span>arXiv</span>
+            </li>
+            <li data-kaynak="reddit">
+              <span class="kaynak-kodu" aria-hidden="true">RD</span
+              ><span>Reddit</span>
+            </li>
+            <li data-kaynak="huggingface">
+              <span class="kaynak-kodu" aria-hidden="true">HF</span
+              ><span>Hugging Face</span>
+            </li>
+            <li data-kaynak="web">
+              <span class="kaynak-kodu" aria-hidden="true">WB</span
+              ><span>Web / PDF</span>
+            </li>
+          </ul>
+        </section>
+        <!-- 1. Girdi paneli -->
+        <section class="kart girdi" aria-label="Analiz girdisi">
+          <div class="satir">
+            <div class="alan buyume">
+              <label for="url">Kaynak bağlantısı</label>
+              <input
+                type="url"
+                id="url"
+                placeholder="YouTube, GitHub, arXiv, Reddit, Hugging Face, web veya PDF…"
+                aria-required="true"
+                aria-describedby="kaynak-algilama-aciklama"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <div
+                class="kaynak-algilama"
+                id="kaynak-algilama"
+                role="status"
+                aria-live="polite"
+              >
+                <span class="kaynak-cip bekliyor" id="kaynak-cip"
+                  >Kaynak bekleniyor</span
+                >
+                <span id="kaynak-algilama-aciklama"
+                  >Bağlantıyı yazdığınızda uygun analiz adaptörü seçilir.</span
+                >
+              </div>
+            </div>
+            <div class="alan">
+              <label for="konu">Konu</label>
+              <select id="konu">
+                <option value="genel">Genel</option>
+                <option value="hukuk">Hukuk</option>
+              </select>
+            </div>
+            <div class="alan">
+              <label for="model">Analiz profili</label>
+              <select
+                id="model"
+                disabled
+                title="Analiz modeli Ayarlar bölümündeki donanım profiline bağlıdır"
+                aria-describedby="model-ipucu"
+              >
+                <option value="">Otomatik (varsayılan)</option>
+              </select>
+            </div>
+            <button
+              class="btn"
+              id="analiz-btn"
+              type="button"
+              disabled
+              aria-disabled="true"
+            >
+              Analiz Et
+            </button>
+          </div>
+          <div class="ipucu model-ipucu" id="model-ipucu">
+            Analiz modeli Ayarlar'daki donanım profiline bağlıdır. Embedding ve
+            kişi tespiti yerel modellerle çalışır.
+          </div>
+          <div class="asr-satir gizli" id="asr-satir">
+            <input type="checkbox" id="asr" aria-describedby="asr-ipucu" />
+            <label for="asr">
+              Altyazı yoksa yerel Whisper ile sese dök
+              <span class="ipucu" id="asr-ipucu"
+                >Daha yavaş; yalnızca altyazısı olmayan videolar için. Ses
+                cihazdan çıkmaz.</span
+              >
+            </label>
+          </div>
+        </section>
+
+        <!-- 2. Çalışma / model-uyarı / hata şeritleri -->
+        <div
+          class="serit uyari gizli"
+          id="model-uyari"
+          role="status"
+          aria-live="polite"
+        ></div>
+        <div
+          class="serit calisiyor gizli"
+          id="calisma-serit"
+          role="status"
+          aria-live="polite"
+        >
+          <span class="nabiz-bar" aria-hidden="true"></span>
+          <span id="calisma-metin"
+            >Analiz ediliyor… (uzun videoda birkaç dakika sürebilir)</span
+          >
+        </div>
+        <div
+          class="serit hata gizli"
+          id="hata-bant"
+          role="alert"
+          aria-live="assertive"
+        >
+          <span id="hata-metin"></span>
+          <button class="btn btn-ikincil" id="tekrar-btn" type="button">
+            Tekrar Dene
+          </button>
+        </div>
+
+        <!-- 3. Sonuç -->
+        <div id="sonuc" class="gizli">
+          <!-- KVKK güven bandı (tam genişlik) -->
+          <section
+            class="guven-bant"
+            id="guven-bant"
+            aria-label="Gizlilik durumu"
+          >
+            <svg
+              class="kalkan"
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 2 4 5v6c0 4.4 3.1 8.3 8 9.5 4.9-1.2 8-5.1 8-9.5V5l-8-3Z"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linejoin="round"
+              />
+              <path
+                d="m9 12 2 2 4-4.5"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div>
+              <div class="baslik" id="guven-baslik">Tamamen Yerel</div>
+              <div class="alt" id="guven-alt">
+                İçerik cihazınızda işlendi — buluta veri gönderilmedi.
+              </div>
+            </div>
+            <div class="cipler" id="guven-cipler"></div>
+          </section>
+
+          <!-- Künye + BilgiDeğeri (tam genişlik hero) -->
+          <section
+            class="kart ozet-blok"
+            id="kaynak-hero"
+            aria-label="Kaynak künyesi ve değer"
+          >
+            <div class="kunye">
+              <div class="kaynak-hero-etiket" id="kaynak-hero-etiket">
+                Kaynak analizi
+              </div>
+              <h2 id="baslik">—</h2>
+              <div class="satir-meta" id="kunye-meta"></div>
+              <div class="alt-satir" id="kunye-alt"></div>
+              <p class="field-note gizli" id="kaynak-icerik-kapsami"></p>
+              <div
+                class="kaynak-metrikleri"
+                id="kaynak-metrikleri"
+                aria-label="Kaynak metrikleri"
+              ></div>
+              <div class="keywords" id="keywords"></div>
+            </div>
+            <div class="skor-sargi">
+              <div
+                class="skor-halka"
+                id="skor-halka"
+                role="img"
+                aria-label="BilgiDeğeri puanı"
+              >
+                <svg width="132" height="132" viewBox="0 0 132 132">
+                  <circle class="iz" cx="66" cy="66" r="58"></circle>
+                  <circle
+                    class="dolum"
+                    id="skor-dolum"
+                    cx="66"
+                    cy="66"
+                    r="58"
+                  ></circle>
+                </svg>
+                <div class="deger">
+                  <span class="sayi" id="skor-sayi">—</span>
+                  <span class="etiket">BilgiDeğeri</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- İçerik-odaklı iki sütun: sol = çıktı içeriği, sağ = durum/metrik -->
+          <div class="sonuc-izgara">
+            <div class="sonuc-ana">
+              <section class="bolum ozet-bolum gizli" id="ozet-bolum">
+                <h3 id="ozet-baslik">Özet</h3>
+                <div class="kart ozet-icerik">
+                  <p class="tldr" id="ozet-kisa"></p>
+                  <div class="metin-govde" id="ozet-detay"></div>
+                  <p class="field-note gizli" id="ozet-model-not">
+                    Model destek tahmini, detay özet ile analiz metnini
+                    karşılaştırır; doğruluk onayı değildir.
+                  </p>
+                </div>
+              </section>
+
+              <section
+                class="bolum kaynak-sinyalleri-bolum gizli"
+                id="kaynak-sinyalleri-bolum"
+              >
+                <h3>
+                  Kaynak sinyalleri
+                  <span class="bolum-not" id="kaynak-sinyalleri-ozet"></span>
+                </h3>
+                <div
+                  class="kart kaynak-sinyalleri"
+                  id="kaynak-sinyalleri"
+                ></div>
+              </section>
+
+              <section class="bolum kisisel-bolum gizli" id="kisisel-bolum">
+                <h3>
+                  <span id="kisisel-baslik">Kişisel analiz</span>
+                  <span class="bolum-not">çalışma bağlamı</span>
+                </h3>
+                <div
+                  class="kart metin-govde kisisel-icerik"
+                  id="kisisel-icerik"
+                ></div>
+              </section>
+
+              <section class="bolum factcheck-bolum gizli" id="factcheck-bolum">
+                <h3>
+                  İddia incelemesi
+                  <span class="bolum-not" id="factcheck-ozet"></span>
+                </h3>
+                <div class="factcheck-liste" id="factcheck-liste"></div>
+              </section>
+
+              <section class="bolum harita-bolum gizli" id="harita-bolum">
+                <div class="cikti-bas">
+                  <h3 style="margin: 0">Zihin haritası</h3>
+                  <button
+                    class="btn btn-ikincil mini"
+                    id="harita-buyut"
+                    type="button"
+                  >
+                    Tam ekran ↗
+                  </button>
+                </div>
+                <div class="kart harita-sargi">
+                  <div
+                    id="harita-cerceve"
+                    role="region"
+                    aria-label="Zihin haritası önizlemesi"
+                  ></div>
+                </div>
+              </section>
+            </div>
+
+            <aside class="sonuc-yan" aria-label="Durum ve metrikler">
+              <section class="bolum">
+                <h3>Neden bu puan</h3>
+                <div class="kart faktorler" id="faktorler"></div>
+              </section>
+
+              <section class="bolum">
+                <h3>İşlem hattı</h3>
+                <ol
+                  class="kart stepper"
+                  id="stepper"
+                  aria-label="Analiz aşamaları"
+                ></ol>
+              </section>
+
+              <section class="bolum">
+                <div class="cikti-bas">
+                  <h3 style="margin: 0">Çıktılar</h3>
+                  <button
+                    class="btn btn-ikincil mini"
+                    id="klasor-ac"
+                    type="button"
+                  >
+                    Klasörü Aç<span
+                      class="klasor-geri"
+                      id="klasor-geri"
+                      aria-live="polite"
+                    ></span>
+                  </button>
+                </div>
+                <div class="kart cikti" id="cikti"></div>
+              </section>
+
+              <details class="teknik">
+                <summary>
+                  <svg
+                    class="ok"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="m6 4 4 4-4 4"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  Teknik detaylar
+                </summary>
+                <div class="kpi-izgara" id="kpi-izgara"></div>
+                <div class="onay-cipler" id="onay-cipler"></div>
+              </details>
+            </aside>
+          </div>
+        </div>
+        <details class="analysis-library" id="analiz-arsivi">
+          <summary>Analiz arşivi</summary>
+          <div
+            id="gorunum-kutuphane"
+            role="region"
+            aria-label="Analiz arşivi"
+            tabindex="0"
+          >
+            <section
+              class="kart kutuphane-kontrol"
+              aria-label="Analiz arşivi filtreleri"
+            >
+              <div class="alan buyume">
+                <label for="kutuphane-ara">Ara</label>
+                <input
+                  type="search"
+                  id="kutuphane-ara"
+                  placeholder="Başlık, sahip, konu…"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="alan">
+                <label for="kutuphane-sirala">Sırala</label>
+                <select id="kutuphane-sirala">
+                  <option value="tarih">Yeni → Eski</option>
+                  <option value="puan">BilgiDeğeri</option>
+                  <option value="baslik">Başlık (A→Z)</option>
+                </select>
+              </div>
+              <div class="alan">
+                <label for="kutuphane-konu">Konu</label>
+                <select id="kutuphane-konu">
+                  <option value="">Tümü</option>
+                </select>
+              </div>
+              <div class="alan">
+                <label for="kutuphane-kaynak">Kaynak</label>
+                <select id="kutuphane-kaynak">
+                  <option value="">Tümü</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="github">GitHub</option>
+                  <option value="arxiv">arXiv</option>
+                  <option value="reddit">Reddit</option>
+                  <option value="huggingface">Hugging Face</option>
+                  <option value="web">Web</option>
+                </select>
+              </div>
+              <span
+                class="kutuphane-sayac mono"
+                id="kutuphane-sayac"
+                aria-live="polite"
+              ></span>
+            </section>
+            <div
+              class="kutuphane-izgara"
+              id="kutuphane-izgara"
+              aria-label="Geçmiş analizler"
+            ></div>
+            <div class="kutuphane-bos gizli" id="kutuphane-bos"></div>
+          </div>
+        </details>
+      </div>
+
+      <section
+        id="gorunum-arastir"
+        class="gizli"
+        role="tabpanel"
+        aria-labelledby="sekme-arastir"
+        tabindex="0"
+      >
+        <header class="research-heading">
+          <div><h1>Araştır</h1><p id="arastir-baslik">Yeni konuşma</p></div>
+          <div class="research-heading-actions">
+            <div class="research-history-anchor">
+              <button type="button" class="btn btn-ikincil" id="arastir-gecmis-ac" aria-expanded="false" aria-controls="arastir-gecmis-panel">Geçmiş</button>
+              <section id="arastir-gecmis-panel" class="research-history-panel" aria-label="Konuşma geçmişi" hidden>
+                <h2>Konuşma geçmişi</h2>
+                <label for="arastir-gecmis-ara" class="sr-only">Konuşmalarda ara</label>
+                <input id="arastir-gecmis-ara" type="search" placeholder="Konuşmalarda ara…" autocomplete="off" />
+                <div id="arastir-gecmis" class="chat-history"></div>
+              </section>
+            </div>
+            <button type="button" class="btn btn-ikincil" id="arastir-yeni">Yeni konuşma</button>
+          </div>
+        </header>
+        <div class="chat-main">
+          <div id="arastir-sonuc" class="chat-messages" role="log" aria-label="Araştırma mesajları" aria-live="polite"></div>
+          <div id="arastir-durum" class="product-status" role="status" aria-live="polite">Bir soru sorun; yanıtın dayandığı kaynakları birlikte inceleyin.</div>
+          <form id="arastir-form" class="chat-composer">
+            <label for="arastir-sorgu" class="sr-only">Mesajınız</label>
+            <textarea id="arastir-sorgu" required maxlength="500" rows="2" placeholder="Bir konu sorun veya önceki sorunuza devam edin…" aria-describedby="arastir-gizlilik"></textarea>
+            <div class="chat-options">
+              <label class="check-line"><input id="arastir-web" type="checkbox" />Web’de de ara</label>
+              <button class="btn chat-send" id="arastir-btn" type="submit" aria-label="Gönder" title="Gönder (Enter)">↑</button>
+            </div>
+          </form>
+          <div class="chat-footnotes"><p id="arastir-gizlilik" class="field-note">Web’e yalnız gönderdiğiniz sorgu iletilir. Enter: gönder · Shift+Enter: yeni satır</p></div>
+        </div>
+      </section>
+    </main>
+    <dialog id="gorunum-ayarlar" class="settings-dialog" aria-labelledby="ayarlar-baslik">
+        <div class="page-heading settings-heading">
+          <div>
+            <h2 id="ayarlar-baslik">Ayarlar</h2>
+            <p>Yerel profil, internet erişimi ve analiz dosyaları.</p>
+          </div>
+          <button type="button" class="btn btn-ikincil" id="ayarlar-kapat" aria-label="Ayarları kapat">Kapat</button>
+          <button class="btn btn-ikincil" id="ilk-kurulum-btn" type="button">
+            İlk kurulum
+          </button>
+        </div>
+        <form
+          id="urun-ayar-form"
+          class="kart product-form"
+          aria-label="Ürün ayarları"
+        >
+          <div class="settings-grid">
+            <div class="alan">
+              <label for="urun-profil">Donanım profili</label
+              ><select id="urun-profil"><option value="auto">Otomatik donanım profili</option>
+                <option value="ram8">8 GB RAM · temel yerel profil</option>
+                <option
+                  value="ram16"
+                  disabled
+                  title="Gelişmiş model doğrulanmadı"
+                >
+                  16 GB ve üzeri · ek model gerekir
+                </option>
+              </select>
+              <p id="urun-profil-not" class="field-note">
+                Bu paket temel 8 GB profilini içerir. Gelişmiş profil, ek model
+                kurulup doğrulandığında kullanılabilir.
+              </p>
+            </div>
+            <div class="alan">
+              <label for="urun-tema">Görünüm</label
+              ><select id="urun-tema">
+                <option value="system">Sistem</option>
+                <option value="dark">Koyu</option>
+                <option value="light">Açık</option>
+              </select>
+            </div>
+            <div class="alan">
+              <label for="urun-arama-saglayici">Web arama sağlayıcısı</label
+              ><select id="urun-arama-saglayici">
+                <option value="auto">Otomatik</option>
+                <option value="duckduckgo">DuckDuckGo</option>
+                <option value="configured">Yapılandırılmış sağlayıcı</option>
+              </select>
+            </div>
+
+          </div>
+          <label class="check-line"
+            ><input id="urun-web" type="checkbox" />Web arama özelliğini
+            kullanıma aç</label
+          >
+          <p class="field-note">
+            Araştırma başlatırken web erişimi ayrıca seçilir. Web’e yalnız
+            gönderdiğiniz sorgu iletilir.
+          </p>
+          <div class="form-actions">
+            <button class="btn" type="submit">Ayarları kaydet</button
+            ><span id="urun-ayar-sonuc" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+        <section class="bolum">
+          <h3>İsteğe bağlı Ollama bağlantısı</h3>
+          <p class="field-note">
+            Birleşik analiz, seçtiğiniz donanım profilindeki yerel Gemma
+            motorunu kullanır. Ollama bağlantısı varsa aşağıdan
+            sınayabilirsiniz.
+          </p>
+          <div class="kart ayar-kart">
+            <div class="satir">
+              <div class="alan buyume">
+                <label for="ayar-ollama-host">Sunucu adresi</label>
+                <input
+                  type="text"
+                  id="ayar-ollama-host"
+                  placeholder="http://127.0.0.1:11434"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <div class="ipucu" id="ayar-host-kaynak"></div>
+              </div>
+              <button class="btn btn-ikincil" id="ayar-test-btn" type="button">
+                Test Et
+              </button>
+            </div>
+            <div
+              class="ayar-durum"
+              id="ayar-ollama-durum"
+              role="status"
+              aria-live="polite"
+            ></div>
+            <div
+              class="ayar-modeller"
+              id="ayar-modeller"
+              aria-label="Yüklü modeller"
+            ></div>
+          </div>
+        </section>
+
+        <section class="bolum">
+          <h3>
+            Yerel motorlar <span class="bolum-not">çıkarım servisleri</span>
+          </h3>
+          <p class="field-note">
+            Model dosyalarını kurmak veya indirme durumunu görmek için İlk
+            kurulum’u açın. Sesli özet için Windows Türkçe ses motoru
+            kullanılır; Dil ve Konuşma ayarlarından Türkçe ses kurulmalıdır.
+          </p>
+          <div class="kart ayar-kart">
+            <div class="ayar-izgara" id="ayar-motorlar"></div>
+          </div>
+        </section>
+
+        <section class="bolum">
+          <h3>Analiz dosyalarının konumu</h3>
+          <div class="kart ayar-kart">
+            <div class="satir">
+              <div class="alan buyume">
+                <label for="ayar-motor-kok"
+                  >Yeni analiz çıktılarının konumu</label
+                >
+                <input
+                  type="text"
+                  id="ayar-motor-kok"
+                  readonly
+                  placeholder="Varsayılan yerel analiz konumu"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <div class="ipucu" id="ayar-motor-durum"></div>
+              </div>
+              <button class="btn" id="ayar-motor-kaydet" type="button">
+                Konum seç<span
+                  class="ayar-geri"
+                  id="ayar-motor-geri"
+                  aria-live="polite"
+                ></span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="bolum">
+          <h3>Çıktı klasörü</h3>
+          <div class="kart ayar-kart">
+            <div class="ayar-yol mono" id="ayar-output-base"></div>
+            <button
+              class="btn btn-ikincil mini"
+              id="ayar-klasor-ac"
+              type="button"
+            >
+              Klasörü Aç<span
+                class="ayar-geri"
+                id="ayar-klasor-geri"
+                aria-live="polite"
+              ></span>
+            </button>
+          </div>
+        </section>
+        <section id="ayarlar-hesap-icerik" class="bolum"></section>
+    </dialog>
+
+    <footer class="app-footer">
+      Rasathane · Yerel öncelikli çalışma<br />Av. Mehmet Arın Gülüm
+    </footer>
+    <dialog id="izleyici" class="izleyici" aria-labelledby="izleyici-ad">
+      <div class="izleyici-bas">
+        <span class="izleyici-ad mono" id="izleyici-ad"></span>
+        <span class="izleyici-aksiyon">
+          <button class="btn btn-ikincil" id="izleyici-klasor" type="button">
+            Klasörü Aç
+          </button>
+          <button
+            class="btn btn-ikincil"
+            id="izleyici-kapat"
+            type="button"
+            autofocus
+          >
+            Kapat
+          </button>
+        </span>
+      </div>
+      <div
+        id="izleyici-cerceve"
+        role="region"
+        aria-label="Çıktı görüntüleyici"
+      ></div>
+    </dialog>
+
+    <dialog
+      id="ilk-kurulum"
+      class="setup-dialog"
+      aria-labelledby="kurulum-baslik"
+    >
+      <div class="setup-heading">
+        <img src="/brand/rasathane-mark.svg" width="56" height="56" alt="" />
+        <div>
+          <h2 id="kurulum-baslik">Rasathane'ye hoş geldiniz</h2>
+          <p>Yerel çalışma biçiminizi seçin.</p>
+        </div>
+      </div>
+      <form id="kurulum-form">
+        <div class="alan">
+          <label for="kurulum-profil">Donanım profili</label
+          ><select id="kurulum-profil">
+            <option value="ram8">8 GB RAM · temel yerel profil</option>
+            <option value="ram16" disabled title="Gelişmiş model doğrulanmadı">
+              16 GB ve üzeri · ek model gerekir
+            </option>
+          </select>
+          <p id="kurulum-profil-not" class="field-note">
+            Bu paket temel 8 GB profilini içerir. Gelişmiş profil, ek model
+            kurulup doğrulandığında kullanılabilir.
+          </p>
+        </div>
+        <p class="field-note">
+          8 GB profili daha küçük modelleri ve sınırlı bağlamı kullanır. Analiz
+          süresi donanımınıza ve kaynağın boyutuna göre değişir.
+        </p>
+        <label class="check-line"
+          ><input id="kurulum-web" type="checkbox" />Web arama özelliğini
+          kullanıma aç</label
+        >
+        <p class="field-note">
+          İnternet erişimi gerektiren araştırmaları ayrıca seçerek
+          başlatırsınız. Yerel notlarınız arama sağlayıcısına gönderilmez.
+        </p>
+        <section class="model-setup" aria-labelledby="model-kurulum-baslik">
+          <h3 id="model-kurulum-baslik">Yerel analiz modelleri</h3>
+          <p class="field-note">
+            Gemma ve BGE modelleri ilk kurulumda indirilir (yaklaşık 3,1 GB). En
+            az 3,5 GB boş disk alanı gerekir. Model dosyaları uygulamanın yerel
+            veri alanında tutulur.
+          </p>
+          <div id="model-kurulum-liste"></div>
+          <label class="check-line"
+            ><input id="model-kosul" type="checkbox" /><span
+              ><a
+                href="https://ai.google.dev/gemma/apache_2"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Gemma 4 Apache 2.0</a
+              >
+              ve
+              <a
+                href="https://opensource.org/license/mit"
+                target="_blank"
+                rel="noopener noreferrer"
+                >BGE MIT</a
+              >
+              lisans bildirimlerini okudum; yaklaşık 3,1 GB model indirmesini
+              başlatmak istiyorum.</span
+            ></label
+          >
+          <div class="form-actions">
+            <button id="model-kur-btn" class="btn btn-ikincil" type="button">
+              Yerel modelleri kur</button
+            ><span id="model-kurulum-durum" role="status" aria-live="polite"
+              >Model durumu okunuyor…</span
+            >
+          </div>
+          <progress
+            id="model-kurulum-ilerleme"
+            class="gizli"
+            max="100"
+            value="0"
+            aria-label="Model indirme ilerlemesi"
+          ></progress>
+        </section>
+        <div
+          id="kurulum-durum"
+          class="product-status"
+          role="status"
+          aria-live="polite"
+        ></div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Kaydet ve başla</button
+          ><button class="btn btn-ikincil" type="button" id="kurulum-kapat">
+            Daha sonra
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <script type="module" src="/src/main.js?v=urun-1"></script>
+  </body>
+</html>

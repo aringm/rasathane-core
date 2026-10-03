@@ -1,0 +1,10 @@
+{
+  "aciklama": "Elle-işaretli 'doğru' segmentasyon. 'cumleler' = sistemin cumlelere_bol() çıktısıyla AYNI sıra. 'segment_id' = her cümlenin ait olduğu segment (monoton artan: 0,0,1,1,2...). segmentasyon_metrik(referans=segment_id, tahmin=üretilen) → Pk/WindowDiff.",
+  "cumleler": [
+    "Birinci cümle — birinci konu.",
+    "İkinci cümle — hâlâ birinci konu.",
+    "Üçüncü cümle — yeni konu başladı.",
+    "Dördüncü cümle — ikinci konu devam."
+  ],
+  "segment_id": [0, 0, 1, 1]
+}

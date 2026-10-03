@@ -1,0 +1,9 @@
+{
+  "aciklama": "Faz 1+ golden şeması örneği (gerçek golden sahip eval/real_docs/'a belge koyunca üretilir)",
+  "video_url": "https://youtu.be/eval-tr-1",
+  "beklenen": {
+    "anadil": "tr",
+    "segment_sayisi": null,
+    "keywords_ornek": []
+  }
+}

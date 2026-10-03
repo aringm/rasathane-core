@@ -1,0 +1,75 @@
+"use strict";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const { validateRequest, trustedSender } = require("./ipc-policy.cjs");
+
+test("kişisel gündem ve kaynak asistanı yalnız dar yöntemlerle açıktır", () => {
+  for (const route of ["/api/rasathane/agenda", "/api/rasathane/agenda-profile"]) {
+    assert.equal(validateRequest(route).method, "GET");
+    assert.equal(validateRequest(route, {method: "POST", body: {}}).method, "POST");
+    assert.throws(() => validateRequest(route, {method: "DELETE"}));
+  }
+  assert.equal(validateRequest("/api/rasathane/source-assistant", {method: "POST", body: {message: "Kaynak öner"}}).method, "POST");
+  assert.throws(() => validateRequest("/api/rasathane/source-assistant"));
+  assert.equal(validateRequest("/api/rasathane/source-assistant/history").method, "GET");
+  assert.throws(() => validateRequest("/api/rasathane/source-assistant/history", {method: "POST"}));
+});
+
+test("kaynak düzenleme yalnız POST ve tek kaynak için açıktır", () => {
+  const route = "/api/rasathane/sources/source_123/update";
+  assert.equal(validateRequest(route, { method: "POST", body: { enabled: false } }).method, "POST");
+  assert.throws(() => validateRequest(route));
+  assert.throws(() => validateRequest(route, { method: "DELETE" }));
+  assert.throws(() => validateRequest("/api/rasathane/sources/source_123/delete", { method: "POST" }));
+  assert.equal(validateRequest("/api/rasathane/articles?category=turk_hukuku&offset=100").method, "GET");
+});
+
+test("dar API sözleşmesi ve tek iş iptali", () => {
+  assert.equal(validateRequest("/api/rasathane/bulletins", { method: "POST", body: {article_ids: ["abc"]} }).method, "POST");
+  assert.equal(validateRequest("/api/rasathane/bulletins/abc").method, "GET");
+  assert.equal(validateRequest("/api/rasathane/bulletins/abc/speech", {method: "POST"}).method, "POST");
+  assert.throws(() => validateRequest("/api/rasathane/bulletins/abc", {method: "POST"}));
+  assert.throws(() => validateRequest("/api/rasathane/bulletins/abc/speech"));
+  assert.equal(validateRequest("/api/rasathane/conversations").method, "GET");
+  assert.equal(validateRequest("/api/rasathane/conversations/abc123").method, "GET");
+  for (const action of ["summary", "speech"]) {
+    assert.equal(validateRequest(`/api/rasathane/articles/abc123/${action}`, { method: "POST", body: {} }).method, "POST");
+    assert.throws(() => validateRequest(`/api/rasathane/articles/abc123/${action}`));
+  }
+  assert.deepEqual(validateRequest("/api/rasathane/jobs/job_123/cancel", { method: "POST", body: {} }), { route: "/api/rasathane/jobs/job_123/cancel", method: "POST", body: "{}" });
+  assert.equal(validateRequest("/gui/dosya?ad=06.pdf&klasor=test").method, "GET");
+  assert.equal(validateRequest("/api/rasathane/jobs/abc123").method, "GET");
+  assert.throws(() => validateRequest("/api/rasathane/jobs/abc123", { method: "POST", body: {} }));
+});
+test("URL, traversal, method ve header injection engellenir", () => {
+  for (const route of ["https://evil.test", "//evil.test", "/api/../gui/health", "/api/rasathane/../../health", "/gui\\health", "/gui/health#x", "/admin", "/gui/%2e%2e/health"]) assert.throws(() => validateRequest(route));
+  assert.throws(() => validateRequest("/gui/ayarlar", { method: "POST", body: { motor_kok: "C:/untrusted" } }));
+  assert.throws(() => validateRequest("/api/product/service-session", { method: "POST", body: { access_token: "at_" + "a".repeat(43) } }));
+  assert.throws(() => validateRequest("/gui/health", { headers: { Origin: "evil" } }));
+  assert.throws(() => validateRequest("/gui/health", { body: {} }));
+  assert.throws(() => validateRequest("/api/rasathane/notes", { method: "POST", body: { body: "a".repeat(40000) } }));
+});
+test("uzak veya credential içeren model host kabul edilmez", () => {
+  for (const host of ["http://evil.test", "http://127.0.0.1.evil.test", "http://user:pass@localhost", "https://127.0.0.1"]) assert.throws(() => validateRequest("/gui/ollama_test", { method: "POST", body: { host } }));
+  assert.equal(validateRequest("/gui/ollama_test", { method: "POST", body: { host: "http://127.0.0.1:11434" } }).method, "POST");
+});
+test("yalnız ana renderer ve exact custom origin", () => {
+  const frame = { url: "rasathane://app/index.html" }; const contents = { mainFrame: frame }; const window = { webContents: contents };
+  assert.equal(trustedSender({ sender: contents, senderFrame: frame }, window), true);
+  assert.equal(trustedSender({ sender: contents, senderFrame: { url: "rasathane://app/index.html" } }, window), false);
+  frame.url = "rasathane://app.evil/index.html";
+  assert.equal(trustedSender({ sender: contents, senderFrame: frame }, window), false);
+});
+
+
+test("emekli çalışma alanı ve konu takibi IPC üzerinden çağrılamaz", () => {
+  for (const path of ["workspaces", "notes", "topics", "topics/abc", "topics/abc/refresh"]) {
+    for (const method of ["GET", "POST"]) assert.throws(() => validateRequest(`/api/rasathane/${path}`, {method}));
+  }
+  for (const path of ["research", "bulletins", "agenda-profile", "settings"]) {
+    for (const field of ["workspace_id", "topic_id", "workspace_ids", "include_topics", "topic_refresh_minutes"]) assert.throws(() => validateRequest(`/api/rasathane/${path}`, {method: "POST", body: {[field]: null}}));
+  }
+  assert.throws(() => validateRequest("/api/rasathane/conversations?workspace_id=abc"));
+  assert.throws(() => validateRequest("/api/rasathane/export?topic_id=abc"));
+  assert.equal(validateRequest("/api/rasathane/sources/abc/refresh", {method: "POST"}).method, "POST");
+});

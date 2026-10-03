@@ -1,0 +1,106 @@
+name: Rasathane kontrolleri
+on:
+  pull_request:
+  push:
+    branches: [main, codex/**]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONUTF8: '1'
+  PYTHONIOENCODING: 'utf-8'
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  desktop:
+    name: verify (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
+        with:
+          python-version: '3.12'
+          enable-cache: false
+      - name: Kilitli engine bağımlılıkları
+        working-directory: apps/desktop
+        run: uv sync --frozen --group content --group intel
+      - name: Engine ve gerçek SQLite senaryoları
+        working-directory: apps/desktop
+        run: uv run --frozen --group content --group intel pytest -q
+      - name: Kaynak arşivi sınırları
+        working-directory: apps/desktop
+        run: uv run --frozen --group content --group intel python infra/source-offer.py self-test
+      - name: Lint, format ve strict tip kontrolü
+        working-directory: apps/desktop
+        shell: pwsh
+        run: |
+          uv run --frozen --group content --group intel ruff check core mcp eval
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv run --frozen --group content --group intel ruff format --check core mcp eval
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv run --frozen --group content --group intel mypy core mcp eval
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Dar IPC, PKCE ve model checksum sözleşmeleri
+        working-directory: apps/desktop/gui
+        run: node --test electron/*.test.cjs
+      - name: Sabit PDF modülleri ve güvenli artifact önizlemesi
+        working-directory: apps/desktop/gui
+        shell: pwsh
+        run: |
+          node scripts/vendor-pdf.cjs --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test ui/tests/*.test.mjs
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+      - name: Kilitli pnpm kurulumu
+        working-directory: apps/web
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.23.0 --activate
+          pnpm install --frozen-lockfile
+      - name: Site ve üyelik sözleşmesi
+        working-directory: apps/web
+        run: |
+          pnpm lint
+          pnpm exec tsc --noEmit
+          node --test scripts/hesap-sozlesmesi.test.mjs
+          pnpm build
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Sabit sürümlü secret scan
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --output gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz' | sha256sum --check
+          tar -xzf gitleaks.tar.gz gitleaks
+          if [ -n "$BASE_SHA" ]; then
+            ./gitleaks git --redact --no-banner --log-opts="$BASE_SHA..$HEAD_SHA" .
+          else
+            ./gitleaks git --redact --no-banner --log-opts="-1" .
+          fi

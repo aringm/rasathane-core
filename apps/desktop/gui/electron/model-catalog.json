@@ -1,0 +1,22 @@
+[
+  {
+    "name": "gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf",
+    "repo": "unsloth/gemma-4-E2B-it-qat-GGUF",
+    "revision": "66a399f68ddd113b06dff02fca9523e55465d11d",
+    "sha256": "e531007218dfab990486a5de7676a6932d6ea8dea233d1f698d7c21cf8a16889",
+    "upstream_sha256": "e531007218dfab990486a5de7676a6932d6ea8dea233d1f698d7c21cf8a16889",
+    "bytes": 2620370976,
+    "license": "Apache-2.0",
+    "url": "https://huggingface.co/unsloth/gemma-4-E2B-it-qat-GGUF/resolve/66a399f68ddd113b06dff02fca9523e55465d11d/gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf"
+  },
+  {
+    "name": "bge-m3-Q4_K_M.gguf",
+    "repo": "gpustack/bge-m3-GGUF",
+    "revision": "2d48f1737679ad900d5c26c5aad5410e9c70fdca",
+    "sha256": "6d39681b26c61279ac1f82db35a04a05009e94c415b51c858ff571489a82fc06",
+    "upstream_sha256": "6d39681b26c61279ac1f82db35a04a05009e94c415b51c858ff571489a82fc06",
+    "bytes": 437778496,
+    "license": "mit",
+    "url": "https://huggingface.co/gpustack/bge-m3-GGUF/resolve/2d48f1737679ad900d5c26c5aad5410e9c70fdca/bge-m3-Q4_K_M.gguf"
+  }
+]

@@ -1,0 +1,94 @@
+[project]
+name = "rasathane"
+version = "0.1.0"
+description = "Kişisel hukuk + AI istihbarat radarı — Claude Desktop'tan MCP üzerinden tüketilir"
+requires-python = ">=3.12,<3.13"
+authors = [{ name = "Av. Mehmet Arın Gülüm", email = "nemezis@tutamail.com" }]
+license = { text = "AGPL-3.0-or-later" }
+dependencies = []
+
+[tool.uv.workspace]
+members = [
+    "apps/worker",
+    "apps/mcp",
+    "packages/ingestion",
+    "packages/llm",
+    "packages/store",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
+    "pytest-mock>=3.14",
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "pre-commit>=4.0",
+    "respx>=0.21",
+    "freezegun>=1.5",
+    "mutagen>=1.47",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["*/migrations/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",      # pycodestyle, pyflakes
+    "I",                # isort
+    "N",                # pep8-naming
+    "UP",               # pyupgrade
+    "B",                # flake8-bugbear
+    "A",                # flake8-builtins
+    "C4",               # flake8-comprehensions
+    "SIM",              # flake8-simplify
+    "RUF",              # ruff-specific
+    "ASYNC",            # async correctness
+    "TID",              # tidy-imports
+]
+ignore = [
+    "E501",             # line too long (formatter handles)
+    "RUF001",           # ambiguous unicode (Turkish ı, ş, ğ, ü, ç, ö are intentional)
+    "RUF002",           # ambiguous unicode in docstrings (same reason)
+    "RUF003",           # ambiguous unicode in comments (same reason)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["alembic.*", "feedparser.*", "praw.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests", "apps", "packages"]
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "slow: marks tests as slow (external API/network)",
+    "integration: integration tests requiring db/redis",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["apps", "packages"]
+omit = ["*/tests/*", "*/migrations/*"]
+
+[tool.coverage.report]
+fail_under = 60
+show_missing = true
+skip_covered = false

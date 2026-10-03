@@ -1,0 +1,1895 @@
+{% extends "_base.html" %}
+{% set active = "sources" %}
+{% block title %}Rasathane · Kaynaklar{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div class="heading">
+        <p class="eyebrow">Kaynak Yönetimi</p>
+        <h1>Kaynaklar</h1>
+        <p class="subtitle">
+            Tüm haber kaynaklarını yönet: aç/kapat, anlık olarak yeniden çek,
+            ya da yeni bir kaynak ekle. Sağ alttaki <strong>Kaynak Ajanı</strong>
+            ile doğal dilde konuş: "duplicate'ları bul", "skorunu açıkla",
+            "X kaynağını ekle" gibi.
+        </p>
+    </div>
+</header>
+
+<!-- Phase 32-v.3: Kaynaklar 2-tab (Bülten + Sosyal Medya) -->
+<style>
+    .tab-bar {
+        display: flex;
+        gap: .5rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0;
+    }
+    .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text2);
+        padding: .85rem 1.4rem;
+        font-family: var(--font-ui);
+        font-size: .95rem;
+        font-weight: 500;
+        cursor: pointer;
+        position: relative;
+        transition: color var(--t-fast);
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+        color: var(--gold-text);
+    }
+    .tab-btn.active::after {
+        content: '';
+        position: absolute;
+        left: 0; right: 0; bottom: -1px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--gold), var(--terra));
+    }
+    .tab-btn .pill {
+        font-family: var(--font-mono);
+        font-size: .7rem;
+        color: var(--text3);
+        margin-left: .35rem;
+    }
+</style>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     Phase 32-i: Kaynak Yönetim Ajanı chatbox'ı (floating panel)
+     ──────────────────────────────────────────────────────────────────
+     Sağ alt köşede pin'li. Açıldığında tüm tool'lara erişir:
+     listele, duplicate, skor açıkla, sağlık probe, sosyal izleme,
+     audit log. Kalıcı değişiklikler proposals listesi olarak döner;
+     "Onayla / Vazgeç / Düzenle" akışı sonrası uygulanır.
+     ════════════════════════════════════════════════════════════════════ -->
+<div x-data="sourceAgent()" class="agent-fab" :class="{ open: open }">
+    <button class="agent-toggle" @click="open = !open"
+            :title="open ? 'Kapat' : 'Kaynak Ajanı'">
+        <span x-show="!open">💬 Kaynak Ajanı</span>
+        <span x-show="open">× Kapat</span>
+    </button>
+
+    <div class="agent-panel" x-show="open" x-transition>
+        <div class="agent-header">
+            <strong>Kaynak Ajanı</strong>
+            <span class="label-mono">deterministik · onay-zorunlu</span>
+        </div>
+
+        <div class="agent-suggestions" x-show="messages.length === 0">
+            <p class="agent-hint">Şunları sorabilirsin:</p>
+            <button class="agent-chip" @click="sendQuick('Kaynakları listele')">Kaynakları listele</button>
+            <button class="agent-chip" @click="sendQuick('Duplicate kaynakları bul')">Duplicate bul</button>
+            <button class="agent-chip" @click="sendQuick('Sosyal medya izleme listesi')">Sosyal izleme</button>
+            <button class="agent-chip" @click="sendQuick('Audit log son değişiklikler')">Audit log</button>
+        </div>
+
+        <div class="agent-messages" x-ref="msgs">
+            <template x-for="(m, idx) in messages" :key="idx">
+                <div class="agent-msg" :class="m.role">
+                    <div class="agent-msg-role" x-text="m.role === 'user' ? 'Sen' : 'Ajan'"></div>
+                    <div class="agent-msg-body" x-html="m.html"></div>
+
+                    <template x-if="m.proposals && m.proposals.length">
+                        <div class="agent-proposals">
+                            <template x-for="(p, pi) in m.proposals" :key="p.proposal_id">
+                                <div class="agent-proposal">
+                                    <div class="agent-prop-head">
+                                        <strong x-text="p.summary"></strong>
+                                        <span class="badge-action" x-text="p.action"></span>
+                                    </div>
+                                    <template x-if="p.warnings && p.warnings.length">
+                                        <ul class="agent-prop-warn">
+                                            <template x-for="w in p.warnings">
+                                                <li x-text="w"></li>
+                                            </template>
+                                        </ul>
+                                    </template>
+                                    <pre class="agent-prop-diff" x-text="JSON.stringify(p.diff, null, 2)"></pre>
+                                    <div class="agent-prop-actions">
+                                        <button class="btn-approve"
+                                                @click="approve(p, idx, pi)"
+                                                :disabled="p._busy">
+                                            <span x-text="p._busy ? '…' : (p.requires_double_confirm ? 'Onayla (kalıcı)' : 'Onayla')"></span>
+                                        </button>
+                                        <button class="btn-cancel-prop" @click="discard(idx, pi)">Vazgeç</button>
+                                        <button class="btn-edit-prop" @click="edit(p, idx, pi)">Düzenle</button>
+                                    </div>
+                                    <template x-if="p._result">
+                                        <div class="agent-prop-result"
+                                             :class="p._result.ok ? 'ok' : 'err'"
+                                             x-text="p._result.text"></div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            <template x-if="thinking">
+                <div class="agent-msg agent">
+                    <div class="agent-msg-role">Ajan</div>
+                    <div class="agent-msg-body"><em>düşünüyor…</em></div>
+                </div>
+            </template>
+        </div>
+
+        <form class="agent-input-row" @submit.prevent="send()">
+            <input type="text" x-model="input"
+                   placeholder="Bir şey sor: 'duplicate'ları bul', 'kaynak ekle: …', vs."
+                   :disabled="thinking"
+                   maxlength="3500">
+            <button type="submit" :disabled="thinking || !input.trim()">Gönder</button>
+        </form>
+    </div>
+</div>
+
+<div x-data="sourcesPage()" x-init="initTab(); load()">
+    <!-- Phase 32-v.3: 2-tab switcher
+         Phase 34-ii: Canlı Akış Kaynakları + Sosyal Medya Kaynakları
+         (label rename + URL hash deep-link: #sosyal → social tab) -->
+    <div class="tab-bar">
+        <button class="tab-btn" :class="{ active: tab === 'bulletin' }"
+                @click="setTab('bulletin')">
+            📰 Canlı Akış Kaynakları
+            <span class="pill" x-show="!loading" x-text="`(${sources.length})`"></span>
+        </button>
+        <button class="tab-btn" :class="{ active: tab === 'social' }"
+                @click="setTab('social')">
+            📣 Sosyal Medya Kaynakları
+            <span class="pill" x-show="socialLoaded" x-text="`(${socialPeople.length})`"></span>
+        </button>
+    </div>
+
+    <!-- Tab 1: Bülten Kaynakları -->
+    <section class="block" x-show="tab === 'bulletin'">
+        <div class="block-header">
+            <h2>Tüm kaynaklar
+                <span class="pill" x-show="!loading"
+                      x-text="visibleSources().length + ' / ' + sources.length"></span>
+            </h2>
+            <div class="filter-pills">
+                <button :class="{ active: filter === 'all' }" @click="filter = 'all'">Tümü</button>
+                <button :class="{ active: filter === 'active' }" @click="filter = 'active'">Aktif</button>
+                <button :class="{ active: filter === 'muted' }" @click="filter = 'muted'">Kapalı</button>
+                <button class="btn-add-source" @click="showAddForm = !showAddForm"
+                        :class="{ active: showAddForm }">
+                    <span x-text="showAddForm ? '× İptal' : '+ Yeni kaynak'"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Phase 15-iv: yeni kaynak ekleme formu -->
+        <template x-if="showAddForm">
+            <form class="add-source-form glass" @submit.prevent="addSource()">
+                <div class="form-row">
+                    <label>Ad
+                        <input type="text" x-model="newSource.name" required maxlength="200"
+                               placeholder="örn. Hukuk Genel Kurulu Blog">
+                    </label>
+                    <label>Kategori
+                        <select x-model="newSource.category" required>
+                            <option value="turk_hukuku">Türk Hukuku</option>
+                            <option value="dunya_ai">Dünya AI</option>
+                            <option value="turkiye_ai">Türkiye AI</option>
+                            <option value="legaltech">Legaltech</option>
+                            <option value="muhakeme_stack">Muhakeme Stack</option>
+                            <option value="china_ai_models">Çin AI Modelleri</option>
+                            <option value="east_asia_ai_models">Uzak Asya AI Modelleri</option>
+                            <option value="open_weight_models">Open-Weight Modeller</option>
+                            <option value="model_infra">Model Infra</option>
+                            <option value="social_watch">Sosyal İzleme</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="form-row">
+                    <label>Tip
+                        <select x-model="newSource.type" required>
+                            <option value="rss">RSS / Atom</option>
+                            <option value="youtube_channel">YouTube kanal</option>
+                            <option value="arxiv">arXiv</option>
+                            <option value="reddit">Reddit</option>
+                        </select>
+                    </label>
+                    <label>Fetch aralığı (dk)
+                        <input type="number" x-model.number="newSource.fetch_interval_minutes"
+                               min="5" max="1440" required>
+                    </label>
+                </div>
+                <label>URL
+                    <input type="url" x-model="newSource.url" required
+                           placeholder="https://...">
+                </label>
+                <div style="display: flex; gap: .65rem; margin-top: .85rem;">
+                    <button type="submit" class="btn-submit-source" :disabled="adding">
+                        <span x-text="adding ? 'Ekleniyor…' : 'Ekle'"></span>
+                    </button>
+                    <button type="button" class="btn-cancel" @click="showAddForm = false"
+                            style="background: transparent; color: var(--text2);
+                                   border: 1px solid var(--border); padding: .55rem 1.1rem;
+                                   border-radius: 6px; cursor: pointer;">
+                        Vazgeç
+                    </button>
+                </div>
+                <template x-if="addError">
+                    <p style="color: #b54b3a; font-size: .85rem; margin: .85rem 0 0;
+                              font-family: var(--font-mono);" x-text="addError"></p>
+                </template>
+            </form>
+        </template>
+
+        <template x-if="loading">
+            <div class="sources-wrap glass" style="padding: 1rem;">
+                <template x-for="i in 5">
+                    <div style="padding: .65rem .9rem; border-top: 1px solid var(--border);">
+                        <div class="skeleton skel-line med"></div>
+                        <div class="skeleton skel-line short" style="margin-top: .35rem;"></div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <template x-if="!loading">
+            <div class="sources-wrap glass">
+                <table class="sources">
+                    <thead>
+                        <tr>
+                            <th style="width: 4.5rem;">Durum</th>
+                            <th>Kaynak</th>
+                            <th>Kategori</th>
+                            <th>Tip</th>
+                            <th>Son fetch</th>
+                            <th style="width: 7rem;">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="s in visibleSources()" :key="s.id">
+                            <tr :class="{ muted: !s.effective_enabled }">
+                                <td>
+                                    <span class="toggle"
+                                          :class="{ on: !s.is_user_disabled, locked: !s.enabled }"
+                                          @click="toggle(s)"
+                                          :title="toggleTitle(s)"
+                                          role="switch"
+                                          :aria-checked="!s.is_user_disabled"></span>
+                                </td>
+                                <td>
+                                    <strong x-text="s.name"></strong>
+                                    <template x-if="!s.enabled">
+                                        <span class="badge-yaml" title="feeds.yaml içinde enabled: false — kod tarafından kapalı, toggle'la açılamaz">
+                                            yaml
+                                        </span>
+                                    </template>
+                                    <div class="url-row" x-text="s.url"></div>
+                                </td>
+                                <td x-text="categoryLabel(s.category)"></td>
+                                <td x-text="s.type"></td>
+                                <td style="font-family: var(--font-mono); font-size: .76rem;"
+                                    x-text="formatTime(s.last_fetched_at)"></td>
+                                <td>
+                                    <div style="display: flex; gap: .35rem; align-items: center;">
+                                        <button class="btn-sync"
+                                                :disabled="syncing[s.id]"
+                                                @click="sync(s)"
+                                                :title="'Bu kaynağı arka planda yeniden çek'">
+                                            <span x-text="syncing[s.id] ? '…' : 'yenile'"></span>
+                                        </button>
+                                        <template x-if="isUserAdded(s)">
+                                            <button class="btn-delete"
+                                                    @click="deleteSource(s)"
+                                                    title="Bu kaynağı kalıcı olarak sil (kullanıcı eklemiş)">
+                                                sil
+                                            </button>
+                                        </template>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                        <template x-if="visibleSources().length === 0">
+                            <tr>
+                                <td colspan="6" style="padding: 2rem; text-align: center;
+                                                       color: var(--text3); font-style: italic;">
+                                    Bu filtrede kaynak yok.
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </template>
+    </section>
+
+    <!-- Phase 34-ii: Tab 2 — Sosyal Medya Kaynakları (social-watch.html'den taşındı)
+         Nested Alpine scope: socialWatchPage() filtreler + modal + Nitter post fetch -->
+    <div x-show="tab === 'social'" x-data="socialWatchPage()" x-init="load()">
+
+        <!-- ── Filter + aksiyonlar ─────────────────────────────────────────── -->
+        <section class="block">
+            <div class="block-header">
+                <h2>İzleme listesi
+                    <span class="pill" x-show="!loading"
+                          x-text="visiblePeople().length + ' / ' + people.length"></span>
+                </h2>
+                <div class="filter-pills">
+                    <select x-model="filter.risk_level" @change="load()"
+                            style="background: var(--bg2); color: var(--text);
+                                   border: 1px solid var(--border); padding: .35rem .65rem;
+                                   border-radius: 4px; font-size: .82rem;">
+                        <option value="">Tüm risk seviyeleri</option>
+                        <option value="official_person">Resmi kişi</option>
+                        <option value="technical_expert">Teknik uzman</option>
+                        <option value="analyst">Analist</option>
+                        <option value="community_amplifier">Topluluk amplifier</option>
+                        <option value="rumor_account">Söylenti hesabı</option>
+                    </select>
+                    <select x-model="filter.region" @change="load()"
+                            style="background: var(--bg2); color: var(--text);
+                                   border: 1px solid var(--border); padding: .35rem .65rem;
+                                   border-radius: 4px; font-size: .82rem;">
+                        <option value="">Tüm bölgeler</option>
+                        <option value="global">Global</option>
+                        <option value="china">Çin</option>
+                        <option value="japan">Japonya</option>
+                        <option value="korea">Kore</option>
+                        <option value="singapore">Singapur</option>
+                        <option value="india">Hindistan</option>
+                        <option value="turkey">Türkiye</option>
+                    </select>
+                    <button class="btn-add-source" @click="showCandidateForm = !showCandidateForm"
+                            :class="{ active: showCandidateForm }">
+                        <span x-text="showCandidateForm ? '× İptal' : '+ Aday değerlendir'"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Aday değerlendirme formu (heuristic, LLM çağırmaz) ────── -->
+            <template x-if="showCandidateForm">
+                <form class="add-source-form glass" @submit.prevent="evaluate()">
+                    <p style="margin: 0 0 .85rem; font-size: .85rem; color: var(--text2);">
+                        Bu form yeni bir sosyal medya hesabının izleme listesine
+                        eklenmeye uygunluğunu <strong>deterministik heuristic</strong>
+                        ile değerlendirir. LLM çağırmaz; doğrulama linkleri,
+                        affiliation ve örnek paylaşımlar üzerinden skor üretir.
+                    </p>
+                    <div class="form-row">
+                        <label>Ad/Display name
+                            <input type="text" x-model="candidate.display_name" required maxlength="120"
+                                   placeholder="örn. Dr. X Researcher">
+                        </label>
+                        <label>Handle
+                            <input type="text" x-model="candidate.handle" required maxlength="120"
+                                   placeholder="@username veya u/x">
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>Affiliation (opsiyonel)
+                            <input type="text" x-model="candidate.affiliation" maxlength="200"
+                                   placeholder="OpenAI, Anthropic, Bağımsız, ...">
+                        </label>
+                        <label>Rol ipucu (opsiyonel)
+                            <input type="text" x-model="candidate.role_hint" maxlength="120"
+                                   placeholder="research scientist, founder, engineer, ...">
+                        </label>
+                    </div>
+                    <label>Doğrulama linkleri (her satıra bir URL — en az 2 önerilir)
+                        <textarea x-model="candidate.verification_links_text" rows="3"
+                                  placeholder="https://github.com/&#10;https://scholar.google.com/&#10;https://company.com/team/x"
+                                  style="background: var(--bg2); border: 1px solid var(--border);
+                                         color: var(--text); padding: .55rem .75rem;
+                                         border-radius: 5px; font-family: var(--font-mono);
+                                         font-size: .82rem; width: 100%; resize: vertical;"></textarea>
+                    </label>
+                    <label style="margin-top: .85rem; display: block;">Örnek paylaşımlar (opsiyonel, her satıra bir post)
+                        <textarea x-model="candidate.sample_posts_text" rows="3"
+                                  placeholder="Birkaç son tweet/post yapıştır (sinyal/gürültü analizi için)"
+                                  style="background: var(--bg2); border: 1px solid var(--border);
+                                         color: var(--text); padding: .55rem .75rem;
+                                         border-radius: 5px; font-size: .85rem;
+                                         width: 100%; resize: vertical;"></textarea>
+                    </label>
+                    <div style="display: flex; gap: .65rem; margin-top: .85rem;">
+                        <button type="submit" class="btn-submit-source" :disabled="evaluating">
+                            <span x-text="evaluating ? 'Değerlendiriliyor…' : 'Değerlendir'"></span>
+                        </button>
+                        <button type="button" class="btn-cancel" @click="resetCandidate()"
+                                style="background: transparent; color: var(--text2);
+                                       border: 1px solid var(--border); padding: .55rem 1.1rem;
+                                       border-radius: 6px; cursor: pointer;">
+                            Temizle
+                        </button>
+                    </div>
+
+                    <!-- Evaluation sonucu -->
+                    <template x-if="evaluationResult">
+                        <div class="eval-result" :class="evaluationResult.accepted ? 'ok' : 'err'">
+                            <div class="eval-head">
+                                <strong x-text="evaluationResult.accepted ? '✓ Aday kabul edilebilir' : '✗ Aday risk taşıyor'"></strong>
+                                <span class="badge-score">
+                                    Skor: <strong x-text="evaluationResult.score.toFixed(2)"></strong>
+                                </span>
+                            </div>
+                            <div class="eval-meta">
+                                <span class="label-mono">Önerilen risk:</span>
+                                <code x-text="evaluationResult.suggested_risk_level || '—'"></code>
+                                <span class="label-mono" style="margin-left: 1rem;">Reliability:</span>
+                                <code x-text="evaluationResult.suggested_reliability || '—'"></code>
+                            </div>
+                            <template x-if="evaluationResult.reasons && evaluationResult.reasons.length">
+                                <div>
+                                    <p class="label-mono" style="margin: .5rem 0 .25rem;">Lehte:</p>
+                                    <ul class="eval-list reasons">
+                                        <template x-for="r in evaluationResult.reasons" :key="r">
+                                            <li x-text="r"></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </template>
+                            <template x-if="evaluationResult.warnings && evaluationResult.warnings.length">
+                                <div>
+                                    <p class="label-mono" style="margin: .5rem 0 .25rem;">Uyarılar:</p>
+                                    <ul class="eval-list warnings">
+                                        <template x-for="w in evaluationResult.warnings" :key="w">
+                                            <li x-text="w"></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </template>
+                            <template x-if="evaluationResult.injection_warnings && evaluationResult.injection_warnings.length">
+                                <div>
+                                    <p class="label-mono" style="margin: .5rem 0 .25rem; color: var(--red);">
+                                        ⚠ Prompt injection uyarısı:
+                                    </p>
+                                    <ul class="eval-list warnings">
+                                        <template x-for="w in evaluationResult.injection_warnings" :key="w">
+                                            <li x-text="w"></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </template>
+                            <p class="eval-note">
+                                <em>Not:</em> Bu değerlendirme heuristic — ön kontrol amaçlı.
+                                Listeye eklemek için <code>data/social_watch.yaml</code>
+                                dosyasını manuel düzenleyip <code>git commit</code> et.
+                                (Otomatik ekleme henüz yok; audit trail için manuel tercih edilir.)
+                            </p>
+                        </div>
+                    </template>
+                </form>
+            </template>
+
+            <!-- ── Loading skeleton ────────────────────────────────────── -->
+            <template x-if="loading">
+                <div class="sources-wrap glass" style="padding: 1rem;">
+                    <template x-for="i in 4">
+                        <div style="padding: .65rem .9rem; border-top: 1px solid var(--border);">
+                            <div class="skeleton skel-line med"></div>
+                            <div class="skeleton skel-line short" style="margin-top: .35rem;"></div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- ── Tablo ───────────────────────────────────────────────── -->
+            <template x-if="!loading">
+                <div class="sources-wrap glass">
+                    <table class="sources">
+                        <thead>
+                            <tr>
+                                <th style="width: 2.2rem;">●</th>
+                                <th>Kişi</th>
+                                <th style="width: 8rem;">Platform / Handle</th>
+                                <th style="width: 10rem;">Affiliation</th>
+                                <th style="width: 7rem;">Risk seviyesi</th>
+                                <th style="width: 5rem;">Skor</th>
+                                <th style="width: 4rem;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="p in visiblePeople()" :key="p.person_id">
+                                <tr :class="{ muted: !p.enabled }" @click="selectPerson(p)"
+                                    style="cursor: pointer;">
+                                    <td>
+                                        <span class="dot"
+                                              :class="reliabilityClass(p.reliability)"
+                                              :title="p.reliability"></span>
+                                    </td>
+                                    <td>
+                                        <strong x-text="p.display_name"></strong>
+                                        <template x-if="p.region">
+                                            <span class="region-tag" x-text="p.region"></span>
+                                        </template>
+                                        <div class="url-row" x-text="p.watch_reason || '(takip nedeni belirtilmemiş)'"></div>
+                                    </td>
+                                    <td style="font-family: var(--font-mono); font-size: .8rem;">
+                                        <span style="color: var(--text3);" x-text="p.platform"></span>
+                                        <br>
+                                        <span x-text="p.handle"></span>
+                                    </td>
+                                    <td style="font-size: .82rem;" x-text="p.affiliation || '—'"></td>
+                                    <td>
+                                        <span class="risk-pill" :class="riskClass(p.risk_level)"
+                                              x-text="riskLabel(p.risk_level)"></span>
+                                    </td>
+                                    <td style="font-family: var(--font-mono); font-weight: 600;">
+                                        <span :style="`color: ${scoreColor(p.signal_score - p.noise_score)}`"
+                                              x-text="(p.signal_score - p.noise_score).toFixed(2)"></span>
+                                    </td>
+                                    <td>
+                                        <button class="btn-sync" @click.stop="selectPerson(p)"
+                                                style="font-size: .72rem;">detay</button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <template x-if="visiblePeople().length === 0">
+                                <tr>
+                                    <td colspan="7" style="padding: 2rem; text-align: center;
+                                                           color: var(--text3); font-style: italic;">
+                                        Bu filtrede kişi yok.
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+        </section>
+
+        <!-- ── Detay paneli (modal) ───────────────────────────────────────── -->
+        <template x-if="selected">
+            <div class="modal-backdrop" @click="closeDetail()">
+                <div class="modal-panel glass" @click.stop>
+                    <button class="modal-close" @click="closeDetail()" title="Kapat">×</button>
+                    <header class="modal-head">
+                        <h2 x-text="selected.display_name"></h2>
+                        <p class="label-mono" x-text="selected.platform + ' · ' + selected.handle"></p>
+                    </header>
+
+                    <dl class="modal-meta">
+                        <div>
+                            <dt>Affiliation</dt>
+                            <dd x-text="selected.affiliation || '—'"></dd>
+                        </div>
+                        <div>
+                            <dt>Rol</dt>
+                            <dd x-text="selected.role || '—'"></dd>
+                        </div>
+                        <div>
+                            <dt>Bölge</dt>
+                            <dd>
+                                <span x-text="selected.region || '—'"></span>
+                                <span x-show="selected.country" x-text="' (' + selected.country + ')'"></span>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Risk seviyesi</dt>
+                            <dd>
+                                <span class="risk-pill" :class="riskClass(selected.risk_level)"
+                                      x-text="riskLabel(selected.risk_level)"></span>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Güvenilirlik</dt>
+                            <dd>
+                                <span class="dot" :class="reliabilityClass(selected.reliability)"></span>
+                                <code x-text="selected.reliability"></code>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Net skor (signal − noise)</dt>
+                            <dd>
+                                <strong :style="`color: ${scoreColor(selected.signal_score - selected.noise_score)}`"
+                                        x-text="(selected.signal_score - selected.noise_score).toFixed(2)"></strong>
+                                <span style="font-size: .78rem; color: var(--text3);"
+                                      x-text="' (signal ' + selected.signal_score.toFixed(2) + ' / noise ' + selected.noise_score.toFixed(2) + ')'"></span>
+                            </dd>
+                        </div>
+                        <div x-show="selected.last_reviewed_at">
+                            <dt>Son kontrol</dt>
+                            <dd x-text="selected.last_reviewed_at"></dd>
+                        </div>
+                        <div x-show="!selected.enabled">
+                            <dt>Durum</dt>
+                            <dd style="color: var(--gold-text);">
+                                Pasif (enabled: false). Açmak için
+                                <code>data/social_watch.yaml</code> düzenle.
+                            </dd>
+                        </div>
+                    </dl>
+
+                    <template x-if="selected.topics && selected.topics.length">
+                        <div class="modal-section">
+                            <p class="label-mono">Topics</p>
+                            <div class="topic-pills">
+                                <template x-for="t in selected.topics" :key="t">
+                                    <span class="topic-pill" x-text="t"></span>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="selected.watch_reason">
+                        <div class="modal-section">
+                            <p class="label-mono">Takip nedeni</p>
+                            <p x-text="selected.watch_reason"></p>
+                        </div>
+                    </template>
+
+                    <template x-if="selected.verification_links && selected.verification_links.length">
+                        <div class="modal-section">
+                            <p class="label-mono">Doğrulama linkleri</p>
+                            <ul class="link-list">
+                                <template x-for="link in selected.verification_links" :key="link">
+                                    <li>
+                                        <a :href="link" target="_blank" rel="noopener noreferrer"
+                                           x-text="link"></a>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+
+                    <template x-if="selected.notes">
+                        <div class="modal-section">
+                            <p class="label-mono">Notlar</p>
+                            <p x-text="selected.notes"></p>
+                        </div>
+                    </template>
+
+                    <div class="modal-section">
+                        <p class="label-mono">Profil</p>
+                        <p>
+                            <a :href="selected.profile_url" target="_blank" rel="noopener noreferrer"
+                               x-text="selected.profile_url"></a>
+                        </p>
+                    </div>
+
+                    <!-- Phase 32-i.3: Son paylaşımlar (Nitter via lazy fetch) -->
+                    <div class="modal-section posts-section">
+                        <div class="posts-head">
+                            <p class="label-mono">Son paylaşımlar (Nitter)</p>
+                            <button class="btn-load-posts"
+                                    @click="loadPosts(selected.person_id)"
+                                    :disabled="postsLoading"
+                                    x-show="!postsByPerson[selected.person_id]">
+                                <span x-text="postsLoading ? 'Yükleniyor…' : 'Yükle (son 10)'"></span>
+                            </button>
+                            <button class="btn-load-posts"
+                                    @click="loadPosts(selected.person_id, true)"
+                                    :disabled="postsLoading"
+                                    x-show="postsByPerson[selected.person_id]"
+                                    title="Cache'i atla, Nitter'a doğrudan git">
+                                <span x-text="postsLoading ? 'Yenileniyor…' : '↻ Yenile'"></span>
+                            </button>
+                        </div>
+
+                        <template x-if="postsByPerson[selected.person_id]">
+                            <div class="posts-wrap">
+                                <div class="posts-meta">
+                                    <span class="badge-source"
+                                          :class="'source-' + postsByPerson[selected.person_id].source"
+                                          x-text="postsByPerson[selected.person_id].source"></span>
+                                    <span x-show="postsByPerson[selected.person_id].fetched_at"
+                                          class="label-mono" style="margin-left: .6rem;">
+                                        <span x-text="formatTime(postsByPerson[selected.person_id].fetched_at)"></span>
+                                    </span>
+                                    <span x-show="postsByPerson[selected.person_id].stale_seconds"
+                                          class="label-mono" style="margin-left: .6rem; color: var(--text3);"
+                                          x-text="'(~' + Math.round(postsByPerson[selected.person_id].stale_seconds / 60) + ' dk önce)'"></span>
+                                </div>
+
+                                <template x-if="postsByPerson[selected.person_id].warning">
+                                    <p class="posts-warning"
+                                       x-text="postsByPerson[selected.person_id].warning"></p>
+                                </template>
+
+                                <template x-if="(postsByPerson[selected.person_id].posts || []).length === 0
+                                                && !postsByPerson[selected.person_id].warning">
+                                    <p class="posts-empty">
+                                        Paylaşım bulunamadı. Hesap private olabilir veya henüz post yok.
+                                    </p>
+                                </template>
+
+                                <ul class="posts-list">
+                                    <template x-for="post in postsByPerson[selected.person_id].posts" :key="post.id">
+                                        <li class="post-item" :class="{ 'post-unsafe': !post.safe }">
+                                            <div class="post-head">
+                                                <span class="post-date label-mono"
+                                                      x-text="formatTime(post.published_at)"></span>
+                                                <a :href="post.url" target="_blank"
+                                                   rel="noopener noreferrer"
+                                                   class="post-link"
+                                                   title="Orijinali aç">↗</a>
+                                            </div>
+                                            <p class="post-text" x-text="post.text"></p>
+                                            <template x-if="!post.safe">
+                                                <p class="post-injection-warn">
+                                                    ⚠ Prompt injection sinyali bu metinde tespit edildi —
+                                                    metin yalnız veri olarak işlenir, ajan talimatı olarak değil.
+                                                    <span class="label-mono"
+                                                          x-text="(post.injection_hits || []).slice(0,3).join(', ')"></span>
+                                                </p>
+                                            </template>
+                                        </li>
+                                    </template>
+                                </ul>
+
+                                <p class="posts-note label-mono">
+                                    Kaynak: Nitter ağ aynası (X için). Veriler bağımsız 3. parti instance'lardan;
+                                    veri doğrudur ama gecikmeli olabilir. Ajan bu metinleri talimat olarak işlemez.
+                                </p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
+
+<style>
+    /* Phase 32-v.3: risk badges */
+    .risk-badge {
+        display: inline-block;
+        padding: .15rem .55rem;
+        border-radius: 999px;
+        font-family: var(--font-mono);
+        font-size: .68rem;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        border: 1px solid;
+    }
+    .risk-low { color: var(--teal-text); border-color: var(--teal-border); background: var(--teal-dim); }
+    .risk-medium { color: var(--gold-text); border-color: var(--gold-border); background: var(--gold-dim); }
+    .risk-high { color: #e8a090; border-color: rgba(220,80,80,0.35); background: rgba(220,80,80,0.08); }
+
+    /* Phase 15-iv: yeni kaynak form + butonları */
+    .btn-add-source {
+        background: rgba(177, 132, 76, 0.12) !important;
+        border: 1px solid rgba(177, 132, 76, 0.4) !important;
+        color: var(--gold-text) !important;
+    }
+    .btn-add-source.active {
+        background: rgba(176, 68, 55, 0.1) !important;
+        border-color: rgba(176, 68, 55, 0.4) !important;
+        color: #e89a90 !important;
+    }
+    .add-source-form {
+        margin: 0 0 1.25rem;
+        padding: 1.4rem 1.6rem;
+        animation: rise .3s var(--ease-ghibli) both;
+    }
+    .add-source-form .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: .85rem;
+    }
+    .add-source-form label {
+        display: flex; flex-direction: column;
+        gap: .35rem;
+        font-family: var(--font-mono);
+        font-size: .76rem;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+    .add-source-form input,
+    .add-source-form select {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: .55rem .75rem;
+        border-radius: 5px;
+        font-family: var(--font-sans, inherit);
+        font-size: .92rem;
+    }
+    .add-source-form input:focus,
+    .add-source-form select:focus {
+        outline: none;
+        border-color: var(--gold-border);
+        box-shadow: 0 0 0 3px rgba(177, 132, 76, 0.15);
+    }
+    .btn-submit-source {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--gold-text) 100%);
+        color: var(--bg);
+        border: none;
+        padding: .55rem 1.4rem;
+        font-weight: 500;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .btn-submit-source:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(177, 132, 76, 0.3);
+    }
+    .btn-submit-source:disabled {
+        opacity: .6; cursor: not-allowed;
+    }
+    .btn-delete {
+        background: transparent;
+        color: #b54b3a;
+        border: 1px solid rgba(176, 68, 55, 0.3);
+        padding: .35rem .7rem;
+        font-family: var(--font-mono); font-size: .72rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .btn-delete:hover {
+        background: rgba(176, 68, 55, 0.1);
+        border-color: rgba(176, 68, 55, 0.5);
+    }
+
+    /* ──────────────────────────────────────────────────────────────────
+       Phase 32-i: Kaynak Yönetim Ajanı chatbox
+       ────────────────────────────────────────────────────────────────── */
+    .agent-fab {
+        position: fixed;
+        right: 1.5rem;
+        bottom: 1.5rem;
+        z-index: 90;
+        font-family: var(--font-ui);
+    }
+    .agent-toggle {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+        color: var(--bg);
+        border: 1px solid var(--gold-border);
+        padding: .75rem 1.15rem;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: .88rem;
+        cursor: pointer;
+        box-shadow: 0 6px 24px rgba(196,112,74,0.32);
+        transition: transform var(--t-fast), box-shadow var(--t-fast);
+    }
+    .agent-toggle:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(196,112,74,0.4);
+    }
+    .agent-fab.open .agent-toggle {
+        background: var(--bg2);
+        color: var(--text);
+        border: 1px solid var(--border2);
+        box-shadow: none;
+    }
+    .agent-panel {
+        position: absolute;
+        right: 0;
+        bottom: 3.6rem;
+        width: 420px;
+        max-width: calc(100vw - 3rem);
+        max-height: 70vh;
+        background: var(--bg2);
+        border: 1px solid var(--gold-border);
+        border-radius: 12px;
+        box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .agent-header {
+        padding: .8rem 1rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: .5rem;
+        background: var(--bg3);
+    }
+    .agent-suggestions {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        flex-wrap: wrap;
+        gap: .45rem;
+    }
+    .agent-hint {
+        flex-basis: 100%;
+        margin: 0 0 .35rem;
+        font-size: .82rem;
+        color: var(--text3);
+    }
+    .agent-chip {
+        background: var(--bg3);
+        color: var(--text2);
+        border: 1px solid var(--border);
+        padding: .35rem .7rem;
+        font-size: .76rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background var(--t-fast), color var(--t-fast);
+    }
+    .agent-chip:hover {
+        background: var(--hover);
+        color: var(--text);
+    }
+    .agent-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: .85rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: .85rem;
+    }
+    .agent-msg {
+        padding: .65rem .85rem;
+        border-radius: 8px;
+        font-size: .88rem;
+        line-height: 1.45;
+    }
+    .agent-msg.user {
+        background: var(--gold-dim);
+        border: 1px solid var(--gold-border);
+    }
+    .agent-msg.agent {
+        background: var(--bg3);
+        border: 1px solid var(--border);
+    }
+    .agent-msg-role {
+        font-family: var(--font-mono);
+        font-size: .68rem;
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        color: var(--text3);
+        margin-bottom: .3rem;
+    }
+    .agent-msg-body { color: var(--text); }
+    .agent-msg-body pre {
+        background: var(--canvas-bg);
+        padding: .6rem;
+        border-radius: 5px;
+        font-size: .72rem;
+        overflow-x: auto;
+        max-height: 200px;
+    }
+    .agent-proposals {
+        margin-top: .75rem;
+        display: flex;
+        flex-direction: column;
+        gap: .6rem;
+    }
+    .agent-proposal {
+        background: var(--canvas-bg);
+        border: 1px solid var(--gold-border);
+        border-radius: 6px;
+        padding: .65rem;
+    }
+    .agent-prop-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: .5rem;
+        margin-bottom: .35rem;
+    }
+    .badge-action {
+        font-family: var(--font-mono);
+        font-size: .66rem;
+        background: var(--bg3);
+        padding: .15rem .4rem;
+        border-radius: 4px;
+        color: var(--text3);
+    }
+    .agent-prop-warn {
+        margin: .35rem 0;
+        padding-left: 1.2rem;
+        font-size: .78rem;
+        color: var(--text2);
+    }
+    .agent-prop-warn li { color: var(--gold-text); }
+    .agent-prop-diff {
+        background: var(--bg);
+        padding: .5rem;
+        font-size: .68rem;
+        max-height: 160px;
+        overflow: auto;
+        border-radius: 4px;
+        color: var(--text2);
+    }
+    .agent-prop-actions {
+        display: flex;
+        gap: .4rem;
+        margin-top: .5rem;
+    }
+    .btn-approve {
+        background: linear-gradient(135deg, var(--gold), var(--terra));
+        color: var(--bg);
+        border: none;
+        padding: .35rem .85rem;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: .76rem;
+        cursor: pointer;
+    }
+    .btn-approve:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-cancel-prop, .btn-edit-prop {
+        background: transparent;
+        border: 1px solid var(--border);
+        padding: .35rem .7rem;
+        color: var(--text2);
+        border-radius: 4px;
+        font-size: .76rem;
+        cursor: pointer;
+    }
+    .agent-prop-result {
+        margin-top: .5rem;
+        padding: .4rem .55rem;
+        font-size: .78rem;
+        border-radius: 4px;
+        font-family: var(--font-mono);
+    }
+    .agent-prop-result.ok {
+        background: rgba(94,138,78,0.12);
+        color: #b8d8a4;
+        border: 1px solid rgba(94,138,78,0.3);
+    }
+    .agent-prop-result.err {
+        background: rgba(176,68,55,0.12);
+        color: #e9a99c;
+        border: 1px solid rgba(176,68,55,0.3);
+    }
+    .agent-input-row {
+        display: flex;
+        gap: .45rem;
+        padding: .7rem;
+        border-top: 1px solid var(--border);
+        background: var(--bg3);
+    }
+    .agent-input-row input {
+        flex: 1;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: .55rem .7rem;
+        border-radius: 5px;
+        font-size: .88rem;
+    }
+    .agent-input-row input:focus {
+        outline: none;
+        border-color: var(--gold-border);
+    }
+    .agent-input-row button {
+        background: var(--gold);
+        color: var(--bg);
+        border: none;
+        padding: .55rem 1rem;
+        border-radius: 5px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .agent-input-row button:disabled { opacity: .55; cursor: not-allowed; }
+
+    /* ── Phase 34-ii: Sosyal Medya sub-tab (social-watch.html'den taşındı) ── */
+    .region-tag {
+        display: inline-block;
+        margin-left: .5rem;
+        padding: .1rem .45rem;
+        font-family: var(--font-mono);
+        font-size: .65rem;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--text3);
+        background: var(--bg3);
+        border-radius: 3px;
+    }
+    .dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--text3);
+        vertical-align: middle;
+    }
+    .dot.reliability-primary             { background: #5e8a4e; box-shadow: 0 0 4px rgba(94,138,78,0.5); }
+    .dot.reliability-secondary_verified  { background: var(--gold); }
+    .dot.reliability-community_signal    { background: var(--text2); }
+    .dot.reliability-rumor               { background: var(--red); }
+
+    .risk-pill {
+        display: inline-block;
+        padding: .2rem .55rem;
+        font-family: var(--font-mono);
+        font-size: .68rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        background: var(--bg3);
+        color: var(--text2);
+    }
+    .risk-pill.risk-official_person     { background: rgba(94,138,78,0.16); color: #b8d8a4; border-color: rgba(94,138,78,0.35); }
+    .risk-pill.risk-technical_expert    { background: var(--gold-dim); color: var(--gold-text); border-color: var(--gold-border); }
+    .risk-pill.risk-analyst             { background: var(--teal-dim); color: var(--teal-text); border-color: var(--teal-border); }
+    .risk-pill.risk-community_amplifier { background: rgba(232,222,192,0.06); color: var(--text2); border-color: var(--border2); }
+    .risk-pill.risk-rumor_account       { background: rgba(176,68,55,0.12); color: #e9a99c; border-color: rgba(176,68,55,0.32); }
+
+    .modal-backdrop {
+        position: fixed; inset: 0; z-index: 200;
+        background: rgba(0,0,0,0.55);
+        display: flex; align-items: center; justify-content: center;
+        padding: 2rem;
+        animation: fade .2s var(--ease-ghibli) both;
+    }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    .modal-panel {
+        max-width: 720px;
+        width: 100%;
+        max-height: 86vh;
+        overflow-y: auto;
+        background: var(--bg2);
+        border: 1px solid var(--gold-border);
+        border-radius: 12px;
+        padding: 2rem 2.2rem;
+        position: relative;
+        animation: rise .3s var(--ease-ghibli) both;
+    }
+    @keyframes rise { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .modal-close {
+        position: absolute;
+        top: .8rem; right: 1rem;
+        background: transparent; border: none;
+        color: var(--text3); font-size: 1.5rem;
+        cursor: pointer; line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-head h2 { margin: 0; }
+    .modal-head p { margin: .35rem 0 1.2rem; color: var(--text3); }
+    .modal-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .85rem 1.5rem;
+        margin: 0 0 1.5rem;
+    }
+    .modal-meta dt {
+        font-family: var(--font-mono);
+        font-size: .7rem;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        color: var(--text3);
+        margin-bottom: .15rem;
+    }
+    .modal-meta dd { margin: 0; color: var(--text); font-size: .92rem; }
+    .modal-section { margin: 1.1rem 0; }
+    .modal-section p { margin: 0; }
+    .modal-section .label-mono { display: block; margin-bottom: .35rem; }
+    .topic-pills {
+        display: flex; flex-wrap: wrap; gap: .35rem;
+    }
+    .topic-pill {
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        color: var(--text2);
+        padding: .2rem .55rem;
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        border-radius: 4px;
+    }
+    .link-list { margin: 0; padding-left: 1.2rem; }
+    .link-list a { font-family: var(--font-mono); font-size: .82rem; word-break: break-all; }
+
+    .eval-result {
+        margin-top: 1.2rem;
+        padding: 1.1rem 1.25rem;
+        border-radius: 8px;
+        border: 1px solid var(--border2);
+        background: var(--bg);
+    }
+    .eval-result.ok    { border-color: rgba(94,138,78,0.35); background: rgba(94,138,78,0.06); }
+    .eval-result.err   { border-color: rgba(176,68,55,0.32); background: rgba(176,68,55,0.05); }
+    .eval-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: .4rem;
+    }
+    .badge-score {
+        font-family: var(--font-mono);
+        font-size: .8rem;
+        color: var(--text2);
+    }
+    .eval-meta {
+        font-size: .82rem;
+        color: var(--text2);
+        margin-bottom: .6rem;
+    }
+    .eval-meta code {
+        background: var(--bg3);
+        padding: .1rem .4rem;
+        border-radius: 3px;
+        font-size: .78rem;
+        color: var(--text);
+    }
+    .eval-list {
+        margin: 0;
+        padding-left: 1.2rem;
+        font-size: .85rem;
+        color: var(--text2);
+    }
+    .eval-list.reasons li  { color: #b8d8a4; }
+    .eval-list.warnings li { color: var(--gold-text); }
+    .eval-note {
+        margin: .85rem 0 0;
+        font-size: .78rem;
+        color: var(--text3);
+        font-style: italic;
+    }
+
+    .posts-section {
+        border-top: 1px dashed var(--border2);
+        padding-top: 1.1rem;
+        margin-top: 1.3rem;
+    }
+    .posts-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: .6rem;
+        margin-bottom: .6rem;
+    }
+    .btn-load-posts {
+        background: var(--gold-dim);
+        border: 1px solid var(--gold-border);
+        color: var(--gold-text);
+        padding: .4rem .85rem;
+        font-size: .8rem;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .btn-load-posts:hover:not(:disabled) {
+        background: rgba(196,112,74,0.16);
+    }
+    .btn-load-posts:disabled { opacity: .55; cursor: not-allowed; }
+    .posts-meta {
+        margin-bottom: .65rem;
+        font-size: .78rem;
+    }
+    .badge-source {
+        display: inline-block;
+        padding: .15rem .55rem;
+        font-family: var(--font-mono);
+        font-size: .68rem;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        border-radius: 3px;
+        background: var(--bg3);
+        color: var(--text2);
+    }
+    .badge-source.source-nitter      { background: rgba(94,138,78,0.16); color: #b8d8a4; }
+    .badge-source.source-cache       { background: var(--gold-dim); color: var(--gold-text); }
+    .badge-source.source-stale_cache { background: rgba(196,112,74,0.10); color: var(--gold-text); }
+    .badge-source.source-unavailable { background: rgba(176,68,55,0.12); color: #e9a99c; }
+
+    .posts-warning {
+        margin: .5rem 0;
+        padding: .55rem .7rem;
+        background: rgba(196,112,74,0.06);
+        border: 1px solid var(--gold-border);
+        border-radius: 5px;
+        font-size: .82rem;
+        color: var(--gold-text);
+    }
+    .posts-empty {
+        margin: 1rem 0;
+        font-size: .85rem;
+        color: var(--text3);
+        font-style: italic;
+        text-align: center;
+    }
+    .posts-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: .55rem;
+    }
+    .post-item {
+        background: var(--canvas-bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: .65rem .8rem;
+    }
+    .post-item.post-unsafe {
+        border-color: rgba(176,68,55,0.32);
+        background: rgba(176,68,55,0.04);
+    }
+    .post-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: .35rem;
+    }
+    .post-date { color: var(--text3); }
+    .post-link {
+        color: var(--gold-text);
+        font-size: 1rem;
+        text-decoration: none;
+    }
+    .post-text {
+        margin: 0;
+        font-size: .9rem;
+        line-height: 1.45;
+        color: var(--text);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .post-injection-warn {
+        margin: .45rem 0 0;
+        padding: .4rem .55rem;
+        background: rgba(176,68,55,0.08);
+        border-left: 3px solid var(--red);
+        font-size: .76rem;
+        color: #e9a99c;
+        border-radius: 0 4px 4px 0;
+    }
+    .post-injection-warn .label-mono {
+        display: block;
+        margin-top: .25rem;
+        font-size: .68rem;
+    }
+    .posts-note {
+        margin: .8rem 0 0;
+        font-size: .68rem;
+        color: var(--text3);
+        font-style: italic;
+        line-height: 1.5;
+    }
+</style>
+
+<script>
+const CATEGORY_LABELS = {
+    "turk_hukuku":         "Türk Hukuku",
+    "dunya_ai":            "Dünya AI",
+    "turkiye_ai":          "Türkiye AI",
+    "legaltech":           "Legaltech",
+    "muhakeme_stack":      "Muhakeme Stack",
+    "china_ai_models":     "Çin AI Modelleri",
+    "east_asia_ai_models": "Uzak Asya AI Modelleri",
+    "open_weight_models":  "Open-Weight Modeller",
+    "model_infra":         "Model Infra",
+    "social_watch":        "Sosyal İzleme",
+};
+
+function sourcesPage() {
+    return {
+        loading: true,
+        sources: [],
+        syncing: {},
+        filter: "all",
+        // Phase 15-iv: yeni kaynak ekleme state
+        showAddForm: false,
+        adding: false,
+        addError: null,
+        newSource: {
+            name: "",
+            category: "turk_hukuku",
+            type: "rss",
+            url: "",
+            fetch_interval_minutes: 60,
+        },
+        // Phase 32-v.3: tab state + sosyal medya
+        // Phase 34-ii: URL hash deep-link (#sosyal → social tab)
+        tab: "bulletin",  // "bulletin" | "social"
+        socialLoaded: false,
+        socialPeople: [],
+        initTab() {
+            // Phase 34-ii: hash'i oku, social ise tab açılır + sosyalPeople yüklenir.
+            const h = (window.location.hash || "").toLowerCase();
+            if (h === "#sosyal" || h === "#social") {
+                this.tab = "social";
+                // Pill count için arka planda yükle (nested socialWatchPage zaten kendi load'unu yapar).
+                this.loadSocialPeople();
+            } else {
+                this.tab = "bulletin";
+            }
+        },
+        setTab(name) {
+            this.tab = name;
+            window.location.hash = name === "social" ? "sosyal" : "bulten";
+            if (name === "social") this.loadSocialPeople();
+        },
+        async load() {
+            this.loading = true;
+            try {
+                const r = await fetch("/api/sources?enabled_only=false");
+                this.sources = await r.json();
+            } finally {
+                this.loading = false;
+            }
+        },
+        async loadSocialPeople() {
+            if (this.socialLoaded) return;  // bir kez yükle
+            try {
+                const r = await fetch("/api/social-watch");
+                const body = await r.json();
+                this.socialPeople = body.people || [];
+            } catch (e) {
+                this.socialPeople = [];
+            } finally {
+                this.socialLoaded = true;
+            }
+        },
+        isUserAdded(s) {
+            return (s.metadata || {}).added_by === "user";
+        },
+        async addSource() {
+            this.adding = true;
+            this.addError = null;
+            try {
+                const r = await fetch("/api/sources", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(this.newSource),
+                });
+                if (r.status === 201) {
+                    const created = await r.json();
+                    this.sources = [created, ...this.sources];
+                    this.showAddForm = false;
+                    // Reset form
+                    this.newSource = {
+                        name: "", category: "turk_hukuku", type: "rss",
+                        url: "", fetch_interval_minutes: 60,
+                    };
+                } else if (r.status === 409) {
+                    const body = await r.json().catch(() => ({}));
+                    this.addError = "Bu kaynak zaten var: " + (body.detail || "");
+                } else if (r.status === 422) {
+                    const body = await r.json().catch(() => ({}));
+                    this.addError = "Geçersiz veri: " + JSON.stringify(body.detail || body);
+                } else {
+                    this.addError = "Beklenmedik hata: HTTP " + r.status;
+                }
+            } catch (e) {
+                this.addError = "İstek başarısız: " + e.message;
+            } finally {
+                this.adding = false;
+            }
+        },
+        async deleteSource(s) {
+            if (!confirm(`"${s.name}" kaynağı ve tüm makaleleri kalıcı olarak silinsin mi?`)) return;
+            try {
+                const r = await fetch(`/api/sources/${s.id}`, { method: "DELETE" });
+                if (r.ok) {
+                    this.sources = this.sources.filter(x => x.id !== s.id);
+                } else if (r.status === 403) {
+                    alert("Bu kaynak yaml-managed; silinemez. Susturmak için toggle kullanın.");
+                } else {
+                    alert("Silme başarısız: HTTP " + r.status);
+                }
+            } catch (e) {
+                alert("İstek başarısız: " + e.message);
+            }
+        },
+        visibleSources() {
+            if (this.filter === "active") {
+                return this.sources.filter(s => s.effective_enabled);
+            }
+            if (this.filter === "muted") {
+                return this.sources.filter(s => !s.effective_enabled);
+            }
+            return this.sources;
+        },
+        categoryLabel(key) {
+            return CATEGORY_LABELS[key] || key;
+        },
+        async toggle(s) {
+            // Phase 15-i: yaml-disabled satırlarda toggle no-op (kullanıcı
+            // user_disabled flag'ini değiştirebilir ama enabled=false
+            // olduğu sürece efektif kapalı kalır → kafa karıştırır).
+            if (!s.enabled) {
+                alert(
+                    "Bu kaynak feeds.yaml dosyasında kapalı. Açmak için " +
+                    "data/feeds.yaml düzenlenip pulse sync-feeds çalıştırılmalı."
+                );
+                return;
+            }
+            // Optimistic flip; revert on error.
+            const wantDisabled = !s.is_user_disabled;
+            s.is_user_disabled = wantDisabled;
+            s.effective_enabled = s.enabled && !wantDisabled;
+            try {
+                const r = await fetch(`/api/sources/${s.id}/toggle`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ disabled: wantDisabled }),
+                });
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            } catch (e) {
+                s.is_user_disabled = !wantDisabled;
+                s.effective_enabled = s.enabled && wantDisabled;
+                alert("Durum değiştirilemedi: " + e.message);
+            }
+        },
+        toggleTitle(s) {
+            if (!s.enabled) return "feeds.yaml'da enabled: false — toggle pasif";
+            return s.is_user_disabled ? "Susturuldu — aç" : "Çalışıyor — sustur";
+        },
+        async sync(s) {
+            this.syncing = { ...this.syncing, [s.id]: true };
+            try {
+                const r = await fetch(`/api/sources/${s.id}/sync`, { method: "POST" });
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                setTimeout(() => this.load(), 1500);
+            } catch (e) {
+                alert("Yenileme başarısız: " + e.message);
+            } finally {
+                this.syncing = { ...this.syncing, [s.id]: false };
+            }
+        },
+        formatTime(iso) {
+            if (!iso) return "—";
+            const d = new Date(iso);
+            return d.toLocaleString("tr-TR", {
+                day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+            });
+        },
+    };
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Phase 34-ii: socialWatchPage Alpine bileşeni — social-watch.html'den
+   verbatim taşındı. /sources#sosyal sub-tab'ında nested scope olarak
+   kullanılır; iç state (people, filter, modal, postsByPerson) sources
+   bilten state'inden tamamen bağımsızdır.
+   ─────────────────────────────────────────────────────────────────── */
+const RISK_LABELS = {
+    "official_person":     "Resmi kişi",
+    "technical_expert":    "Teknik uzman",
+    "analyst":             "Analist",
+    "community_amplifier": "Topluluk amp.",
+    "rumor_account":       "Söylenti",
+};
+
+function socialWatchPage() {
+    return {
+        loading: true,
+        people: [],
+        filter: {
+            risk_level: "",
+            region: "",
+        },
+        selected: null,
+        showCandidateForm: false,
+        evaluating: false,
+        evaluationResult: null,
+        // Phase 32-i.3: Son paylaşımlar (Nitter fetch + cache)
+        postsByPerson: {},
+        postsLoading: false,
+        candidate: {
+            display_name: "",
+            handle: "",
+            affiliation: "",
+            role_hint: "",
+            verification_links_text: "",
+            sample_posts_text: "",
+        },
+
+        async load() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams();
+                if (this.filter.risk_level) params.set("risk_level", this.filter.risk_level);
+                if (this.filter.region) params.set("region", this.filter.region);
+                const r = await fetch("/api/social-watch?" + params.toString());
+                if (!r.ok) throw new Error("HTTP " + r.status);
+                const body = await r.json();
+                this.people = body.people || [];
+            } catch (e) {
+                console.error("social_watch.load failed", e);
+                this.people = [];
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        visiblePeople() {
+            return this.people;
+        },
+
+        selectPerson(p) {
+            this.selected = p;
+            document.body.style.overflow = "hidden";
+        },
+
+        closeDetail() {
+            this.selected = null;
+            document.body.style.overflow = "";
+        },
+
+        async loadPosts(personId, forceRefresh = false) {
+            if (!personId) return;
+            this.postsLoading = true;
+            try {
+                const url = `/api/social-watch/${encodeURIComponent(personId)}/posts?limit=10`
+                    + (forceRefresh ? "&force_refresh=true" : "");
+                const r = await fetch(url);
+                if (!r.ok) {
+                    const body = await r.json().catch(() => ({}));
+                    this.postsByPerson = {
+                        ...this.postsByPerson,
+                        [personId]: {
+                            source: "unavailable",
+                            posts: [],
+                            warning: `HTTP ${r.status}: ${JSON.stringify(body.detail || body).slice(0, 200)}`,
+                        },
+                    };
+                    return;
+                }
+                const body = await r.json();
+                this.postsByPerson = { ...this.postsByPerson, [personId]: body };
+            } catch (e) {
+                this.postsByPerson = {
+                    ...this.postsByPerson,
+                    [personId]: {
+                        source: "unavailable",
+                        posts: [],
+                        warning: "Network hatası: " + e.message,
+                    },
+                };
+            } finally {
+                this.postsLoading = false;
+            }
+        },
+
+        formatTime(iso) {
+            if (!iso) return "—";
+            try {
+                const d = new Date(iso);
+                return d.toLocaleString("tr-TR", {
+                    day: "2-digit", month: "2-digit", year: "2-digit",
+                    hour: "2-digit", minute: "2-digit",
+                });
+            } catch { return iso; }
+        },
+
+        async evaluate() {
+            this.evaluating = true;
+            this.evaluationResult = null;
+            try {
+                const verification_links = this.candidate.verification_links_text
+                    .split("\n")
+                    .map(s => s.trim())
+                    .filter(Boolean);
+                const sample_posts = this.candidate.sample_posts_text
+                    .split("\n")
+                    .map(s => s.trim())
+                    .filter(Boolean);
+
+                const r = await fetch("/api/social-watch/evaluate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        display_name: this.candidate.display_name,
+                        handle: this.candidate.handle,
+                        affiliation: this.candidate.affiliation || null,
+                        role_hint: this.candidate.role_hint || null,
+                        verification_links,
+                        sample_posts,
+                    }),
+                });
+                if (!r.ok) {
+                    const body = await r.json().catch(() => ({}));
+                    this.evaluationResult = {
+                        accepted: false,
+                        score: 0,
+                        suggested_risk_level: null,
+                        suggested_reliability: null,
+                        reasons: [],
+                        warnings: ["HTTP " + r.status + ": " + JSON.stringify(body.detail || body).slice(0, 200)],
+                        injection_warnings: [],
+                    };
+                } else {
+                    this.evaluationResult = await r.json();
+                }
+            } catch (e) {
+                this.evaluationResult = {
+                    accepted: false,
+                    score: 0,
+                    suggested_risk_level: null,
+                    suggested_reliability: null,
+                    reasons: [],
+                    warnings: ["İstek başarısız: " + e.message],
+                    injection_warnings: [],
+                };
+            } finally {
+                this.evaluating = false;
+            }
+        },
+
+        resetCandidate() {
+            this.candidate = {
+                display_name: "",
+                handle: "",
+                affiliation: "",
+                role_hint: "",
+                verification_links_text: "",
+                sample_posts_text: "",
+            };
+            this.evaluationResult = null;
+        },
+
+        reliabilityClass(rel) {
+            return "reliability-" + (rel || "community_signal");
+        },
+        riskClass(level) {
+            return "risk-" + (level || "community_amplifier");
+        },
+        riskLabel(level) {
+            return RISK_LABELS[level] || level || "—";
+        },
+        scoreColor(net) {
+            if (net >= 0.6) return "#b8d8a4";
+            if (net >= 0.3) return "var(--gold-text)";
+            if (net >= 0.0) return "var(--text2)";
+            return "#e9a99c";
+        },
+    };
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Phase 32-i: Kaynak Yönetim Ajanı chatbox Alpine.js komponenti
+   ─────────────────────────────────────────────────────────────────── */
+function sourceAgent() {
+    return {
+        open: false,
+        input: "",
+        thinking: false,
+        messages: [],
+
+        sendQuick(text) {
+            this.input = text;
+            this.send();
+        },
+
+        async send() {
+            const text = (this.input || "").trim();
+            if (!text || this.thinking) return;
+
+            this.messages.push({ role: "user", html: escapeHtml(text), proposals: [] });
+            this.input = "";
+            this.thinking = true;
+            this.scrollToBottom();
+
+            try {
+                const r = await fetch("/api/agent/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text }),
+                });
+                const body = await r.json().catch(() => ({}));
+
+                if (!r.ok) {
+                    this.messages.push({
+                        role: "agent",
+                        html: `<span style="color: var(--red);">Hata: HTTP ${r.status}</span> — ${escapeHtml(JSON.stringify(body.detail || body).slice(0, 240))}`,
+                        proposals: [],
+                    });
+                    return;
+                }
+
+                const dataPreview = renderAgentData(body);
+                const msg = {
+                    role: "agent",
+                    html: `${escapeHtml(body.message || "")}${dataPreview ? "<br><br>" + dataPreview : ""}`,
+                    proposals: (body.proposals || []).map(p => ({ ...p, _busy: false, _result: null })),
+                };
+                if (body.safe_for_llm === false) {
+                    msg.html = `<em style="color: var(--gold-text);">⚠ Mesajında prompt-injection sinyali tespit edildi; metin yalnız veri olarak işlendi.</em><br>${msg.html}`;
+                }
+                this.messages.push(msg);
+            } catch (e) {
+                this.messages.push({
+                    role: "agent",
+                    html: `<span style="color: var(--red);">İstek başarısız:</span> ${escapeHtml(e.message)}`,
+                    proposals: [],
+                });
+            } finally {
+                this.thinking = false;
+                this.$nextTick(() => this.scrollToBottom());
+            }
+        },
+
+        async approve(p, msgIdx, propIdx) {
+            if (p.requires_double_confirm) {
+                if (!confirm(`KALICI İŞLEM:\n\n${p.summary}\n\nUygulansın mı?`)) return;
+            }
+            p._busy = true;
+            try {
+                const r = await fetch("/api/agent/execute", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(p),
+                });
+                const body = await r.json().catch(() => ({}));
+                if (r.ok && body.status === "ok") {
+                    p._result = { ok: true, text: "✓ Uygulandı" + (body.source_id ? ` (id=${body.source_id.slice(0,8)}…)` : "") };
+                } else {
+                    p._result = { ok: false, text: `✗ ${body.status || "hata"} — ${JSON.stringify(body).slice(0,200)}` };
+                }
+            } catch (e) {
+                p._result = { ok: false, text: "✗ Network hatası: " + e.message };
+            } finally {
+                p._busy = false;
+            }
+        },
+
+        discard(msgIdx, propIdx) {
+            this.messages[msgIdx].proposals.splice(propIdx, 1);
+        },
+
+        edit(p, msgIdx, propIdx) {
+            // Düzenleme modu — payload'u prompt input'una bas (basit MVP)
+            this.input = `${p.action} payload: ${JSON.stringify(p.payload)}`;
+            this.discard(msgIdx, propIdx);
+        },
+
+        scrollToBottom() {
+            const el = this.$refs.msgs;
+            if (el) el.scrollTop = el.scrollHeight;
+        },
+    };
+}
+
+function escapeHtml(s) {
+    if (s == null) return "";
+    return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function renderAgentData(body) {
+    const data = body.data || {};
+    if (data.sources && data.sources.length) {
+        const rows = data.sources.slice(0, 8).map(s =>
+            `<li><strong>${escapeHtml(s.name)}</strong> <span style="color:var(--text3);font-size:.78rem;">· ${escapeHtml(s.category)} · ${escapeHtml(s.type)}</span></li>`
+        ).join("");
+        const more = data.sources.length > 8 ? `<li style="color:var(--text3);">…${data.sources.length - 8} kaynak daha</li>` : "";
+        return `<ul style="margin:.4rem 0 0;padding-left:1.2rem;">${rows}${more}</ul>`;
+    }
+    if (data.people && data.people.length) {
+        const rows = data.people.slice(0, 8).map(p =>
+            `<li><strong>${escapeHtml(p.display_name)}</strong> <span style="color:var(--text3);font-size:.78rem;">· ${escapeHtml(p.handle)} · ${escapeHtml(p.risk_level)} · skor ${(p.signal_score - p.noise_score).toFixed(2)}</span></li>`
+        ).join("");
+        return `<ul style="margin:.4rem 0 0;padding-left:1.2rem;">${rows}</ul>`;
+    }
+    if (data.groups && data.groups.length) {
+        const rows = data.groups.slice(0, 5).map(g =>
+            `<li><strong>${g.size} kaynak benzer:</strong> ${g.members.map(m => escapeHtml(m.name)).join(" · ")}</li>`
+        ).join("");
+        return `<ul style="margin:.4rem 0 0;padding-left:1.2rem;">${rows}</ul>`;
+    }
+    if (data.entries && data.entries.length) {
+        const rows = data.entries.slice(0, 10).map(e =>
+            `<li><span style="font-family:var(--font-mono);font-size:.72rem;color:var(--text3);">${escapeHtml(e.ts)}</span> · <strong>${escapeHtml(e.action)}</strong> · ${escapeHtml(e.summary || "")}</li>`
+        ).join("");
+        return `<ul style="margin:.4rem 0 0;padding-left:1.2rem;">${rows}</ul>`;
+    }
+    return "";
+}
+</script>
+{% endblock %}

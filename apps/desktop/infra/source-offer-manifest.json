@@ -1,0 +1,480 @@
+{
+  "schema_version": "1.0",
+  "product": "Rasathane",
+  "version": "0.5.0",
+  "owner": "Av. Mehmet Arın Gülüm",
+  "verified_on": "2026-10-03",
+  "platform": "Windows x64",
+  "provenance": {
+    "pyav_wheel": {
+      "filename": "av-18.0.0-cp311-abi3-win_amd64.whl",
+      "sha256": "aaf4d354d2beaa6651e4f92e54409a578bde64f79c0beef9a30b388d06f7c629",
+      "ffmpeg_version": "8.1.2",
+      "vendor_binary_sha256": "d00e5c5ae01d5c51dd56043bc9597d9d03200ab72695e1b61565b75f02a2e380"
+    },
+    "llama_binary": {
+      "tag": "b10599",
+      "source_commit": "4a08fa29705b8177e332b134306566c2c4b95902",
+      "archive_sha256": "d95eff420538b372273c5ee82258e238cc955ee3b5135443503d1fa4a38d8308"
+    },
+    "ffmpeg_configure": "--disable-static --enable-shared --libdir=/c/cibw/vendor/lib --prefix=/c/cibw/vendor --disable-programs --disable-doc --disable-libxml2 --disable-lzma --disable-libtheora --disable-libfreetype --disable-libfontconfig --disable-libbluray --disable-libopenjpeg --enable-mediafoundation --enable-version3 --disable-alsa --disable-gnutls --enable-libdav1d --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopus --enable-libsvtav1 --enable-libvpx --enable-libwebp --disable-libxcb --enable-zlib --enable-libx264 --enable-libx265 --enable-nvenc --enable-nvdec --enable-amf --enable-libvpl --disable-encoder='avui,dca,mlp,opus,s302m,sonic,sonic_ls,truehd' --disable-decoder=sonic --disable-libjack --disable-indev=jack --disable-filter=gfxcapture",
+    "ffmpeg_metadata_license": "LGPL version 3 or later",
+    "vendor_patch": "patches/ffmpeg.patch moves libx264/libx265 from EXTERNAL_LIBRARY_GPL_LIST to EXTERNAL_LIBRARY_VERSION3_LIST; metadata alone does not establish the license of the complete binary payload.",
+    "upstream_windows_job": "https://github.com/PyAV-Org/pyav-ffmpeg/actions/runs/28393781929/job/84127236786",
+    "upstream_job_logs": "HTTP 410 on 2026-10-03; expired.",
+    "msys_binary_mapping_verified": false,
+    "msys_dll_evidence": [
+      {
+        "file": "libgcc_s_seh-1",
+        "sha256": "99a25df00a49a5e1ff131533416faa8d4686dd09a9a800633bc56ce93f69b5a6",
+        "evidence": "Embedded GCC16.1.0 Rev5; includes Rev2 build strings"
+      },
+      {
+        "file": "libstdc++-6",
+        "sha256": "80c66b5220c554aa61b72cce0e9322547d111f81179792dde4d9a645255d0e5a",
+        "evidence": "Embedded GCC16.1.0 source paths"
+      },
+      {
+        "file": "libiconv-2",
+        "sha256": "6ce5f4ff92ada49d6f23a8e4134555028a60cbf22ac4bb5ac78b12a2727676ec",
+        "evidence": "PE version1.19; compiler15.2.0 Rev13"
+      },
+      {
+        "file": "libwinpthread-1",
+        "sha256": "02332fab016bf884a2a7a7b2ece22ffe1dea58d56609f913026c22697dd950bc",
+        "evidence": "Compiler16.1.0 Rev5; source revision not embedded"
+      },
+      {
+        "file": "zlib1",
+        "sha256": "79e0c4f9db71cb511398c504b832d395ba0fdee530f98efd1f861dd96de2ceb2",
+        "evidence": "Compiler15.2.0 Rev11/Rev13; candidate zlib1.3.2-2 recipe from build date"
+      }
+    ]
+  },
+  "release_blockers": [
+    {
+      "id": "published_source_access",
+      "requirement": "GPL corresponding-source access; LGPL2.1 §§4/6; MPL2 §3.2(a)",
+      "detail": "Before distributing the binary to third parties, provide this corresponding-source artifact with it or an effective source download route with clear next-to-binary instructions. Public same-release source URL/readback is not yet recorded."
+    }
+  ],
+  "archives": [
+    {
+      "id": "nv-codec-headers",
+      "url": "https://github.com/FFmpeg/nv-codec-headers/archive/refs/tags/n13.0.19.0.tar.gz",
+      "sha256": "86d15d1a7c0ac73a0eafdfc57bebfeba7da8264595bf531cf4d8db1c22940116",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "nv-codec-headers-86d15d1a7c0a.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "amf-headers",
+      "url": "https://github.com/GPUOpen-LibrariesAndSDKs/AMF/releases/download/v1.5.0/AMF-headers-v1.5.0.tar.gz",
+      "sha256": "d569647fa26f289affe81a206259fa92f819d06db1e80cc334559953e82a3f01",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "amf-headers-d569647fa26f.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "libvpl",
+      "url": "https://github.com/intel/libvpl/archive/refs/tags/v2.16.0.tar.gz",
+      "sha256": "d60931937426130ddad9f1975c010543f0da99e67edb1c6070656b7947f633b6",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "libvpl-d60931937426.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "nasm",
+      "url": "https://www.nasm.us/pub/nasm/releasebuilds/2.16.03/nasm-2.16.03.tar.xz",
+      "sha256": "1412a1c760bbd05db026b6c0d1657affd6631cd0a63cddb6f73cc6d4aa616148",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "nasm-1412a1c760bb.tar.xz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "ffmpeg",
+      "url": "https://ffmpeg.org/releases/ffmpeg-8.1.2.tar.xz",
+      "sha256": "464beb5e7bf0c311e68b45ae2f04e9cc2af88851abb4082231742a74d97b524c",
+      "revision": "n8.1.2; 38b88335f99e76ed89ff3c93f877fdefce736c13",
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "ffmpeg-464beb5e7bf0.tar.xz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "lame",
+      "url": "https://deb.debian.org/debian/pool/main/l/lame/lame_3.100.orig.tar.gz",
+      "sha256": "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "lame-ddfe36cab873.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "opus",
+      "url": "https://ftp.osuosl.org/pub/xiph/releases/opus/opus-1.6.1.tar.gz",
+      "sha256": "6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "opus-6ffcb593207b.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "dav1d",
+      "url": "https://code.videolan.org/videolan/dav1d/-/archive/1.5.3/dav1d-1.5.3.tar.bz2",
+      "sha256": "e099f53253f6c247580c554d53a13f1040638f2066edc3c740e4c2f15174ce22",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "dav1d-e099f53253f6.tar.bz2",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "libsvtav1",
+      "url": "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v4.1.0/SVT-AV1-v4.1.0.tar.bz2",
+      "sha256": "184162d3db3a4448882b17230413b4938ca252eef6b3c5e2f1236b2fcf497881",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "libsvtav1-184162d3db3a.tar.bz2",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "vpx",
+      "url": "https://github.com/webmproject/libvpx/archive/refs/tags/v1.16.0.tar.gz",
+      "sha256": "7a479a3c66b9f5d5542a4c6a1b7d3768a983b1e5c14c60a9396edc9b649e015c",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "vpx-7a479a3c66b9.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "png",
+      "url": "https://downloads.sourceforge.net/project/libpng/libpng16/1.6.58/libpng-1.6.58.tar.xz",
+      "sha256": "28eb403f51f0f7405249132cecfe82ea5c0ef97f1b32c5a65828814ae0d34775",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "png-28eb403f51f0.tar.xz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "webp",
+      "url": "https://github.com/webmproject/libwebp/archive/refs/tags/v1.6.0.tar.gz",
+      "sha256": "93a852c2b3efafee3723efd4636de855b46f9fe1efddd607e1f42f60fc8f2136",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "webp-93a852c2b3ef.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "opencore-amr",
+      "url": "https://downloads.sourceforge.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.6.tar.gz",
+      "sha256": "483eb4061088e2b34b358e47540b5d495a96cd468e361050fae615b1809dc4a1",
+      "revision": null,
+      "license": "See retained upstream license texts",
+      "kind": "tar",
+      "filename": "opencore-amr-483eb4061088.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "x264",
+      "url": "https://code.videolan.org/videolan/x264/-/archive/b35605ace3ddf7c1a5d67a2eb553f034aef41d55/x264-b35605ace3ddf7c1a5d67a2eb553f034aef41d55.tar.bz2",
+      "sha256": "6eeb82934e69fd51e043bd8c5b0d152839638d1ce7aa4eea65a3fedcf83ff224",
+      "revision": "b35605ace3ddf7c1a5d67a2eb553f034aef41d55",
+      "license": "GPL-2.0-or-later",
+      "kind": "tar",
+      "filename": "x264-6eeb82934e69.tar.bz2",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "x265",
+      "url": "https://bitbucket.org/multicoreware/x265_git/downloads/x265_4.2.tar.gz",
+      "sha256": "40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210",
+      "revision": "4.2; archive x265Version.txt e444744",
+      "license": "GPL-2.0-or-later",
+      "kind": "tar",
+      "filename": "x265-40b1ea0453e0.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "pyav",
+      "url": "https://files.pythonhosted.org/packages/ae/a4/570a5a35c8638aba01e739925846c35fdd6b0756a15526766d0a4dd3b7df/av-18.0.0.tar.gz",
+      "sha256": "4ef7e72c3d3a872584a1215173b16e0226811037f40dcdbf75992631098df1ba",
+      "revision": "54a4395bb4cdd9cdd53ff6216c50b69f6475c13d",
+      "license": "BSD-3-Clause",
+      "kind": "tar",
+      "filename": "pyav-4ef7e72c3d3a.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "pyav-ffmpeg-build",
+      "url": "https://github.com/PyAV-Org/pyav-ffmpeg/archive/a71bf9279f7a4659154b68ba6783e89be460bcd5.tar.gz",
+      "sha256": "cae01fc6e6b4072ceef1944c389771096f402a561979d5726b152a04c69ea77c",
+      "revision": "a71bf9279f7a4659154b68ba6783e89be460bcd5",
+      "license": "Upstream repository has no standalone license file; preserve build scripts and patches without relabeling",
+      "kind": "tar",
+      "filename": "pyav-ffmpeg-build-cae01fc6e6b4.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "llama-cpp",
+      "url": "https://github.com/ggml-org/llama.cpp/archive/4a08fa29705b8177e332b134306566c2c4b95902.tar.gz",
+      "sha256": "c7122a848f572f948d98c511fc5579540517fa58b253d1c894f43fd5d1986a30",
+      "revision": "4a08fa29705b8177e332b134306566c2c4b95902",
+      "license": "MIT and bundled third-party notices",
+      "kind": "tar",
+      "filename": "llama-cpp-c7122a848f57.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "msys2-build-recipes",
+      "url": "https://github.com/msys2/MINGW-packages/archive/4f0fb09a6ee2bbd2203a0720f2d54cc6b6a5d8f4.tar.gz",
+      "sha256": "b8e15b8b85da578661b5478d154caaee0a586341553bd158994a2e94336b6e9e",
+      "revision": "4f0fb09a6ee2bbd2203a0720f2d54cc6b6a5d8f4",
+      "license": "Per package; source recipes inferred from June 2026 upstream build date",
+      "kind": "tar",
+      "filename": "msys2-build-recipes-b8e15b8b85da.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "gcc-runtime-source",
+      "url": "https://ftp.gnu.org/gnu/gcc/gcc-16.1.0/gcc-16.1.0.tar.xz",
+      "sha256": "50efb4d94c3397aff3b0d61a5abd748b4dd31d9d3f2ab7be05b171d36a510f79",
+      "revision": "16.1.0; MSYS2 16.1.0-5 recipe 18aeb95f69dd6bd3c9172a938c9fd35491536410",
+      "license": "GPL-3.0-or-later WITH GCC-exception-3.1 AND LGPL-2.1-or-later",
+      "kind": "tar",
+      "filename": "gcc-runtime-source-50efb4d94c33.tar.xz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "libiconv",
+      "url": "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.19.tar.gz",
+      "sha256": "88dd96a8c0464eca144fc791ae60cd31cd8ee78321e67397e25fc095c4a19aa6",
+      "revision": "1.19; MSYS2 recipe 045d46aedb9fdbd93b0900b1e20c1a6c73f23072",
+      "license": "LGPL-2.1-or-later; documentation GPL-3.0-or-later",
+      "kind": "tar",
+      "filename": "libiconv-88dd96a8c046.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "zlib",
+      "url": "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.xz",
+      "sha256": "d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3",
+      "revision": "1.3.2; MSYS2 recipe 6430831b570304e48982fce7d65af399b801ceab",
+      "license": "Zlib",
+      "kind": "tar",
+      "filename": "zlib-d7a0654783a4.tar.xz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "winpthreads-source",
+      "url": "https://github.com/mingw-w64/mingw-w64/archive/31bd54ab7d5fe03c67ed2bb1a57e531b9c7f8cc4.tar.gz",
+      "sha256": "d04a1d517e042b727c416038538c28ad51a14e343f8f8e58d632530154f1a10f",
+      "revision": "31bd54ab7d5fe03c67ed2bb1a57e531b9c7f8cc4; MSYS2 14.0.0.r147.g31bd54ab7-1 inferred",
+      "license": "MIT AND BSD-3-Clause-Clear",
+      "kind": "tar",
+      "filename": "winpthreads-source-d04a1d517e04.tar.gz",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "gcc-seh-patch",
+      "url": "https://gcc.gnu.org/git/?p=gcc.git;a=patch;h=b0f09b72d9e1783e8ccaf2d8c1c72b03e3973f0b;hp=e88f8d7bfc811f6d152c42ba009255506f5beba1",
+      "sha256": "fdf4e90a56fc195a8f9a969af39335f158a29f29d42d33c00d908fc47cf5ad24",
+      "revision": "b0f09b72d9e1783e8ccaf2d8c1c72b03e3973f0b",
+      "filename": "gcc-seh.patch",
+      "kind": "file",
+      "license": "GCC upstream patch",
+      "max_bytes": 268435456
+    },
+    {
+      "id": "docxtpl-0-20-2",
+      "url": "https://files.pythonhosted.org/packages/b2/b4/4435f3fcb1357ec441079c4af1dda3ea926fad6dcead4aed2d93b369944e/docxtpl-0.20.2.tar.gz",
+      "sha256": "eddf3350d70b4d123208e801d585bcb313d21044a377a14f75a66d0965841de1",
+      "filename": "docxtpl-0.20.2.tar.gz",
+      "revision": "0.20.2",
+      "kind": "tar",
+      "max_bytes": 16777216,
+      "license": "LGPL-2.1-only"
+    },
+    {
+      "id": "yake-0-7-3",
+      "url": "https://files.pythonhosted.org/packages/ff/5b/3603589ba74d6b3cb92278ecb7b58538bca9cbe7d6cf2fe1b9440d403ec8/yake-0.7.3.tar.gz",
+      "sha256": "8778fb2832e58d26d838d6d7ac967b4947521f1fe8cdf23dd872636161fc53ed",
+      "filename": "yake-0.7.3.tar.gz",
+      "revision": "0.7.3",
+      "kind": "tar",
+      "max_bytes": 16777216,
+      "license": "LGPLv3"
+    },
+    {
+      "id": "certifi-2026-5-20",
+      "url": "https://files.pythonhosted.org/packages/f3/ce/ee2ecad540810a79593028e88299baeae54d346cc7a0d94b6199988b89b1/certifi-2026.5.20.tar.gz",
+      "sha256": "69dea482ab64caa7b9f6aba1c6bf48bb6a5448d1c0f1b17ab42ad8c763a5344d",
+      "filename": "certifi-2026.5.20.tar.gz",
+      "revision": "2026.5.20",
+      "kind": "tar",
+      "max_bytes": 16777216,
+      "license": "MPL-2.0"
+    },
+    {
+      "id": "certifi-2026-7-22",
+      "url": "https://files.pythonhosted.org/packages/a3/c2/24167ea9858356b47a87a50d39908bfdb72ceeefe0041586e704e5376b3a/certifi-2026.7.22.tar.gz",
+      "sha256": "741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55",
+      "filename": "certifi-2026.7.22.tar.gz",
+      "revision": "2026.7.22",
+      "kind": "tar",
+      "max_bytes": 16777216,
+      "license": "MPL-2.0"
+    },
+    {
+      "id": "orjson-3-11-9",
+      "url": "https://files.pythonhosted.org/packages/7e/0c/964746fcafbd16f8ff53219ad9f6b412b34f345c75f384ad434ceaadb538/orjson-3.11.9.tar.gz",
+      "sha256": "4fef17e1f8722c11587a6ef18e35902450221da0028e65dbaaa543619e68e48f",
+      "filename": "orjson-3.11.9.tar.gz",
+      "revision": "3.11.9",
+      "kind": "tar",
+      "max_bytes": 16777216,
+      "license": "MPL-2.0 AND (Apache-2.0 OR MIT)"
+    },
+    {
+      "id": "tqdm-4-68-1",
+      "url": "https://files.pythonhosted.org/packages/06/b3/36c8ecf72e8925200671613332db156d84b99b3aee742a41c1938ebb0808/tqdm-4.68.1.tar.gz",
+      "sha256": "fc163d96b287bd031e1aa24421ce4411b25559bd0a1be4fe649bdaa4d2c02bf5",
+      "filename": "tqdm-4.68.1.tar.gz",
+      "revision": "4.68.1",
+      "kind": "tar",
+      "max_bytes": 16777216,
+      "license": "MPL-2.0 AND MIT"
+    },
+    {
+      "id": "tqdm-4-70-1",
+      "url": "https://files.pythonhosted.org/packages/0d/ea/b2a5bd54b28a324dae8211928b2d730b6547500342c7e6c6dea08bd0a485/tqdm-4.70.1.tar.gz",
+      "sha256": "cefd0eca11b2a37a3aee776544d4f4ae913f02688135b5556b8788dfa474afc4",
+      "filename": "tqdm-4.70.1.tar.gz",
+      "revision": "4.70.1",
+      "kind": "tar",
+      "max_bytes": 16777216,
+      "license": "MPL-2.0 AND MIT"
+    },
+    {
+      "id": "pyinstaller-6-20-0",
+      "url": "https://files.pythonhosted.org/packages/46/60/d03d52e6690d4e9caf333dcd14550cde634ce6c118b3bc8fa3112c3186fd/pyinstaller-6.20.0.tar.gz",
+      "sha256": "95c5c7e03d5d61e9dfb8ef259c699cf492bb1041beb6dbe83696608cec07347a",
+      "filename": "pyinstaller-6.20.0.tar.gz",
+      "revision": "6.20.0",
+      "kind": "tar",
+      "max_bytes": 16777216,
+      "license": "GPLv2-or-later with a special exception which allows to use PyInstaller to build and distribute non-free programs (including commercial ones)"
+    }
+  ],
+  "provenance_notes": [
+    "Exact MSYS binary/package mapping remains a provenance improvement. winpthreads (MIT/BSD) and zlib (Zlib) do not acquire a corresponding-source duty merely from this mapping gap.",
+    "libiconv PE version 1.19 is directly observed. The exact 1.19 source archive and the only matching MSYS recipe/patches from the build period are included. No conflicting source version or local modification was observed.",
+    "GCC16.1.0 runtime source, MSYS16.1.0-5 recipe and all patches, COPYING.RUNTIME and GPL notices are retained. The runtime exception permits eligible target-code combinations with independent modules; it does not impose the application's entire source release.",
+    "The vendor recipe copy is preserved without AGPL relabeling. Repository standalone license declaration was not found; included build modifications and compiler instructions are provenance evidence, not a new license grant."
+  ],
+  "reciprocal_inventory": [
+    {
+      "component": "FFmpeg/x264/x265",
+      "license": "GPL-2.0-or-later codec scope; LGPL-3.0-or-later metadata alone insufficient",
+      "sources": [
+        "ffmpeg",
+        "pyav-ffmpeg-build",
+        "x264",
+        "x265"
+      ],
+      "obligation": "Corresponding source and actual build modifications/configure instructions. GPL §6 / LGPL source conditions.",
+      "observed_in": "worker av.libs"
+    },
+    {
+      "component": "libiconv1.19",
+      "license": "LGPL-2.1-or-later",
+      "sources": [
+        "libiconv",
+        "msys2-build-recipes"
+      ],
+      "obligation": "LGPL2.1 §§4/6 source and replacement/rebuild rights; source version+recipe+patches included.",
+      "observed_in": "worker av.libs"
+    },
+    {
+      "component": "GCC16.1.0 runtime",
+      "license": "GPL-3.0-or-later WITH GCC-exception-3.1",
+      "sources": [
+        "gcc-runtime-source",
+        "gcc-seh-patch",
+        "msys2-build-recipes"
+      ],
+      "obligation": "GPL notices/runtime source preserved; GCC Runtime Library Exception §1 permits eligible independent-module target combinations.",
+      "observed_in": "worker av.libs"
+    },
+    {
+      "component": "docxtpl0.20.2",
+      "license": "LGPL-2.1-only",
+      "sources": [
+        "docxtpl-0-20-2"
+      ],
+      "obligation": "LGPL2.1 §§4/6 exact library source and rebuild/modification rights.",
+      "observed_in": "sidecar frozen PYZ"
+    },
+    {
+      "component": "yake0.7.3",
+      "license": "LGPLv3",
+      "sources": [
+        "yake-0-7-3"
+      ],
+      "obligation": "LGPL3 §4 source/rebuild rights; upstream library sdist retained.",
+      "observed_in": "sidecar frozen PYZ"
+    },
+    {
+      "component": "certifi",
+      "license": "MPL-2.0",
+      "sources": [
+        "certifi-2026-5-20",
+        "certifi-2026-7-22"
+      ],
+      "obligation": "MPL2 §3.2(a) Covered Software source availability and notice; no reciprocal licensing of independent product.",
+      "observed_in": "sidecar/worker frozen PYZ"
+    },
+    {
+      "component": "orjson3.11.9",
+      "license": "MPL-2.0 AND (Apache-2.0 OR MIT)",
+      "sources": [
+        "orjson-3-11-9"
+      ],
+      "obligation": "MPL2 §3.2(a) covered source files; Apache/MIT notices retained.",
+      "observed_in": "sidecar PYZ and native .pyd"
+    },
+    {
+      "component": "tqdm",
+      "license": "MPL-2.0 AND MIT",
+      "sources": [
+        "tqdm-4-68-1",
+        "tqdm-4-70-1"
+      ],
+      "obligation": "MPL2 §3.2(a) covered files' source; MIT notice retained.",
+      "observed_in": "sidecar/worker frozen PYZ"
+    },
+    {
+      "component": "PyInstaller6.20.0",
+      "license": "GPLv2-or-later with bootloader exception",
+      "sources": [
+        "pyinstaller-6-20-0"
+      ],
+      "obligation": "Generated executable is excepted; sidecar additionally embeds PyInstaller modules, so exact project source and COPYING are retained.",
+      "observed_in": "both bootloaders; sidecar frozen PYZ includes PyInstaller"
+    }
+  ]
+}

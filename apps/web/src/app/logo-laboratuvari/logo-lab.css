@@ -1,0 +1,170 @@
+/* ============================================================
+   LOGO LABORATUVARI — geçici seçim sayfası (noindex)
+   Düz seçici yapısı (Lightning CSS nesting uyarısı gereği).
+   ============================================================ */
+
+html:has(.logolab) {
+  background: #0b0f1e;
+}
+
+.logolab {
+  --bg: #0b0f1e;
+  --panel: #0e1326;
+  --text: #ece7d8;
+  --text-soft: rgba(236, 231, 216, 0.66);
+  --text-faint: rgba(236, 231, 216, 0.44);
+  --rule: rgba(236, 231, 216, 0.14);
+  --accent: #c9a227;
+  --paper: #faf6ec;
+  --ink: #1d160f;
+  --f-display: var(--font-cormorant), Georgia, serif;
+  --f-body: var(--font-inter), system-ui, sans-serif;
+  --f-mono: var(--font-plex-mono), Consolas, monospace;
+
+  min-height: 100svh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--f-body);
+  line-height: 1.6;
+  padding: clamp(2.5rem, 6vw, 4.5rem) 1.25rem 5rem;
+}
+
+.logolab * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.logolab > * {
+  max-width: 980px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.logolab a {
+  color: var(--accent);
+}
+
+.logolab .ll-kicker {
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 0.8rem;
+}
+
+.logolab h1 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: clamp(2rem, 4.5vw, 2.9rem);
+  line-height: 1.08;
+  margin-bottom: 1rem;
+}
+
+.logolab .ll-desc {
+  color: var(--text-soft);
+  max-width: 60ch;
+  margin-bottom: 1rem;
+}
+
+.logolab .ll-links {
+  font-family: var(--f-mono);
+  font-size: 0.8rem;
+  margin-bottom: 3.5rem;
+}
+
+.logolab .ll-candidate {
+  border-top: 1px solid var(--rule);
+  padding: 2.2rem 0 3rem;
+}
+
+.logolab .ll-cand-head h2 {
+  font-family: var(--f-mono);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.logolab .ll-cand-head p {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  max-width: 64ch;
+  margin-bottom: 1.6rem;
+}
+
+.logolab .ll-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.logolab .ll-cell {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 1.1rem;
+  padding: 1.4rem 1.2rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  min-height: 168px;
+}
+
+.logolab .ll-night {
+  background: #0b0f1e;
+  color: var(--text);
+}
+
+.logolab .ll-paper {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.logolab .ll-gold {
+  background: var(--accent);
+  color: #141830;
+}
+
+.logolab .ll-lockup {
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 96px;
+}
+
+.logolab .ll-word {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.logolab .ll-word.serif {
+  font-family: var(--f-display);
+  font-weight: 500;
+}
+
+.logolab .ll-word.mono {
+  font-family: var(--f-mono);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.logolab .ll-foot {
+  border-top: 1px solid var(--rule);
+  padding-top: 1.6rem;
+  color: var(--text-faint);
+  font-size: 0.82rem;
+  max-width: 68ch;
+}
+
+@media (max-width: 760px) {
+  .logolab .ll-row {
+    grid-template-columns: 1fr;
+  }
+  .logolab .ll-cell {
+    min-height: 120px;
+    gap: 1.4rem;
+  }
+}

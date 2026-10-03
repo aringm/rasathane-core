@@ -1,0 +1,522 @@
+[
+  {
+    "surface": "web",
+    "file": "01e4147cff8141ee-s.p.3huc2loe0ie8a.woff2",
+    "bytes": 37776,
+    "sha256": "5d618c462b7a5b74f442e1548880086af71764d9cc7d35c16ab45353da934621",
+    "names": {
+      "0": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "1": ["Cormorant Garamond Light"],
+      "4": ["Cormorant Garamond Light"],
+      "5": ["Version 4.001"],
+      "6": ["CormorantGaramond-Light"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "02263ebadd758ea4-s.29yke99gs9qpn.woff2",
+    "bytes": 4036,
+    "sha256": "b2529fba93fd07a50ffb8fc3d103eb04b0c298d4f6564d2833c44fde286de7e4",
+    "names": {
+      "0": ["Copyright 2017 IBM Corp. All rights reserved."],
+      "1": ["IBM Plex Mono Medium"],
+      "4": ["IBM Plex Mono Medium"],
+      "5": ["Version 2.3"],
+      "6": ["IBMPlexMono-Medium"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["http://scripts.sil.org/OFL"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "0926c12c4384550f-s.p.1-qpv3jvnkkyl.woff2",
+    "bytes": 34444,
+    "sha256": "06bc9a8c179afaf7dd5d3b4987ad2f4a82ca85a542c9e498b18bf32ad0257d8e",
+    "names": {
+      "0": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "1": ["Cormorant Garamond Light"],
+      "4": ["Cormorant Garamond Light Italic"],
+      "5": ["Version 4.001"],
+      "6": ["CormorantGaramond-LightItalic"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "1bffadaabf893a1e-s.p.3-6t-g6q0vh0a.woff2",
+    "bytes": 85272,
+    "sha256": "a28eb6d3ccb534ae0c94ca999371df024aab60b08c3c8a5720ee9e32fa0faaa2",
+    "names": {
+      "0": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "1": ["Inter"],
+      "4": ["Inter Regular"],
+      "5": ["Version 4.001;git-66647c0bb"],
+      "6": ["Inter-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "1f9e983605289f29-s.p.3aak_kra40y8r.woff2",
+    "bytes": 33740,
+    "sha256": "9dc38267bdee93a653200ef3c1e8060e3f1399073432c415c683b419d3b50464",
+    "names": {
+      "0": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "1": ["Cormorant Garamond Light"],
+      "4": ["Cormorant Garamond Light"],
+      "5": ["Version 4.001"],
+      "6": ["CormorantGaramond-Light"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "2bbe8d2671613f1f-s.0k62hbripvv8p.woff2",
+    "bytes": 10280,
+    "sha256": "8db00ff46c67b22cda8bed865acf7077651cac8d2841d5b40980556b48961931",
+    "names": {
+      "0": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "1": ["Inter"],
+      "4": ["Inter Regular"],
+      "5": ["Version 4.001;git-66647c0bb"],
+      "6": ["Inter-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "2c55a0e60120577a-s.0-dom-5bn10r2.woff2",
+    "bytes": 25844,
+    "sha256": "fccca918fea40089dacadc7045861314d1a6bc91f1f323cc1eeb22ebcdb321b5",
+    "names": {
+      "0": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "1": ["Inter"],
+      "4": ["Inter Regular"],
+      "5": ["Version 4.001;git-66647c0bb"],
+      "6": ["Inter-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "2fe89d53234c61d4-s.p.1u30mmyq6lnsd.woff2",
+    "bytes": 8860,
+    "sha256": "f1050dc5317b43434c0aeda599d4624c774ffc162e87a8cf204b949b6a85816d",
+    "names": {
+      "0": ["Copyright 2017 IBM Corp. All rights reserved."],
+      "1": ["IBM Plex Mono"],
+      "4": ["IBM Plex Mono Regular"],
+      "5": ["Version 2.3"],
+      "6": ["IBMPlexMono-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["http://scripts.sil.org/OFL"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "5476f68d60460930-s.2uwcyprjm3xu3.woff2",
+    "bytes": 19044,
+    "sha256": "46dd4cdca58c26ae87cc6927657bf83b2e8abfc39ffd0ab176e301a8d28d22bf",
+    "names": {
+      "0": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "1": ["Inter"],
+      "4": ["Inter Regular"],
+      "5": ["Version 4.001;git-66647c0bb"],
+      "6": ["Inter-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "591574edbe85c69b-s.2cu8l7zf4s4ec.woff2",
+    "bytes": 21264,
+    "sha256": "3170a883f1968a2d1135259e40fd88508da70c20337e491f171f9405d0749053",
+    "names": {
+      "0": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "1": ["Cormorant Garamond Light"],
+      "4": ["Cormorant Garamond Light Italic"],
+      "5": ["Version 4.001"],
+      "6": ["CormorantGaramond-LightItalic"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "59b15b4bcd7b1eb5-s.2vemzm0itqzfy.woff2",
+    "bytes": 5476,
+    "sha256": "7b59d6bf7f8b8408ac28f27d01dca9a890abeae77045d343b1d8ccb089a92e54",
+    "names": {
+      "0": ["Copyright 2017 IBM Corp. All rights reserved."],
+      "1": ["IBM Plex Mono"],
+      "4": ["IBM Plex Mono Regular"],
+      "5": ["Version 2.3"],
+      "6": ["IBMPlexMono-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["http://scripts.sil.org/OFL"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "5e05ae5b48faa55e-s.1yd4_i3e35931.woff2",
+    "bytes": 4336,
+    "sha256": "311098be73eac339128f0b5a6e33d72645b6f87488541fdf467c402152d297fd",
+    "names": {
+      "0": ["Copyright 2017 IBM Corp. All rights reserved."],
+      "1": ["IBM Plex Mono Medium"],
+      "4": ["IBM Plex Mono Medium"],
+      "5": ["Version 2.3"],
+      "6": ["IBMPlexMono-Medium"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["http://scripts.sil.org/OFL"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "68757d6cddeff913-s.p.1i-sca43-qwng.woff2",
+    "bytes": 8848,
+    "sha256": "77f03e26f981c582bdba3a7abed4baa2d3149211c01366bb3ab3ba7622ec4ae5",
+    "names": {
+      "0": ["Copyright 2017 IBM Corp. All rights reserved."],
+      "1": ["IBM Plex Mono Medium"],
+      "4": ["IBM Plex Mono Medium"],
+      "5": ["Version 2.3"],
+      "6": ["IBMPlexMono-Medium"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["http://scripts.sil.org/OFL"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "83afe278b6a6bb3c-s.p.2bn3s6zvc0dyp.woff2",
+    "bytes": 48432,
+    "sha256": "c940764593d0fe5d596be327ca7558855e018039fb78509aa21921fd3644c3e4",
+    "names": {
+      "0": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "1": ["Inter"],
+      "4": ["Inter Regular"],
+      "5": ["Version 4.001;git-66647c0bb"],
+      "6": ["Inter-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "8bd76523131fa0fc-s.p.1pvupmngxrt5z.woff2",
+    "bytes": 39304,
+    "sha256": "e6d6d1d73858aa9b66f3a3539f9dec22faab2276e61ad1d813bc04dd59c9c122",
+    "names": {
+      "0": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "1": ["Cormorant Garamond Light"],
+      "4": ["Cormorant Garamond Light Italic"],
+      "5": ["Version 4.001"],
+      "6": ["CormorantGaramond-LightItalic"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "99e609270109b47d-s.p.40sczeszzbjw1.woff2",
+    "bytes": 10052,
+    "sha256": "c36f509c0a8f9f85f29cb44bc8701d8a9e0b14c499e77a884f789ead7093a7ac",
+    "names": {
+      "0": ["Copyright 2017 IBM Corp. All rights reserved."],
+      "1": ["IBM Plex Mono"],
+      "4": ["IBM Plex Mono Regular"],
+      "5": ["Version 2.3"],
+      "6": ["IBMPlexMono-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["http://scripts.sil.org/OFL"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "9c72aa0f40e4eef8-s.1y4-pdgsjb-pw.woff2",
+    "bytes": 18744,
+    "sha256": "aebf2ab4a4ce6810d73c1ac7be7cafb4e5ec4cee2d6db5fb3e09691747ec4bd6",
+    "names": {
+      "0": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "1": ["Inter"],
+      "4": ["Inter Regular"],
+      "5": ["Version 4.001;git-66647c0bb"],
+      "6": ["Inter-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "9cc5c0547f229dea-s.00y8kskkn0hyx.woff2",
+    "bytes": 23408,
+    "sha256": "d04439363ec805132dc6c6e6a925f76efe17646f9811af8e10e218ea3dba5335",
+    "names": {
+      "0": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "1": ["Cormorant Garamond Light"],
+      "4": ["Cormorant Garamond Light"],
+      "5": ["Version 4.001"],
+      "6": ["CormorantGaramond-Light"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "a7afbb44bec2bb18-s.1qc6dx89jd2qv.woff2",
+    "bytes": 5500,
+    "sha256": "d524dc8ff6dbf7ed69772f3b2ff4affaf5a89b5762b270e36c3f21da0d4e39f5",
+    "names": {
+      "0": ["Copyright 2017 IBM Corp. All rights reserved."],
+      "1": ["IBM Plex Mono Medium"],
+      "4": ["IBM Plex Mono Medium"],
+      "5": ["Version 2.3"],
+      "6": ["IBMPlexMono-Medium"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["http://scripts.sil.org/OFL"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "acf349172f10b359-s.0gv8q2vqi14yg.woff2",
+    "bytes": 11556,
+    "sha256": "3512ad3b4ddd21fa75ab44296867da1f82948350ffba678a04afbb511015cb08",
+    "names": {
+      "0": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "1": ["Cormorant Garamond Light"],
+      "4": ["Cormorant Garamond Light Italic"],
+      "5": ["Version 4.001"],
+      "6": ["CormorantGaramond-LightItalic"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "ad66f9afd8947f86-s.3lvt2whj97whp.woff2",
+    "bytes": 11272,
+    "sha256": "a2e2c783ca6f9c20486e81e72a279203e86730bbf8f01ff6a5ee9dbd09e1c271",
+    "names": {
+      "0": [
+        "Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "1": ["Inter"],
+      "4": ["Inter Regular"],
+      "5": ["Version 4.001;git-66647c0bb"],
+      "6": ["Inter-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "b0947914c9718a1e-s.1xjn85gt7t6qs.woff2",
+    "bytes": 21132,
+    "sha256": "d81372bae1f872f1418c0b7eb412f8a92a156a950fda8d2383701c75d38969df",
+    "names": {
+      "0": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "1": ["Cormorant Garamond Light"],
+      "4": ["Cormorant Garamond Light"],
+      "5": ["Version 4.001"],
+      "6": ["CormorantGaramond-Light"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "d0b60be57f16ee32-s.1xtu7gopqv2u0.woff2",
+    "bytes": 11264,
+    "sha256": "826f73ca737feec0eb1004808629973d6b611fddc2bd2a689b5fe331f6be6427",
+    "names": {
+      "0": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "1": ["Cormorant Garamond Light"],
+      "4": ["Cormorant Garamond Light"],
+      "5": ["Version 4.001"],
+      "6": ["CormorantGaramond-Light"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "d8cddd76dbfeaef0-s.1mblz1wog092a.woff2",
+    "bytes": 25196,
+    "sha256": "919a7720ae1671f06ebdd4f65bb9c2f0d619f81f805d85aec025c89139536292",
+    "names": {
+      "0": [
+        "Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)"
+      ],
+      "1": ["Cormorant Garamond Light"],
+      "4": ["Cormorant Garamond Light Italic"],
+      "5": ["Version 4.001"],
+      "6": ["CormorantGaramond-LightItalic"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["https://openfontlicense.org"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "e390973e931a41c5-s.0rgnxg2b64rzs.woff2",
+    "bytes": 4348,
+    "sha256": "c6f09ee0e0a24b7c85ecb2a601eb99332f65b1f6b37c31e0bbe73fb307625eca",
+    "names": {
+      "0": ["Copyright 2017 IBM Corp. All rights reserved."],
+      "1": ["IBM Plex Mono"],
+      "4": ["IBM Plex Mono Regular"],
+      "5": ["Version 2.3"],
+      "6": ["IBMPlexMono-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["http://scripts.sil.org/OFL"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "e532fa1b9921e1cd-s.3cb5lpr2l6xud.woff2",
+    "bytes": 4000,
+    "sha256": "0a8b854cc18641bd1b8222afa7ec82a75e59bc6501f777744ec87db1b6cd7a2c",
+    "names": {
+      "0": ["Copyright 2017 IBM Corp. All rights reserved."],
+      "1": ["IBM Plex Mono"],
+      "4": ["IBM Plex Mono Regular"],
+      "5": ["Version 2.3"],
+      "6": ["IBMPlexMono-Regular"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["http://scripts.sil.org/OFL"]
+    }
+  },
+  {
+    "surface": "web",
+    "file": "effe91970fc4db64-s.p.0oace-s_gkfks.woff2",
+    "bytes": 10060,
+    "sha256": "a76f53ca6612e7b3828eec2311098675b7f9849ae4169a8bcef6302aec02a6c0",
+    "names": {
+      "0": ["Copyright 2017 IBM Corp. All rights reserved."],
+      "1": ["IBM Plex Mono Medium"],
+      "4": ["IBM Plex Mono Medium"],
+      "5": ["Version 2.3"],
+      "6": ["IBMPlexMono-Medium"],
+      "8": [],
+      "9": [],
+      "11": [],
+      "13": [],
+      "14": ["http://scripts.sil.org/OFL"]
+    }
+  }
+]

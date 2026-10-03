@@ -1,0 +1,1801 @@
+{% extends "_base.html" %}
+{% set active = "home" %}
+{% block title %}Rasathane · Bülten{% endblock %}
+
+{% block content %}
+<section class="block" x-data="briefPanel()" x-init="load()">
+    <!-- Phase 31: Tarih hero + aylık takvim + modern aksiyon grubu -->
+    <div class="brief-hero">
+        <button class="brief-hero-date"
+                :aria-expanded="showCalendar"
+                @click="toggleCalendar()"
+                :title="showCalendar ? 'Takvimi kapat' : 'Aylık takvim'">
+            <span class="brief-hero-date-text"
+                  x-text="data?.date ? formatDateTR(data.date) : 'Hazırlanıyor…'"></span>
+            <svg class="brief-hero-chevron"
+                 :class="{ open: showCalendar }"
+                 width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+            </svg>
+        </button>
+
+        <div class="brief-calendar"
+             x-show="showCalendar"
+             x-transition:enter="cal-enter"
+             x-transition:enter-start="cal-enter-start"
+             x-transition:enter-end="cal-enter-end"
+             x-cloak>
+            <div class="cal-head">
+                <button class="cal-nav" @click="shiftMonth(-1)" aria-label="Önceki ay">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <span class="cal-title" x-text="calendarTitle()"></span>
+                <button class="cal-nav" @click="shiftMonth(1)" aria-label="Sonraki ay">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="cal-weekdays" aria-hidden="true">
+                <span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span>
+                <span>Cum</span><span>Cmt</span><span>Paz</span>
+            </div>
+            <div class="cal-grid" role="grid">
+                <template x-for="cell in monthGrid()" :key="cell.iso">
+                    <button class="cal-day"
+                            role="gridcell"
+                            :class="{
+                                other: cell.otherMonth,
+                                today: cell.isToday,
+                                'has-brief': cell.hasBrief,
+                                'is-active': cell.iso === activeIso(),
+                                'holiday-national': cell.holiday && cell.holiday.type === 'national',
+                                'holiday-religious': cell.holiday && cell.holiday.type === 'religious',
+                                weekend: cell.weekend,
+                            }"
+                            :disabled="!cell.hasBrief && !cell.isToday"
+                            @click="onCalendarDayClick(cell)"
+                            :title="cellTitle(cell)">
+                        <span class="cal-day-num" x-text="cell.day"></span>
+                        <span class="cal-day-marks" aria-hidden="true">
+                            <i x-show="cell.holiday && cell.holiday.type === 'national'"
+                               class="dot dot-national"></i>
+                            <i x-show="cell.holiday && cell.holiday.type === 'religious'"
+                               class="dot dot-religious"></i>
+                            <i x-show="cell.hasBrief" class="dot dot-brief"></i>
+                        </span>
+                    </button>
+                </template>
+            </div>
+            <div class="cal-legend">
+                <span><i class="dot dot-brief"></i>Gündem</span>
+                <span><i class="dot dot-national"></i>Resmi tatil</span>
+                <span><i class="dot dot-religious"></i>Dini bayram</span>
+            </div>
+        </div>
+
+        <div class="brief-actions">
+            <template x-if="viewingDate">
+                <button class="btn-pill btn-pill-ghost"
+                        @click="goToToday()"
+                        title="Bugünün gündemine dön">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 14 4 9 9 4"/>
+                        <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                    </svg>
+                    <span>Bugüne dön</span>
+                </button>
+            </template>
+            <button class="btn-pill btn-pill-primary"
+                    :disabled="generating"
+                    @click="onGenerate()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2 14.5 8.5 21 11l-6.5 2.5L12 20l-2.5-6.5L3 11l6.5-2.5z"/>
+                </svg>
+                <span x-text="buttonLabel()"></span>
+            </button>
+            <template x-if="data?.top_brief && !data?.generating">
+                <button class="btn-pill btn-pill-ghost"
+                        :class="{ active: briefAudioGenerating || briefAudioReady }"
+                        @click="onBriefAudio()"
+                        :title="briefAudioReady ? 'Sesli özet hazır' : 'Sesli özet üret (~30-60 sn)'">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 5 6 9H2v6h4l5 4V5z"/>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                    </svg>
+                    <span x-show="!briefAudioGenerating && !briefAudioReady">Sesli oku</span>
+                    <span x-show="briefAudioGenerating"
+                          x-text="(briefAudioElapsed || 0) + ' sn'"></span>
+                    <span x-show="briefAudioReady && !briefAudioGenerating">Hazır</span>
+                </button>
+            </template>
+            <button class="btn-pill btn-pill-ghost"
+                    x-data="syncAllButton()"
+                    :disabled="syncing"
+                    @click="trigger()"
+                    :title="syncing ? 'Akış yenileniyor (~1-2 dk)' : 'Tüm haber kaynaklarını şimdi yenile'">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <polyline points="1 20 1 14 7 14"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                <span x-text="syncing ? (elapsed || 0) + ' sn' : 'Akışı yenile'"></span>
+            </button>
+            <template x-if="data?.top_brief && !data?.generating">
+                <button class="btn-pill-icon"
+                        :class="{ saved: data.in_library }"
+                        @click="toggleBriefBookmark()"
+                        :title="data.in_library ? 'Kütüphaneden çıkar' : 'Brief\'i kütüphaneye kaydet'">
+                    <svg width="17" height="17" viewBox="0 0 24 24"
+                         :fill="data.in_library ? 'currentColor' : 'none'"
+                         stroke="currentColor" stroke-width="1.6"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </button>
+            </template>
+        </div>
+    </div>
+    <!-- Phase 30: custom audio player (Alpine.js controlled) -->
+    <template x-if="briefAudioReady && briefAudioUrl">
+        <div class="brief-audio-player" x-data="audioPlayer(briefAudioUrl)" x-init="bind()">
+            <audio x-ref="el" preload="metadata"
+                   @loadedmetadata="onLoaded()"
+                   @timeupdate="onTime()"
+                   @ended="onEnded()"
+                   @play="playing = true"
+                   @pause="playing = false"></audio>
+            <button class="player-play" @click="toggle()" :aria-label="playing ? 'Duraklat' : 'Oynat'">
+                <svg x-show="!playing" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                <svg x-show="playing" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 5h4v14H6zM14 5h4v14h-4z"/>
+                </svg>
+            </button>
+            <div class="player-progress" @click="seek($event)">
+                <div class="player-progress-fill" :style="`width: ${progressPct}%`"></div>
+            </div>
+            <span class="player-time"
+                  x-text="`${fmtTime(current)} / ${fmtTime(duration)}`"></span>
+            <button class="player-speed" @click="cycleSpeed()"
+                    :title="'Hız: ' + speed + 'x'"
+                    x-text="speed + '×'"></button>
+            <a class="player-download" :href="briefAudioUrl" download
+               title="MP3 indir" aria-label="MP3 indir">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+            </a>
+        </div>
+    </template>
+    <div class="brief glass">
+        <template x-if="loading">
+            <div>
+                <div class="skeleton skel-line short"></div>
+                <div class="skeleton skel-line full"></div>
+                <div class="skeleton skel-line full"></div>
+                <div class="skeleton skel-line med"></div>
+            </div>
+        </template>
+        <template x-if="!loading && data?.generating">
+            <div class="empty-state">
+                <p style="color: var(--text2); margin: 0;">
+                    <strong style="color: var(--text);">Gündem hazırlanıyor…</strong>
+                    <span x-text="(data.elapsed_sec || 0) + ' sn'"></span>
+                </p>
+                <p style="color: var(--text3); font-size: .8rem; margin: .5rem 0 0;">
+                    Son 24 saatin haberleri sentezleniyor (yaklaşık 1-2 dakika).
+                </p>
+            </div>
+        </template>
+        <template x-if="!loading && data?.error && !data?.generating">
+            <div class="empty-state">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+                     style="color: var(--text3); margin-bottom: .75rem;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <p style="color: var(--text2); margin: 0;">
+                    <strong style="color: var(--text);">Bugünün gündemi henüz hazır değil.</strong>
+                    Yukarıdaki <em>Bugünün gündemini üret</em> butonuna basarak
+                    son 24 saatin haberlerini bir araya getirelim.
+                </p>
+                <p style="color: var(--text3); font-size: .8rem; margin: .5rem 0 0;
+                          font-family: var(--font-mono);" x-text="data.error"></p>
+            </div>
+        </template>
+        <template x-if="!loading && data && !data.error && !data.generating">
+            <div class="brief-content" x-html="renderMarkdown(data.top_brief)"></div>
+        </template>
+        <!-- Phase 24: brief'te bahsedilen kaynakları analiz et CTA listesi -->
+        <template x-if="!loading && data?.analyzable_urls && data.analyzable_urls.length > 0">
+            <div class="brief-analyze-cta">
+                <h4 class="brief-analyze-title">
+                    <span aria-hidden="true">🔬</span>
+                    Bu yazıdaki kaynakları derinlemesine analiz et
+                </h4>
+                <p class="brief-analyze-sub">
+                    Brief'te bahsedilen YouTube videoları, GitHub depoları ve
+                    arXiv makaleleri — tek tıkla analiz sayfasına git, özet +
+                    zihin haritası + sesli özet otomatik üretilsin.
+                </p>
+                <ul class="brief-analyze-list">
+                    <template x-for="link in data.analyzable_urls" :key="link.url">
+                        <li class="brief-analyze-item">
+                            <span class="brief-analyze-icon" x-text="briefAnalyzeIcon(link.type)"></span>
+                            <span class="brief-analyze-label" x-text="link.label"></span>
+                            <a class="brief-analyze-go"
+                               :href="'/analyze?url=' + encodeURIComponent(link.url)">
+                                Analiz et →
+                            </a>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </template>
+        <!-- Phase 33-i: brief sonu kullanılan kaynaklar accordion -->
+        <template x-if="!loading && data?.sources && data.sources.length > 0">
+            <details class="brief-sources" x-data="briefSources(data.sources)">
+                <summary>
+                    <span>📎 Kullanılan Kaynaklar</span>
+                    <span class="brief-sources-count" x-text="totalCount + ' kaynak · ' + categoryCount + ' kategori'"></span>
+                </summary>
+                <div class="brief-sources-body">
+                    <template x-for="cat in categories" :key="cat.key">
+                        <section class="brief-sources-category">
+                            <h4 x-text="cat.label + ' (' + cat.items.length + ')'"></h4>
+                            <ul>
+                                <template x-for="item in cat.items" :key="item.url">
+                                    <li>
+                                        <a :href="item.url" target="_blank" rel="noopener"
+                                           x-text="item.title"></a>
+                                        <span class="brief-source-meta">
+                                            — <span x-text="item.source_name"></span>
+                                            <template x-if="item.time_str">
+                                                <span>, <span x-text="item.time_str"></span></span>
+                                            </template>
+                                        </span>
+                                    </li>
+                                </template>
+                            </ul>
+                        </section>
+                    </template>
+                </div>
+            </details>
+        </template>
+        <template x-if="data?.last_error">
+            <p style="color: #b54b3a; font-size: .82rem; margin: 1rem 0 0;
+                      font-family: var(--font-mono);">
+                Son üretim hatası: <span x-text="data.last_error.substring(0, 200)"></span>
+            </p>
+        </template>
+    </div>
+
+    <!-- Phase 30 + 32-ii: Önceki gündemler — ilk 3 aktif + "Daha fazla göster" -->
+    <div class="past-briefs" x-data="pastBriefs()" x-init="load()">
+        <h3 class="past-briefs-title">
+            <span aria-hidden="true">📅</span>
+            Önceki Bültenler
+            <span class="past-briefs-count" x-show="!loading && items.length > 0"
+                  x-text="visibleCount + ' / ' + items.length"></span>
+        </h3>
+        <template x-if="loading && items.length === 0">
+            <p class="past-briefs-empty">Geçmiş yükleniyor…</p>
+        </template>
+        <template x-if="!loading && items.length === 0">
+            <p class="past-briefs-empty">Henüz başka gündem üretilmedi.</p>
+        </template>
+        <ul class="past-briefs-list">
+            <template x-for="b in visibleItems()" :key="b.date">
+                <li class="past-brief-item"
+                    :class="{ active: b.date === activeDate }">
+                    <button class="past-brief-open" @click="openDate(b.date)">
+                        <span class="past-brief-date"
+                              x-text="formatDateTR(b.date)"></span>
+                        <span class="past-brief-preview" x-text="b.preview"></span>
+                    </button>
+                    <span class="past-brief-audio" x-show="b.has_audio"
+                          title="Sesli özeti var">🔊</span>
+                </li>
+            </template>
+        </ul>
+        <div class="past-briefs-actions" x-show="!loading && items.length > 0">
+            <button class="past-briefs-more"
+                    x-show="hasMore()"
+                    @click="loadMore()"
+                    :title="'Sonraki ' + Math.min(5, remainingCount()) + ' gündem'">
+                ▾ Daha fazla göster
+                <span class="past-briefs-more-count"
+                      x-text="'(+' + remainingCount() + ')'"></span>
+            </button>
+            <button class="past-briefs-collapse"
+                    x-show="!hasMore() && items.length > 3"
+                    @click="collapse()"
+                    title="Listeyi ilk 3'e küçült">
+                ▴ Küçült
+            </button>
+        </div>
+    </div>
+</section>
+
+<style>
+    .empty-state {
+        padding: 2.25rem 1.5rem; text-align: center;
+        max-width: 32rem; margin: 0 auto;
+    }
+    .empty-state svg { display: block; margin: 0 auto; }
+
+    /* ════════════════════════════════════════════════════════════
+       Phase 31 — Tarih hero + aylık takvim + modern aksiyon grubu
+       Tüm geçişler --ease-ghibli; gradient + paper palette tutarlı.
+       ════════════════════════════════════════════════════════════ */
+    .brief-hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        margin: .25rem 0 1.75rem;
+        text-align: center;
+    }
+    .brief-hero-date {
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 18px;
+        padding: .6rem 1.1rem .75rem;
+        display: inline-flex;
+        align-items: center;
+        gap: .85rem;
+        cursor: pointer;
+        /* Phase 35-xx: 1.05 → 1.25 — gradient text + dar line-height Chromium
+           clip bug; ş/ğ/p/y descender'ları kırpılıyordu. */
+        line-height: 1.25;
+        transition: transform var(--t-base), background var(--t-base),
+                    border-color var(--t-base);
+    }
+    .brief-hero-date:hover {
+        transform: translateY(-2px);
+        background: rgba(177, 132, 76, 0.05);
+        border-color: var(--gold-border);
+    }
+    .brief-hero-date:focus-visible {
+        outline: none;
+        border-color: var(--gold-border);
+        box-shadow: 0 0 0 3px var(--gold-dim);
+    }
+    .brief-hero-date-text {
+        font-family: var(--font-display);
+        font-size: clamp(2.4rem, 5.5vw, 3.55rem);
+        font-weight: 500;
+        letter-spacing: -0.012em;
+        /* Phase 35-xx: descender safety + clip prevention */
+        line-height: 1.22;
+        padding-block: 0.05em;
+        background: linear-gradient(135deg, var(--text) 0%, var(--gold-text) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        /* Phase 35-xx: text-transform lowercase + ::first-letter uppercase
+           hack'i kaldırıldı — TR_MONTHS/TR_DAYS zaten "Mayıs/Çarşamba" Title
+           Case ve ilk char çoğunlukla rakam ("20 Mayıs..."), uppercase no-op.
+           Lowercase Türkçe locale ay/gün isimlerine zarar veriyordu. */
+    }
+    .brief-hero-chevron {
+        color: var(--gold-text);
+        flex-shrink: 0;
+        transition: transform var(--t-base);
+    }
+    .brief-hero-chevron.open { transform: rotate(180deg); }
+
+    /* Aylık takvim popover */
+    .brief-calendar {
+        width: 100%;
+        max-width: 26rem;
+        background: var(--card-bg);
+        backdrop-filter: blur(16px) saturate(140%);
+        -webkit-backdrop-filter: blur(16px) saturate(140%);
+        border: 1px solid var(--card-border);
+        border-radius: 14px;
+        padding: 1rem 1.05rem 1.05rem;
+        box-shadow:
+            0 12px 32px rgba(0, 0, 0, 0.22),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        transform-origin: top center;
+    }
+    /* Alpine x-transition keyframe sınıfları (Ghibli easing) */
+    .cal-enter { transition: all 220ms var(--ease-ghibli); }
+    .cal-enter-start { opacity: 0; transform: translateY(-6px) scale(.98); }
+    .cal-enter-end   { opacity: 1; transform: translateY(0) scale(1); }
+
+    .cal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .85rem;
+        margin-bottom: .85rem;
+    }
+    .cal-title {
+        font-family: var(--font-display);
+        font-size: 1.08rem;
+        font-weight: 500;
+        color: var(--text);
+        letter-spacing: -0.005em;
+        text-transform: capitalize;
+        flex: 1;
+        text-align: center;
+    }
+    .cal-nav {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text2);
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .cal-nav:hover {
+        color: var(--gold-text);
+        border-color: var(--gold-border);
+        background: var(--gold-dim);
+        transform: translateY(-1px);
+    }
+    .cal-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+        font-family: var(--font-mono);
+        font-size: .64rem;
+        text-transform: uppercase;
+        letter-spacing: .14em;
+        color: var(--text3);
+        text-align: center;
+        padding-bottom: .4rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: .35rem;
+    }
+    .cal-weekdays span:nth-child(6),
+    .cal-weekdays span:nth-child(7) { color: var(--gold-text); opacity: .7; }
+    .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 3px;
+    }
+    .cal-day {
+        aspect-ratio: 1 / 1;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: var(--text2);
+        font-family: var(--font-body);
+        font-size: .88rem;
+        cursor: default;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        position: relative;
+        padding: 0;
+        transition: all var(--t-fast);
+    }
+    .cal-day:disabled { cursor: default; }
+    .cal-day.weekend { color: var(--text3); }
+    .cal-day.other { color: var(--text3); opacity: .35; }
+    .cal-day.today {
+        border-color: var(--gold);
+        color: var(--gold-text);
+        font-weight: 600;
+    }
+    .cal-day.has-brief {
+        cursor: pointer;
+        color: var(--text);
+    }
+    .cal-day.has-brief:hover {
+        background: var(--gold-dim);
+        border-color: var(--gold-border);
+        transform: translateY(-1px);
+    }
+    .cal-day.is-active {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+        color: var(--bg);
+        border-color: transparent;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(196, 112, 74, 0.35);
+    }
+    .cal-day.is-active.today { color: var(--bg); }
+    .cal-day.holiday-national { color: var(--terra); }
+    .cal-day.holiday-religious { color: var(--teal-text); }
+    .cal-day-num { line-height: 1; }
+    .cal-day-marks {
+        display: flex;
+        gap: 2px;
+        height: 4px;
+        align-items: center;
+    }
+    .dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--gold);
+        display: inline-block;
+    }
+    .dot-brief { background: var(--gold); }
+    .dot-national { background: var(--terra); }
+    .dot-religious { background: var(--teal-text); }
+    .cal-day.is-active .dot { background: var(--bg); opacity: .8; }
+    .cal-legend {
+        display: flex;
+        justify-content: center;
+        gap: 1.1rem;
+        margin-top: .9rem;
+        padding-top: .7rem;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono);
+        font-size: .64rem;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        color: var(--text3);
+        flex-wrap: wrap;
+    }
+    .cal-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+    }
+    .cal-legend .dot { width: 6px; height: 6px; }
+
+    /* Modern aksiyon butonları (pill) */
+    .brief-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+        justify-content: center;
+        align-items: center;
+    }
+    .btn-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        padding: .52rem 1rem;
+        font-family: var(--font-ui);
+        font-size: .82rem;
+        font-weight: 500;
+        line-height: 1;
+        border-radius: 999px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all var(--t-base);
+        white-space: nowrap;
+    }
+    .btn-pill svg { flex-shrink: 0; }
+    .btn-pill-primary {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+        color: var(--bg);
+        box-shadow: 0 3px 12px rgba(196, 112, 74, 0.28);
+    }
+    .btn-pill-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(196, 112, 74, 0.42);
+    }
+    .btn-pill-primary:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    .btn-pill-ghost {
+        background: rgba(177, 132, 76, 0.04);
+        color: var(--text2);
+        border-color: var(--border2);
+    }
+    .btn-pill-ghost:hover:not(:disabled) {
+        color: var(--gold-text);
+        border-color: var(--gold-border);
+        background: rgba(177, 132, 76, 0.10);
+        transform: translateY(-1px);
+    }
+    .btn-pill-ghost.active {
+        color: var(--gold-text);
+        border-color: var(--gold-border);
+        background: rgba(177, 132, 76, 0.13);
+    }
+    .btn-pill-ghost:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .btn-pill-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text3);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .btn-pill-icon:hover {
+        color: var(--gold-text);
+        border-color: var(--gold-border);
+        background: rgba(177, 132, 76, 0.06);
+        transform: translateY(-1px);
+    }
+    .btn-pill-icon.saved {
+        color: var(--gold);
+        border-color: var(--gold-border);
+    }
+
+    @media (max-width: 720px) {
+        .brief-actions { gap: .4rem; }
+        .btn-pill { padding: .45rem .8rem; font-size: .78rem; }
+        .brief-calendar { max-width: 100%; padding: .85rem .85rem 1rem; }
+    }
+
+    /* Phase 30: custom audio player */
+    .brief-audio-player {
+        display: flex;
+        align-items: center;
+        gap: .85rem;
+        margin: 1.1rem 1.2rem 0;
+        padding: .65rem .9rem;
+        background: var(--bg2);
+        border: 1px solid var(--gold-border);
+        border-radius: 999px;
+        animation: rise .3s var(--ease-ghibli) both;
+    }
+    .brief-audio-player .player-play {
+        flex-shrink: 0;
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+        color: var(--bg);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform var(--t-fast), box-shadow var(--t-fast);
+        box-shadow: 0 2px 8px rgba(196, 112, 74, 0.25);
+    }
+    .brief-audio-player .player-play:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 14px rgba(196, 112, 74, 0.4);
+    }
+    .brief-audio-player .player-progress {
+        flex: 1;
+        height: 6px;
+        background: var(--bg3);
+        border-radius: 999px;
+        cursor: pointer;
+        overflow: hidden;
+        transition: height var(--t-fast);
+    }
+    .brief-audio-player .player-progress:hover { height: 8px; }
+    .brief-audio-player .player-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--gold), var(--gold2));
+        border-radius: 999px;
+        transition: width 100ms linear;
+    }
+    .brief-audio-player .player-time {
+        flex-shrink: 0;
+        font-family: var(--font-mono);
+        font-size: .76rem;
+        color: var(--text2);
+        font-variant-numeric: tabular-nums;
+        min-width: 5.5rem;
+        text-align: right;
+    }
+    .brief-audio-player .player-speed {
+        flex-shrink: 0;
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text2);
+        padding: .25rem .55rem;
+        border-radius: 999px;
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--t-fast);
+        min-width: 2.6rem;
+    }
+    .brief-audio-player .player-speed:hover {
+        color: var(--gold-text);
+        border-color: var(--gold-border);
+    }
+    .brief-audio-player .player-download {
+        flex-shrink: 0;
+        color: var(--text3);
+        padding: .25rem;
+        border-radius: 4px;
+        transition: color var(--t-fast);
+        display: inline-flex;
+        align-items: center;
+    }
+    .brief-audio-player .player-download:hover { color: var(--gold-text); }
+
+    /* Phase 30: önceki gündemler listesi */
+    .past-briefs {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+    .past-briefs-title {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: var(--text);
+        margin: 0 0 .85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+    }
+    .past-briefs-empty {
+        margin: .35rem 0;
+        color: var(--text3);
+        font-size: .85rem;
+        font-style: italic;
+    }
+    .past-briefs-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: .4rem;
+    }
+    .past-brief-item {
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+        padding: .55rem .85rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        transition: border-color var(--t-fast), background var(--t-fast),
+                    transform var(--t-fast);
+    }
+    .past-brief-item:hover {
+        border-color: var(--gold-border);
+        background: rgba(177, 132, 76, 0.04);
+        transform: translateY(-1px);
+    }
+    .past-brief-item.active {
+        border-color: var(--gold);
+        background: rgba(196, 112, 74, 0.08);
+    }
+    .past-brief-open {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+        min-width: 0;
+    }
+    .past-brief-date {
+        font-family: var(--font-display);
+        font-size: .98rem;
+        color: var(--text);
+        /* Phase 35-xx: lowercase + ::first-letter uppercase hack kaldırıldı;
+           TR_MONTHS/TR_DAYS native Title Case dönüyor. */
+    }
+    .past-brief-preview {
+        font-size: .82rem;
+        color: var(--text3);
+        line-height: 1.4;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .past-brief-audio {
+        flex-shrink: 0;
+        font-size: .92rem;
+        opacity: .7;
+    }
+    /* Phase 32-ii: pagination */
+    .past-briefs-count {
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        font-weight: 400;
+        color: var(--text3);
+        letter-spacing: .04em;
+    }
+    .past-briefs-actions {
+        margin-top: .85rem;
+        display: flex;
+        gap: .65rem;
+        justify-content: center;
+    }
+    .past-briefs-more,
+    .past-briefs-collapse {
+        background: transparent;
+        border: 1px dashed var(--border2);
+        color: var(--text2);
+        font-family: var(--font-ui);
+        font-size: .82rem;
+        padding: .45rem 1.1rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .past-briefs-more:hover,
+    .past-briefs-collapse:hover {
+        background: var(--hover);
+        border-color: var(--gold-border);
+        color: var(--text);
+    }
+    .past-briefs-more-count {
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        color: var(--text3);
+        margin-left: .35rem;
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       Phase 32-ii: Akış (feed) modernizasyonu — _base.html override
+       ──────────────────────────────────────────────────────────────
+       Mevcut grid layout uzun başlık + uzun source isminde sıkıştığı için
+       2-line card layout'a geçildi: ÜST → metadata (time · cat · source),
+       ALT → title (multi-line wrap, occlusion yok), expanded → summary.
+       Kart hover'da ışıma, expanded'da gold border.
+       ════════════════════════════════════════════════════════════ */
+    .feed { padding: 0; overflow: visible; }
+    .feed .entry {
+        border-top: 1px solid var(--border);
+        padding: .85rem 1.1rem;
+        cursor: pointer;
+        transition: background var(--t-fast), border-color var(--t-fast);
+        position: relative;
+    }
+    .feed .entry:first-child { border-top: none; }
+    .feed .entry:hover { background: var(--hover); }
+    .feed .entry.expanded {
+        background: rgba(196, 112, 74, 0.04);
+        border-left: 2px solid var(--gold);
+        padding-left: calc(1.1rem - 2px);
+    }
+    .feed .head {
+        display: flex;
+        flex-direction: column;
+        gap: .4rem;
+    }
+    /* Metadata satırı (üst): time + cat pill + source */
+    .feed .head .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .55rem;
+        font-family: var(--font-mono);
+        font-size: .72rem;
+    }
+    .feed .head .time {
+        color: var(--text3);
+        font-size: .76rem;
+        letter-spacing: .02em;
+    }
+    .feed .head .cat {
+        display: inline-block;
+        padding: .12rem .55rem;
+        background: var(--gold-dim);
+        color: var(--gold-text);
+        text-transform: uppercase;
+        font-size: .64rem;
+        letter-spacing: .12em;
+        border-radius: 999px;
+        border: 1px solid var(--gold-border);
+        white-space: nowrap;
+    }
+    .feed .head .source {
+        color: var(--text2);
+        font-size: .76rem;
+        max-width: 60%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .feed .head .source::before {
+        content: "·";
+        margin-right: .35rem;
+        color: var(--text3);
+    }
+    /* Title satırı (alt): full-width, multi-line wrap, body font */
+    .feed .head .title {
+        font-family: var(--font-body);
+        font-size: 1rem;
+        line-height: 1.45;
+        color: var(--text);
+    }
+    .feed .head .title a {
+        color: var(--text);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color var(--t-fast), color var(--t-fast);
+    }
+    .feed .head .title a:hover {
+        color: var(--gold-text);
+        border-bottom-color: var(--gold-border);
+    }
+    .feed .head .title .title-en-hint {
+        font-size: .72rem;
+        color: var(--text3);
+        font-style: italic;
+        font-family: var(--font-mono);
+        margin-left: .4rem;
+    }
+
+    /* Summary — title kolonu align kaldırıldı (artık tek kolon) */
+    .feed .summary {
+        margin: .55rem 0 0;
+        padding-left: 0;
+        font-family: var(--font-body);
+        font-size: .9rem;
+        line-height: 1.55;
+        color: var(--text2);
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        transition: color var(--t-fast);
+    }
+    .feed .entry.expanded .summary {
+        -webkit-line-clamp: unset;
+        color: var(--text);
+    }
+    .feed .summary-empty {
+        margin: .5rem 0 0;
+        padding-left: 0;
+    }
+
+    /* Phase 32-ii: "Detaylı analiz" CTA in expanded entry — layout */
+    .feed .entry .analyze-cta {
+        margin-top: .8rem;
+        display: flex;
+        gap: .55rem;
+        flex-wrap: wrap;
+    }
+    /* Phase 35-xiii: `.btn-deep-analyze` stilleri `_base.html`'e taşındı
+       (global). Burada sadece layout helper `.analyze-cta` kalır;
+       index.html'de bu buton HTML'de kullanılmıyor, sadece canli-akis.html
+       kullanıyor — CSS global olmalıydı. Önceki dead-local CSS Phase 34-ii
+       "Canlı Akış index'ten standalone /canli-akis'e taşıma" sırasında
+       unutulmuş kalmıştı. */
+
+    .brief-content { font-family: var(--font-serif, Georgia, serif); line-height: 1.6; }
+    .brief-content h2 { font-size: 1.15rem; margin: 1.4rem 0 .55rem; }
+    .brief-content h3 {
+        font-size: 1rem; margin: 1.2rem 0 .45rem;
+        color: var(--text2);
+        border-bottom: 1px solid var(--border);
+        padding-bottom: .25rem;
+    }
+    .brief-content h3:first-child { margin-top: 0; }
+    .brief-content p { margin: .55rem 0; color: var(--text2); }
+    .brief-content ul { margin: .35rem 0 .85rem; padding-left: 1.4rem; }
+    .brief-content li { margin: .3rem 0; color: var(--text2); }
+    .brief-content strong { color: var(--text); }
+
+    /* Phase 24: brief'teki kaynakları derinlemesine analiz et CTA listesi */
+    .brief-analyze-cta {
+        margin: 1.5rem 0 .5rem;
+        padding: 1rem 1.2rem 1.1rem;
+        background: rgba(177, 132, 76, 0.06);
+        border: 1px dashed rgba(177, 132, 76, 0.4);
+        border-radius: 8px;
+    }
+    .brief-analyze-title {
+        margin: 0 0 .25rem;
+        font-size: .95rem;
+        color: var(--text);
+    }
+    .brief-analyze-sub {
+        margin: 0 0 .85rem;
+        font-size: .82rem;
+        color: var(--text3);
+    }
+    .brief-analyze-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: .35rem;
+    }
+    .brief-analyze-item {
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+        padding: .45rem .65rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        transition: border-color var(--t-fast), background var(--t-fast);
+    }
+    .brief-analyze-item:hover {
+        border-color: var(--gold-border);
+        background: rgba(177, 132, 76, 0.04);
+    }
+    .brief-analyze-icon {
+        flex-shrink: 0;
+        font-size: 1rem;
+    }
+    .brief-analyze-label {
+        flex: 1;
+        font-size: .85rem;
+        color: var(--text2);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.35;
+    }
+    .brief-analyze-go {
+        flex-shrink: 0;
+        font-family: var(--font-sans, inherit);
+        font-size: .78rem;
+        color: var(--gold-text);
+        text-decoration: none;
+        padding: .25rem .65rem;
+        border: 1px solid var(--gold-border);
+        border-radius: 4px;
+        background: rgba(177, 132, 76, 0.08);
+        transition: all var(--t-fast);
+    }
+    .brief-analyze-go:hover {
+        background: rgba(177, 132, 76, 0.2);
+        color: var(--text);
+        border-color: rgba(177, 132, 76, 0.7);
+    }
+</style>
+
+<script>
+// Phase 35-xxiv: canonical kategoriler `data/feeds.yaml`'a paralel.
+// `briefSources()` aşağıda kendi içinde detaylı versiyonu kullanır
+// (order field'ı dropdown'ı stabil sıralar).
+const CATEGORY_LABELS = {
+    "turk_hukuku":          "Türk Hukuku",
+    "dunya_ai":             "Dünya AI",
+    "turkiye_ai":           "Türkiye AI",
+    "legaltech":            "Legaltech",
+    "muhakeme_stack":       "Muhakeme Stack",
+    "china_ai_models":      "Çin AI Modelleri",
+    "east_asia_ai_models":  "Doğu Asya AI Modelleri",
+    "open_weight_models":   "Açık Ağırlık Modeller",
+};
+
+function syncAllButton() {
+    return {
+        syncing: false,
+        elapsed: 0,
+        timer: null,
+        lastResult: "",
+        async trigger() {
+            if (this.syncing) return;
+            if (!confirm("Tüm aktif haber kaynaklarını şimdi yenilemek istiyor musun? (~1-2 dk)")) return;
+            this.syncing = true;
+            this.lastResult = "";
+            const start = Date.now();
+            this.timer = setInterval(() => {
+                this.elapsed = Math.floor((Date.now() - start) / 1000);
+            }, 1000);
+            try {
+                const r = await fetch("/api/sources/sync-all", { method: "POST" });
+                if (!r.ok) {
+                    this.lastResult = "Yenileme tetiklenemedi: HTTP " + r.status;
+                    return;
+                }
+                // Background task, polling yok — ~1-2 dk sonra sayfayı yenilemek mantıklı
+                // KPI bar'ın "Son 24 Saat" sayısını izleyelim: 90 sn sonra reload
+                setTimeout(() => {
+                    this.lastResult = "Yenileme tamamlandı, sayfa güncellendi.";
+                    window.location.reload();
+                }, 90 * 1000);
+            } catch (e) {
+                this.lastResult = "İstek başarısız: " + e;
+            } finally {
+                // Buton ~90 sn disabled kalır, sonra reload zaten state'i sıfırlar
+                setTimeout(() => {
+                    clearInterval(this.timer);
+                }, 90 * 1000);
+            }
+        },
+    };
+}
+
+
+// Phase 30: TR uzun tarih formatı — "10 Mayıs 2026, Pazar"
+const TR_MONTHS = [
+    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+];
+const TR_DAYS = [
+    "Pazar", "Pazartesi", "Salı", "Çarşamba",
+    "Perşembe", "Cuma", "Cumartesi",
+];
+function formatDateTR(iso) {
+    if (!iso) return "";
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return iso;
+    const [, y, mo, d] = m;
+    const dt = new Date(Date.UTC(+y, +mo - 1, +d));
+    return `${+d} ${TR_MONTHS[+mo - 1]} ${y}, ${TR_DAYS[dt.getUTCDay()]}`;
+}
+
+// Phase 31: Türkiye milli + dini bayram takvimi
+const TR_NATIONAL_HOLIDAYS = {
+    "01-01": "Yılbaşı",
+    "04-23": "Ulusal Egemenlik ve Çocuk Bayramı",
+    "05-01": "Emek ve Dayanışma Günü",
+    "05-19": "Atatürk'ü Anma, Gençlik ve Spor Bayramı",
+    "07-15": "Demokrasi ve Milli Birlik Günü",
+    "08-30": "Zafer Bayramı",
+    "10-29": "Cumhuriyet Bayramı",
+};
+const TR_RELIGIOUS_HOLIDAYS = {
+    "2024-04-09": "Ramazan Bayramı Arifesi",
+    "2024-04-10": "Ramazan Bayramı 1. Gün",
+    "2024-04-11": "Ramazan Bayramı 2. Gün",
+    "2024-04-12": "Ramazan Bayramı 3. Gün",
+    "2024-06-15": "Kurban Bayramı Arifesi",
+    "2024-06-16": "Kurban Bayramı 1. Gün",
+    "2024-06-17": "Kurban Bayramı 2. Gün",
+    "2024-06-18": "Kurban Bayramı 3. Gün",
+    "2024-06-19": "Kurban Bayramı 4. Gün",
+    "2025-03-29": "Ramazan Bayramı Arifesi",
+    "2025-03-30": "Ramazan Bayramı 1. Gün",
+    "2025-03-31": "Ramazan Bayramı 2. Gün",
+    "2025-04-01": "Ramazan Bayramı 3. Gün",
+    "2025-06-05": "Kurban Bayramı Arifesi",
+    "2025-06-06": "Kurban Bayramı 1. Gün",
+    "2025-06-07": "Kurban Bayramı 2. Gün",
+    "2025-06-08": "Kurban Bayramı 3. Gün",
+    "2025-06-09": "Kurban Bayramı 4. Gün",
+    "2026-03-19": "Ramazan Bayramı Arifesi",
+    "2026-03-20": "Ramazan Bayramı 1. Gün",
+    "2026-03-21": "Ramazan Bayramı 2. Gün",
+    "2026-03-22": "Ramazan Bayramı 3. Gün",
+    "2026-05-26": "Kurban Bayramı Arifesi",
+    "2026-05-27": "Kurban Bayramı 1. Gün",
+    "2026-05-28": "Kurban Bayramı 2. Gün",
+    "2026-05-29": "Kurban Bayramı 3. Gün",
+    "2026-05-30": "Kurban Bayramı 4. Gün",
+    "2027-03-08": "Ramazan Bayramı Arifesi",
+    "2027-03-09": "Ramazan Bayramı 1. Gün",
+    "2027-03-10": "Ramazan Bayramı 2. Gün",
+    "2027-03-11": "Ramazan Bayramı 3. Gün",
+    "2027-05-15": "Kurban Bayramı Arifesi",
+    "2027-05-16": "Kurban Bayramı 1. Gün",
+    "2027-05-17": "Kurban Bayramı 2. Gün",
+    "2027-05-18": "Kurban Bayramı 3. Gün",
+    "2027-05-19": "Kurban Bayramı 4. Gün",
+};
+function holidayFor(year, month, day) {
+    const mm = String(month + 1).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    const iso = `${year}-${mm}-${dd}`;
+    if (TR_RELIGIOUS_HOLIDAYS[iso]) {
+        return { name: TR_RELIGIOUS_HOLIDAYS[iso], type: "religious" };
+    }
+    const md = `${mm}-${dd}`;
+    if (TR_NATIONAL_HOLIDAYS[md]) {
+        return { name: TR_NATIONAL_HOLIDAYS[md], type: "national" };
+    }
+    return null;
+}
+function todayIso() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${da}`;
+}
+
+function briefPanel() {
+    const now = new Date();
+    return {
+        loading: true,
+        data: null,
+        viewingDate: null,
+        generating: false,
+        // confirmingForce + confirmTimer Phase 32-ii'de kaldırıldı —
+        // "Yenile" tıklaması tek tık ile force=true gönderir, ek onay yok.
+        pollTimer: null,
+        briefAudioGenerating: false,
+        briefAudioReady: false,
+        briefAudioUrl: null,
+        briefAudioElapsed: 0,
+        briefAudioTimer: null,
+        briefAudioPollTimer: null,
+        // Phase 31: aylık takvim state
+        showCalendar: false,
+        calYear: now.getFullYear(),
+        calMonth: now.getMonth(),
+        briefDates: {}, // { "YYYY-MM-DD": true }
+        briefAnalyzeIcon(t) {
+            return ({ youtube: "📺", github: "📦", arxiv: "📄" })[t] || "🔗";
+        },
+        formatDateTR,
+        // ── Phase 31: takvim helpers ───────────────────────────────
+        toggleCalendar() {
+            this.showCalendar = !this.showCalendar;
+            if (this.showCalendar) {
+                const focus = this.viewingDate || this.data?.date || todayIso();
+                const m = focus.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                if (m) {
+                    this.calYear = +m[1];
+                    this.calMonth = +m[2] - 1;
+                }
+                if (Object.keys(this.briefDates).length === 0) {
+                    this.loadBriefDates();
+                }
+            }
+        },
+        async loadBriefDates() {
+            try {
+                const r = await fetch("/api/briefs?limit=400");
+                const body = await r.json();
+                const map = {};
+                for (const b of (body.items || [])) map[b.date] = true;
+                this.briefDates = map;
+            } catch (_) { /* sessiz: takvim çalışmaya devam eder */ }
+        },
+        shiftMonth(delta) {
+            let m = this.calMonth + delta;
+            let y = this.calYear;
+            while (m < 0)  { m += 12; y -= 1; }
+            while (m > 11) { m -= 12; y += 1; }
+            this.calYear = y;
+            this.calMonth = m;
+        },
+        calendarTitle() {
+            return `${TR_MONTHS[this.calMonth]} ${this.calYear}`;
+        },
+        activeIso() {
+            return this.viewingDate || this.data?.date || null;
+        },
+        cellTitle(cell) {
+            const parts = [];
+            if (cell.holiday) parts.push(cell.holiday.name);
+            if (cell.hasBrief) parts.push("Bu günün gündemi var");
+            else if (cell.isToday) parts.push("Bugün");
+            return parts.join(" — ");
+        },
+        monthGrid() {
+            const y = this.calYear;
+            const m = this.calMonth;
+            const today = todayIso();
+            const first = new Date(Date.UTC(y, m, 1));
+            // JS gün: 0=Pazar..6=Cumartesi → TR Pzt-Paz: (d+6)%7
+            const startOffset = (first.getUTCDay() + 6) % 7;
+            const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+            const prevLast = new Date(Date.UTC(y, m, 0)).getUTCDate();
+            const out = [];
+            // Önceki ay kuyruğu
+            for (let i = startOffset - 1; i >= 0; i--) {
+                const day = prevLast - i;
+                const dt = new Date(Date.UTC(y, m - 1, day));
+                out.push(this._buildCell(dt, true, today));
+            }
+            // Mevcut ay
+            for (let day = 1; day <= daysInMonth; day++) {
+                out.push(this._buildCell(new Date(Date.UTC(y, m, day)), false, today));
+            }
+            // Sonraki ay başı (42 hücreye tamamla)
+            const remaining = 42 - out.length;
+            for (let day = 1; day <= remaining; day++) {
+                const dt = new Date(Date.UTC(y, m + 1, day));
+                out.push(this._buildCell(dt, true, today));
+            }
+            return out;
+        },
+        _buildCell(dt, otherMonth, todayStr) {
+            const yy = dt.getUTCFullYear();
+            const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+            const dd = String(dt.getUTCDate()).padStart(2, "0");
+            const iso = `${yy}-${mm}-${dd}`;
+            const wd = dt.getUTCDay(); // 0=Pazar, 6=Cumartesi
+            return {
+                iso,
+                year: yy,
+                month: dt.getUTCMonth(),
+                day: dt.getUTCDate(),
+                otherMonth,
+                isToday: iso === todayStr,
+                weekend: wd === 0 || wd === 6,
+                hasBrief: !!this.briefDates[iso],
+                holiday: holidayFor(yy, dt.getUTCMonth(), dt.getUTCDate()),
+            };
+        },
+        onCalendarDayClick(cell) {
+            if (cell.hasBrief) {
+                this.showCalendar = false;
+                this.loadByDate(cell.iso);
+            } else if (cell.isToday) {
+                this.showCalendar = false;
+                this.goToToday();
+            }
+            // Aksi halde no-op (disabled)
+        },
+        goToToday() {
+            this.viewingDate = null;
+            this.showCalendar = false;
+            const today = todayIso();
+            this.calYear = +today.slice(0, 4);
+            this.calMonth = +today.slice(5, 7) - 1;
+            this.load();
+        },
+        async load() {
+            try {
+                const url = this.viewingDate
+                    ? `/api/brief?date=${encodeURIComponent(this.viewingDate)}`
+                    : "/api/brief";
+                const r = await fetch(url);
+                this.data = await r.json();
+                this.generating = !!this.data?.generating;
+                this.briefAudioReady = false;
+                this.briefAudioUrl = null;
+                if (this.data?.audio_url) {
+                    this.briefAudioReady = true;
+                    this.briefAudioUrl = this.data.audio_url;
+                }
+                window.dispatchEvent(new CustomEvent("brief-loaded", {
+                    detail: { date: this.data?.date || null },
+                }));
+                // İlk mount'ta takvim işaretçilerini seed et
+                if (Object.keys(this.briefDates).length === 0) {
+                    this.loadBriefDates();
+                }
+            } catch (_) {
+                this.data = { error: "load_failed" };
+            } finally {
+                this.loading = false;
+            }
+        },
+        async loadByDate(date) {
+            this.viewingDate = date;
+            this.loading = true;
+            clearInterval(this.pollTimer);
+            await this.load();
+            const sec = document.querySelector(".block .brief");
+            if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+        buttonLabel() {
+            if (this.viewingDate) return "↩ Bugüne dön";
+            if (this.generating) {
+                const sec = this.data?.elapsed_sec || 0;
+                return `Üretiliyor… ${sec} sn`;
+            }
+            if (this.data?.last_error && !this.data?.top_brief) return "Tekrar dene";
+            // Phase 32-ii: "Yeniden üret" + confirm-dance kaldırıldı.
+            // Brief varsa tek tık ile sessizce force=true regenerate.
+            if (this.data?.top_brief) return "✨ Yenile";
+            return "Bugünün gündemini üret";
+        },
+        async onGenerate() {
+            // Yeniden üret yalnız bugünün gündemine uygulanır — geçmiş gündem
+            // görüntülerken viewingDate set, üretim devre dışı
+            if (this.viewingDate) {
+                this.viewingDate = null;
+                await this.load();
+                return;
+            }
+            // Phase 32-ii: Brief varsa otomatik force=true (confirm dance yok).
+            // "Yenile" tıklandı → eski brief üzerine yaz, ses dosyaları temizlensin.
+            const force = !!this.data?.top_brief;
+            if (force) {
+                this.briefAudioReady = false;
+                this.briefAudioUrl = null;
+                this.briefAudioGenerating = false;
+                clearInterval(this.briefAudioTimer);
+                clearInterval(this.briefAudioPollTimer);
+            }
+            try {
+                const r = await fetch("/api/brief/generate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ force }),
+                });
+                if (r.status === 503) {
+                    alert("Claude CLI bulunamadı — kurulum gerekli.");
+                    return;
+                }
+                if (r.status === 409) {
+                    const body = await r.json();
+                    if (body?.detail?.error === "in_progress") {
+                        // Başka bir üretim sürüyor, polling'e geç
+                        this.startPolling();
+                        return;
+                    }
+                    if (body?.detail?.error === "already_exists") {
+                        // Should never happen if force was true; reload state
+                        await this.load();
+                        return;
+                    }
+                }
+                this.startPolling();
+            } catch (e) {
+                alert("Üretim başlatılamadı: " + e);
+            }
+        },
+        startPolling() {
+            this.generating = true;
+            clearInterval(this.pollTimer);
+            this.pollTimer = setInterval(async () => {
+                await this.load();
+                if (!this.generating) {
+                    clearInterval(this.pollTimer);
+                    // Phase 31: üretim bittiğinde takvim işaretçilerini tazele
+                    this.loadBriefDates();
+                }
+            }, 2000);
+            // Hard ceiling: 12 dk sonra polling kes (lockfile stale 10 dk)
+            setTimeout(() => {
+                clearInterval(this.pollTimer);
+                this.generating = false;
+            }, 12 * 60 * 1000);
+        },
+        async onBriefAudio() {
+            // Phase 22-iii: brief'i edge-tts ile sesli okutma
+            if (this.briefAudioReady && this.briefAudioUrl) {
+                // Audio zaten hazır → player aşağıda görünüyor
+                return;
+            }
+            if (this.briefAudioGenerating) return;
+            if (!this.data?.date || !this.data?.top_brief) {
+                alert("Önce brief'in hazır olması gerekiyor.");
+                return;
+            }
+            this.briefAudioGenerating = true;
+            this.briefAudioElapsed = 0;
+            const start = Date.now();
+            this.briefAudioTimer = setInterval(() => {
+                this.briefAudioElapsed = Math.floor((Date.now() - start) / 1000);
+            }, 1000);
+            try {
+                const r = await fetch("/api/brief/audio", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ date: this.data.date }),
+                });
+                if (!r.ok) {
+                    alert("Sesli okuma başlatılamadı: HTTP " + r.status);
+                    this.briefAudioGenerating = false;
+                    clearInterval(this.briefAudioTimer);
+                    return;
+                }
+                const body = await r.json();
+                if (body.status === "already_exists" && body.audio_url) {
+                    this.briefAudioGenerating = false;
+                    clearInterval(this.briefAudioTimer);
+                    this.briefAudioReady = true;
+                    this.briefAudioUrl = body.audio_url;
+                    return;
+                }
+                // Polling: 3 sn'de bir /api/brief'i çek, audio_url geldi mi
+                this.briefAudioPollTimer = setInterval(async () => {
+                    try {
+                        const ck = await fetch("/api/brief");
+                        const cb = await ck.json();
+                        if (cb?.audio_url) {
+                            this.briefAudioReady = true;
+                            this.briefAudioUrl = cb.audio_url;
+                            this.briefAudioGenerating = false;
+                            clearInterval(this.briefAudioTimer);
+                            clearInterval(this.briefAudioPollTimer);
+                        }
+                    } catch (_) {}
+                }, 3000);
+                // Phase 32-ii: 10 dk hard ceiling (eski 5dk → podcast 3-spiker
+                // synthesis + ffmpeg concat ~3-4dk gerçekçi, güvenlik payı).
+                setTimeout(() => {
+                    if (this.briefAudioGenerating) {
+                        this.briefAudioGenerating = false;
+                        clearInterval(this.briefAudioTimer);
+                        clearInterval(this.briefAudioPollTimer);
+                        if (!this.briefAudioReady) {
+                            alert("Sesli podcast üretimi 10 dakikayı aştı.");
+                        }
+                    }
+                }, 10 * 60 * 1000);
+            } catch (e) {
+                alert("İstek başarısız: " + e);
+                this.briefAudioGenerating = false;
+                clearInterval(this.briefAudioTimer);
+            }
+        },
+        async toggleBriefBookmark() {
+            // Phase 13: brief'i kütüphaneye ekle/çıkar
+            if (!this.data?.date) return;
+            if (this.data.in_library) {
+                if (!confirm("Brief kütüphaneden çıkarılsın mı?")) return;
+                try {
+                    const r = await fetch(`/api/library/${this.data.library_item_id}`, {
+                        method: "DELETE",
+                    });
+                    if (r.ok) {
+                        this.data.in_library = false;
+                        this.data.library_item_id = null;
+                    }
+                } catch (e) {
+                    alert("Silme başarısız: " + e);
+                }
+                return;
+            }
+            try {
+                const r = await fetch("/api/library", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        item_type: "brief",
+                        brief_date: this.data.date,
+                        note: null,
+                    }),
+                });
+                if (r.status === 201) {
+                    const body = await r.json();
+                    this.data.in_library = true;
+                    this.data.library_item_id = body.id;
+                } else if (r.status === 409) {
+                    const body = await r.json();
+                    this.data.in_library = true;
+                    this.data.library_item_id = body.detail?.id;
+                } else {
+                    alert("Brief kaydedilemedi: " + r.status);
+                }
+            } catch (e) {
+                alert("İstek başarısız: " + e);
+            }
+        },
+        renderMarkdown(text) {
+            // Hafif markdown → HTML; tam parser değil, sadece görünüm.
+            // h2/h3 başlıklar, listeler, bold, paragraflar, ve
+            // [text](url) → <a target="_blank" rel="noopener"> (Phase 15-ii).
+            if (!text) return "";
+            const escape = (s) => s.replace(/[&<>"']/g, (m) => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+            }[m]));
+            // Inline transforms: önce **bold**, sonra [text](url).
+            // URL whitelist: sadece http(s) — javascript: ve diğer scheme'ler skip.
+            const inline = (s) => {
+                let out = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+                out = out.replace(
+                    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+                    (_m, label, url) =>
+                        `<a href="${url}" target="_blank" rel="noopener">${label}</a>`,
+                );
+                return out;
+            };
+            const lines = text.split("\n");
+            let html = "";
+            let inList = false;
+            for (const raw of lines) {
+                const line = raw.trimEnd();
+                if (line.startsWith("### ")) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h3>${escape(line.slice(4))}</h3>`;
+                } else if (line.startsWith("## ")) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h2>${escape(line.slice(3))}</h2>`;
+                } else if (line.startsWith("- ")) {
+                    if (!inList) { html += "<ul>"; inList = true; }
+                    html += `<li>${inline(escape(line.slice(2)))}</li>`;
+                } else if (line === "") {
+                    if (inList) { html += "</ul>"; inList = false; }
+                } else {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<p>${inline(escape(line))}</p>`;
+                }
+            }
+            if (inList) html += "</ul>";
+            return html;
+        },
+    };
+}
+
+// Phase 30: özel audio player component
+function audioPlayer(src) {
+    return {
+        src,
+        playing: false,
+        current: 0,
+        duration: 0,
+        speed: 1,
+        speedSteps: [1, 1.25, 1.5, 2],
+        bind() {
+            this.$refs.el.src = this.src;
+            this.$refs.el.playbackRate = this.speed;
+        },
+        get progressPct() {
+            if (!this.duration) return 0;
+            return Math.min(100, (this.current / this.duration) * 100);
+        },
+        toggle() {
+            const a = this.$refs.el;
+            if (a.paused) a.play();
+            else a.pause();
+        },
+        onLoaded() {
+            this.duration = this.$refs.el.duration || 0;
+        },
+        onTime() {
+            this.current = this.$refs.el.currentTime || 0;
+        },
+        onEnded() {
+            this.playing = false;
+            this.current = 0;
+        },
+        seek(ev) {
+            const bar = ev.currentTarget;
+            const rect = bar.getBoundingClientRect();
+            const ratio = (ev.clientX - rect.left) / rect.width;
+            const t = Math.max(0, Math.min(1, ratio)) * (this.duration || 0);
+            this.$refs.el.currentTime = t;
+            this.current = t;
+        },
+        cycleSpeed() {
+            const i = this.speedSteps.indexOf(this.speed);
+            this.speed = this.speedSteps[(i + 1) % this.speedSteps.length];
+            this.$refs.el.playbackRate = this.speed;
+        },
+        fmtTime(t) {
+            if (!t || !isFinite(t)) return "0:00";
+            const m = Math.floor(t / 60);
+            const s = Math.floor(t % 60).toString().padStart(2, "0");
+            return `${m}:${s}`;
+        },
+    };
+}
+
+// Phase 30: önceki gündemler listesi
+// Phase 32-ii: default ilk 3 göster + "Daha fazla göster" pagination
+const PAST_BRIEFS_INITIAL = 3;
+const PAST_BRIEFS_STEP = 5;
+function pastBriefs() {
+    return {
+        loading: true,
+        items: [],
+        visibleCount: PAST_BRIEFS_INITIAL,
+        activeDate: null,
+        formatDateTR,
+        async load() {
+            this.loading = true;
+            try {
+                const r = await fetch("/api/briefs?limit=20");
+                const body = await r.json();
+                this.items = body.items || [];
+                // visibleCount'u reset etme — kullanıcı tarafından "Daha fazla göster"
+                // tıklandıysa state korunsun, sadece initial yüklemede default 3
+                if (this.visibleCount === PAST_BRIEFS_INITIAL) {
+                    this.visibleCount = Math.min(PAST_BRIEFS_INITIAL, this.items.length);
+                }
+            } catch (_) {
+                this.items = [];
+            } finally {
+                this.loading = false;
+            }
+            // Aktif tarih sinyalini briefPanel'den al
+            window.addEventListener("brief-loaded", (e) => {
+                this.activeDate = e.detail?.date || null;
+            });
+        },
+        visibleItems() {
+            return this.items.slice(0, this.visibleCount);
+        },
+        hasMore() {
+            return this.items.length > this.visibleCount;
+        },
+        remainingCount() {
+            return Math.max(0, this.items.length - this.visibleCount);
+        },
+        loadMore() {
+            this.visibleCount = Math.min(
+                this.visibleCount + PAST_BRIEFS_STEP,
+                this.items.length,
+            );
+        },
+        collapse() {
+            this.visibleCount = Math.min(PAST_BRIEFS_INITIAL, this.items.length);
+        },
+        openDate(date) {
+            // briefPanel x-data'sına ulaş ve loadByDate çağır
+            const sec = document.querySelector('[x-data^="briefPanel"]');
+            if (sec && sec._x_dataStack) {
+                const stack = sec._x_dataStack[0];
+                if (stack && typeof stack.loadByDate === "function") {
+                    stack.loadByDate(date);
+                    this.activeDate = date;
+                    return;
+                }
+            }
+            // Fallback: query param ile reload
+            window.location.href = `/?date=${encodeURIComponent(date)}`;
+        },
+    };
+}
+
+function briefSources(sources) {
+    // Phase 33-i + 35-xxiv: kategori bazlı gruplandırılmış kaynak accordion.
+    // Canonical kategoriler `data/feeds.yaml` ile paralel; eski legacy
+    // anahtarlar (resmi_mevzuat, tr_hukuk, tr_avukat, tr_ai, acik_kaynak_ai)
+    // production'da kullanılmıyor, kaldırıldı.
+    const CATEGORY_LABELS = {
+        "turk_hukuku":         { label: "Türk Hukuku",            order: 1 },
+        "legaltech":           { label: "Legaltech",              order: 2 },
+        "turkiye_ai":          { label: "Türkiye AI",             order: 3 },
+        "dunya_ai":            { label: "Dünya AI",               order: 4 },
+        "open_weight_models":  { label: "Açık Ağırlık Modeller",  order: 5 },
+        "china_ai_models":     { label: "Çin AI Modelleri",       order: 6 },
+        "east_asia_ai_models": { label: "Doğu Asya AI Modelleri", order: 7 },
+        "muhakeme_stack":      { label: "Muhakeme Stack",         order: 8 },
+    };
+
+    function fmtTime(iso) {
+        if (!iso) return "";
+        try {
+            const d = new Date(iso);
+            return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        } catch (_) { return ""; }
+    }
+
+    const byCat = {};
+    for (const s of sources) {
+        const c = s.category || "diger";
+        if (!byCat[c]) byCat[c] = [];
+        byCat[c].push({
+            ...s,
+            time_str: fmtTime(s.published_at || s.fetched_at),
+        });
+    }
+
+    const categories = Object.entries(byCat)
+        .map(([key, items]) => {
+            const meta = CATEGORY_LABELS[key] || { label: key, order: 99 };
+            items.sort((a, b) => {
+                const ta = a.published_at || a.fetched_at || "";
+                const tb = b.published_at || b.fetched_at || "";
+                return tb.localeCompare(ta);
+            });
+            return { key, label: meta.label, order: meta.order, items };
+        })
+        .sort((a, b) => a.order - b.order);
+
+    return {
+        categories,
+        totalCount: sources.length,
+        categoryCount: categories.length,
+    };
+}
+</script>
+{% endblock %}

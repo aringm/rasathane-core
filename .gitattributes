@@ -1,0 +1,8 @@
+# SOURCE-MANIFEST ve vendor hash'leri bütün platformlarda aynı byte'ları doğrular.
+# text özniteliği yalnız otomatik EOL dönüşümünü kapatır; text diff'leri korunur.
+* -text whitespace=cr-at-eol
+apps/desktop/infra/source-offer-manifest.json text eol=lf
+# Upstream lisans metinlerinin özgün son boşlukları korunur.
+**/fonts/licenses/*-OFL.txt -text whitespace=cr-at-eol,-blank-at-eol
+**/font-licenses/*-OFL.txt -text whitespace=cr-at-eol,-blank-at-eol
+**/ui/lib/pdfjs/**/LICENSE* -text whitespace=cr-at-eol,-blank-at-eol

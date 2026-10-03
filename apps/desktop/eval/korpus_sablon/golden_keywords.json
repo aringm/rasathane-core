@@ -1,0 +1,9 @@
+{
+  "aciklama": "Bu video için 'doğru' anahtar kelimeler (referans set). keyword_metrik(tahmin=sistem, golden=bu liste) → P/R/F1. 8-15 terim önerilir; çok-kelimeli ifadeler serbest.",
+  "keywords": [
+    "sözleşme hukuku",
+    "irade serbestisi",
+    "tazminat",
+    "haksız fiil"
+  ]
+}

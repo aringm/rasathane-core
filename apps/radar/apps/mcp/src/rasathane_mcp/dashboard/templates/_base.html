@@ -1,0 +1,1516 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Rasathane{% endblock %}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" href="/static/logo.ico" sizes="any">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="apple-touch-icon" href="/static/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="/static/alpine.min.js" defer></script>
+    <style>
+        /* ════════════════════════════════════════════════════════════
+           METZINGER PALETTE — Ghibli 60:30:10 (dark)
+           60% deep forest · 30% cream/terra · 10% gold/teal accents
+           ════════════════════════════════════════════════════════════ */
+        :root {
+            /* 60% — Deep forest dominant */
+            --bg:           #141F1A;
+            --bg2:          #1A2922;
+            --bg3:          #22342B;
+            --bg4:          #2D4035;
+            --canvas-bg:    #0E1712;
+
+            /* 30% — Cream + terracotta secondary */
+            --text:         #E8DEC0;
+            --text2:        #B8A88A;
+            --text3:        #7A6E5C;
+            --terra:        #B86B4A;
+            --terra-dim:    rgba(184,107,74,0.08);
+
+            /* 10% — Warm gold + teal accents */
+            --gold:         #C4704A;
+            --gold2:        #D4A880;
+            --gold-text:    #D4956A;
+            --gold-dim:     rgba(196,112,74,0.06);
+            --gold-border:  rgba(196,112,74,0.18);
+            --teal:         #2E6B5E;
+            --teal-text:    #3D8B7A;
+            --teal-dim:     rgba(46,107,94,0.10);
+            --teal-border:  rgba(46,107,94,0.22);
+
+            /* Borders, cards, hover */
+            --border:       rgba(232,222,192,0.06);
+            --border2:      rgba(232,222,192,0.12);
+            --card-bg:      rgba(34,52,43,0.55);
+            --card-border:  rgba(232,222,192,0.07);
+            --hover:        rgba(196,112,74,0.06);
+
+            /* States */
+            --green:        #5e8a4e;
+            --red:          #b04437;
+
+            /* Motion — Ghibli easing */
+            --ease-ghibli:  cubic-bezier(0.22, 1, 0.36, 1);
+            --ease-emph:    cubic-bezier(0.4, 0, 0.2, 1);
+            --t-fast:       180ms var(--ease-ghibli);
+            --t-base:       320ms var(--ease-ghibli);
+            --t-slow:       560ms var(--ease-ghibli);
+
+            /* Type stack */
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-ui:      'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            --font-body:    'Source Sans 3', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-mono:    'JetBrains Mono', ui-monospace, "SF Mono", Consolas, monospace;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           RESET + BASE
+           ════════════════════════════════════════════════════════════ */
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        [x-cloak] { display: none !important; }
+        body {
+            min-height: 100vh;
+            font-family: var(--font-body);
+            font-size: 14.5px;
+            line-height: 1.55;
+            color: var(--text);
+            background: var(--canvas-bg);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ── Atmospheric backdrop: orb + grid + paper grain ────────── */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: -2;
+            background:
+                radial-gradient(ellipse 60% 50% at 80% 15%,
+                    rgba(46, 107, 94, 0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 15% 85%,
+                    rgba(196, 112, 74, 0.12) 0%, transparent 65%),
+                linear-gradient(165deg,
+                    var(--canvas-bg) 0%, var(--bg) 60%, var(--bg2) 100%);
+            pointer-events: none;
+        }
+        body::after {
+            content: '';
+            position: fixed; inset: 0; z-index: -1;
+            background-image:
+                linear-gradient(rgba(232,222,192,0.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(232,222,192,0.018) 1px, transparent 1px);
+            background-size: 64px 64px;
+            mask-image: radial-gradient(ellipse 95% 85% at 50% 40%, black 0%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse 95% 85% at 50% 40%, black 0%, transparent 80%);
+            pointer-events: none;
+        }
+
+        a { color: var(--gold-text); text-decoration: none; transition: color var(--t-fast); }
+        a:hover { color: var(--gold2); }
+        ::selection { background: rgba(196, 112, 74, 0.32); color: var(--text); }
+
+        ::-webkit-scrollbar { width: 9px; height: 9px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--gold-border); }
+
+        h1, h2 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            line-height: 1.15;
+            letter-spacing: -0.01em;
+            color: var(--text);
+            margin: 0;
+        }
+        h1 { font-size: 2.75rem; font-weight: 500; }
+        h2 { font-size: 1.5rem; font-weight: 500; color: var(--text); }
+        .label-mono {
+            font-family: var(--font-mono);
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: .14em;
+            color: var(--text3);
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           TOP BAR — glass nav with brand shimmer
+           ════════════════════════════════════════════════════════════ */
+        .topbar {
+            position: sticky; top: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 1.5rem;
+            padding: .85rem 1.5rem;
+            background: color-mix(in srgb, var(--bg) 78%, transparent);
+            backdrop-filter: blur(18px) saturate(140%);
+            -webkit-backdrop-filter: blur(18px) saturate(140%);
+            border-bottom: 1px solid var(--border);
+        }
+        .brand {
+            display: flex; align-items: center; gap: .65rem;
+            transition: transform var(--t-base);
+        }
+        .brand:hover { transform: translateY(-1px); }
+        .brand img {
+            width: 32px; height: 32px;
+            filter: drop-shadow(0 0 12px rgba(196, 112, 74, 0.35));
+            transition: filter var(--t-base);
+        }
+        .brand:hover img {
+            filter: drop-shadow(0 0 20px rgba(196, 112, 74, 0.55));
+        }
+        .brand-text {
+            font-family: var(--font-display);
+            font-size: 1.55rem;
+            font-weight: 600;
+            letter-spacing: 0.015em;
+            background: linear-gradient(135deg, var(--teal-text), var(--gold-text), var(--teal-text));
+            background-size: 220% 220%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 9s ease infinite;
+        }
+        @keyframes shimmer {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .nav { display: flex; gap: .25rem; }
+        .nav a {
+            font-family: var(--font-ui);
+            font-size: .78rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--text2);
+            padding: .45rem .9rem;
+            border-radius: 999px;
+            transition: all var(--t-fast);
+        }
+        .nav a:hover { color: var(--text); background: var(--hover); }
+        .nav a.active {
+            color: var(--gold-text);
+            background: var(--gold-dim);
+            box-shadow: inset 0 0 0 1px var(--gold-border);
+        }
+        .topbar-spacer { width: 6rem; } /* Balances brand width — keeps nav optically centered */
+        @keyframes pulse {
+            0%, 100% { opacity: .6; transform: scale(1); }
+            50%      { opacity: 1;  transform: scale(1.18); }
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           LAYOUT
+           ════════════════════════════════════════════════════════════ */
+        .container { max-width: 1180px; margin: 0 auto; padding: 1.5rem 1.5rem 4rem; }
+        .container > * { animation: rise .6s var(--ease-ghibli) both; }
+        .container > *:nth-child(2) { animation-delay: .07s; }
+        .container > *:nth-child(3) { animation-delay: .14s; }
+        .container > *:nth-child(4) { animation-delay: .21s; }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           PAGE HEADER — eyebrow + h1 + subtitle (shared across pages)
+           ════════════════════════════════════════════════════════════ */
+        .page-header {
+            margin: 1.25rem 0 2rem;
+            display: flex; align-items: flex-end; justify-content: space-between;
+            gap: 1.5rem; flex-wrap: wrap;
+        }
+        .page-header .heading { max-width: 44rem; }
+        .page-header .eyebrow {
+            font-family: var(--font-mono);
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .18em;
+            color: var(--gold-text);
+            margin: 0 0 .55rem;
+            display: inline-flex; align-items: center; gap: .5rem;
+        }
+        .page-header .eyebrow::before {
+            content: ''; display: inline-block;
+            width: 1.5rem; height: 1px; background: var(--gold-border);
+        }
+        .page-header h1 {
+            font-size: clamp(2.25rem, 4.2vw, 3.1rem);
+            margin: 0 0 .65rem;
+            background: linear-gradient(135deg, var(--text) 0%, var(--gold-text) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .page-header .subtitle {
+            color: var(--text2);
+            font-size: 1.02rem;
+            line-height: 1.65;
+            margin: 0;
+            max-width: 44rem;
+        }
+        .page-header .actions {
+            /* Phase 34-v: brief-actions ile aynı flex davranışı — Canlı Akış
+               yenile butonu Bülten'deki ile aynı görünür. */
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           BTN-PILL — Phase 34-v: index.html'den _base.html'e taşındı
+           (canli-akis.html'in de erişebilmesi için global). Yenile / Sesli oku
+           / Bugüne dön / generate butonlarının ortak stil ailesi.
+           ════════════════════════════════════════════════════════════ */
+        .btn-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            padding: .52rem 1rem;
+            font-family: var(--font-ui);
+            font-size: .82rem;
+            font-weight: 500;
+            line-height: 1;
+            border-radius: 999px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all var(--t-base);
+            white-space: nowrap;
+        }
+        .btn-pill svg { flex-shrink: 0; }
+        .btn-pill-primary {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+            color: var(--bg);
+            box-shadow: 0 3px 12px rgba(196, 112, 74, 0.28);
+        }
+        .btn-pill-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(196, 112, 74, 0.42);
+        }
+        .btn-pill-primary:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-pill-ghost {
+            background: rgba(177, 132, 76, 0.04);
+            color: var(--text2);
+            border-color: var(--border2);
+        }
+        .btn-pill-ghost:hover:not(:disabled) {
+            color: var(--gold-text);
+            border-color: var(--gold-border);
+            background: rgba(177, 132, 76, 0.10);
+            transform: translateY(-1px);
+        }
+        .btn-pill-ghost.active {
+            color: var(--gold-text);
+            border-color: var(--gold-border);
+            background: rgba(177, 132, 76, 0.13);
+        }
+        /* Phase 35-xiii: "Detaylı analiz et" CTA — btn-pill family'ye taşındı
+           (önce index.html'de local + dead CSS'di; canli-akis.html'de buton
+           kullanıyordu ama stil yüklenmiyordu). Tasarım pill-shape gradient,
+           Phase 32-ii ruhu + Phase 34-v `.btn-pill` ailesi ile aynı pattern. */
+        .btn-deep-analyze {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+            color: var(--bg);
+            border: none;
+            padding: .42rem 1rem;
+            font-family: var(--font-mono);
+            font-size: .78rem;
+            font-weight: 500;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: transform var(--t-fast), box-shadow var(--t-fast);
+            box-shadow: 0 2px 8px rgba(196, 112, 74, 0.22);
+            white-space: nowrap;
+        }
+        .btn-deep-analyze svg { flex-shrink: 0; }
+        .btn-deep-analyze:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(196, 112, 74, 0.36);
+        }
+        .btn-deep-analyze:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-pill-ghost:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           KPI CARDS — dashboard-style stat row
+           ════════════════════════════════════════════════════════════ */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .kpi {
+            padding: 1.15rem 1.35rem;
+            position: relative; overflow: hidden;
+            transition: transform var(--t-base), border-color var(--t-base);
+        }
+        .kpi:hover { transform: translateY(-2px); }
+        .kpi::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: var(--accent, var(--teal-text));
+            opacity: .7;
+        }
+        .kpi.gold::before { background: var(--gold-text); }
+        .kpi.teal::before { background: var(--teal-text); }
+        .kpi.cream::before { background: var(--text2); }
+        /* Phase 22-ii: .kpi-action + .btn-sync-all kaldırıldı — KPI bar siliniyor.
+           Akışı Yenile butonu compact form'da brief panel'a taşındı (.btn-sync-all-compact, index.html). */
+        .kpi .kpi-label {
+            font-family: var(--font-mono);
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: .14em;
+            color: var(--text3);
+            margin: 0 0 .45rem;
+        }
+        .kpi .kpi-value {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1;
+            margin: 0;
+        }
+        .kpi .kpi-sub {
+            font-size: .8rem;
+            color: var(--text3);
+            margin: .35rem 0 0;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           SECTION — consistent vertical rhythm with optional header
+           ════════════════════════════════════════════════════════════ */
+        section.block { margin: 0 0 2.25rem; }
+        section.block .block-header {
+            display: flex; align-items: baseline; justify-content: space-between;
+            gap: 1rem; flex-wrap: wrap;
+            margin: 0 0 .85rem; padding: 0 .25rem;
+        }
+        section.block .block-header h2 {
+            font-size: 1.4rem; font-weight: 500;
+            display: inline-flex; align-items: baseline; gap: .65rem;
+        }
+        section.block .block-header h2 .pill {
+            font-family: var(--font-mono);
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--text3);
+            font-weight: 400;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           SKELETON LOADER — subtle shimmer
+           ════════════════════════════════════════════════════════════ */
+        .skeleton {
+            background: linear-gradient(90deg,
+                var(--bg2) 0%, var(--bg3) 50%, var(--bg2) 100%);
+            background-size: 200% 100%;
+            animation: skel 1.4s ease-in-out infinite;
+            border-radius: 4px;
+        }
+        @keyframes skel {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skel-line { height: .9rem; margin: .35rem 0; }
+        .skel-line.short { width: 35%; }
+        .skel-line.med   { width: 70%; }
+        .skel-line.full  { width: 100%; }
+
+        /* ════════════════════════════════════════════════════════════
+           FOOTER
+           ════════════════════════════════════════════════════════════ */
+        footer.foot {
+            border-top: 1px solid var(--border);
+            margin: 4rem 0 0;
+            padding: 1.5rem;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: .72rem;
+            color: var(--text3);
+            display: flex; gap: 1.25rem;
+            align-items: center; justify-content: center;
+            flex-wrap: wrap;
+        }
+        footer.foot a { color: var(--text3); }
+        footer.foot a:hover { color: var(--gold-text); }
+        footer.foot .sep { color: var(--text3); opacity: .4; }
+        footer.foot .status-dot {
+            display: inline-block; width: 7px; height: 7px;
+            border-radius: 50%; background: var(--teal-text);
+            box-shadow: 0 0 8px rgba(61,139,122,0.55);
+            animation: pulse 2.4s ease-in-out infinite;
+            margin-right: .35rem;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           GLASS CARD (shared)
+           ════════════════════════════════════════════════════════════ */
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(14px) saturate(135%);
+            -webkit-backdrop-filter: blur(14px) saturate(135%);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            transition: border-color var(--t-base);
+        }
+        .glass:hover { border-color: var(--gold-border); }
+
+        /* ════════════════════════════════════════════════════════════
+           BRIEF PANEL
+           ════════════════════════════════════════════════════════════ */
+        .brief {
+            position: relative;
+            padding: 2.25rem 2.5rem;
+            margin: 1.5rem 0 2.25rem;
+            overflow: hidden;
+        }
+        .brief::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg,
+                rgba(46, 107, 94, 0.10) 0%,
+                rgba(196, 112, 74, 0.06) 50%,
+                transparent 100%);
+            pointer-events: none;
+        }
+        .brief > * { position: relative; }
+        .brief .meta { margin-bottom: .75rem; display: flex; gap: 1rem; align-items: center; }
+        .brief h1 {
+            background: linear-gradient(135deg, var(--text) 0%, var(--gold-text) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: clamp(2rem, 4.5vw, 2.85rem);
+        }
+        .brief .empty { color: var(--text2); font-style: italic; margin: 1rem 0 0; }
+        .brief pre {
+            white-space: pre-wrap;
+            font-family: var(--font-body);
+            font-size: 1.02rem;
+            line-height: 1.75;
+            color: var(--text);
+            margin: 1.25rem 0 0;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           FEED HEADER + FILTER PILLS
+           ════════════════════════════════════════════════════════════ */
+        .feed-header {
+            display: flex; align-items: baseline; justify-content: space-between;
+            gap: 1rem; flex-wrap: wrap;
+            margin-bottom: .9rem; padding: 0 .25rem;
+        }
+        .filter-pills { display: flex; gap: .35rem; flex-wrap: wrap; }
+        .filter-pills button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text2);
+            padding: .35rem .8rem;
+            font-family: var(--font-mono);
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all var(--t-fast);
+        }
+        .filter-pills button:hover {
+            color: var(--text);
+            border-color: var(--gold-border);
+            transform: translateY(-1px);
+        }
+        .filter-pills button.active {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+            border-color: transparent;
+            color: var(--bg);
+            font-weight: 600;
+            box-shadow: 0 4px 14px rgba(196,112,74,0.3);
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           ARTICLE FEED — dense + expandable
+           ════════════════════════════════════════════════════════════ */
+        .feed { padding: 0; overflow: hidden; }
+        .feed .entry {
+            border-top: 1px solid var(--border);
+            padding: .55rem .95rem;
+            cursor: pointer;
+            transition: background var(--t-fast);
+        }
+        .feed .entry:first-child { border-top: none; }
+        .feed .entry:hover { background: var(--hover); }
+        /* Phase 34-iii: 2-row layout (Phase 32-ii HTML ile uyumlu).
+           Üst satır .meta-row inline metadata strip; alt satır .title tam
+           genişlik. Eski 4-col grid (4.5/7/11rem/1fr) .title'ı 7rem'lik dar
+           kolona sıkıştırıyordu → başlıklar dar satırlı sarmal sarmal. */
+        .feed .head {
+            display: flex;
+            flex-direction: column;
+            gap: .2rem;
+            font-family: var(--font-mono);
+            font-size: .82rem;
+        }
+        .feed .head .meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .75rem;
+            align-items: baseline;
+            font-family: var(--font-mono);
+            font-size: .76rem;
+        }
+        .feed .head .time {
+            color: var(--text3);
+            font-variant-numeric: tabular-nums;
+            min-width: 3.5rem;
+        }
+        .feed .head .cat {
+            color: var(--gold-text);
+            text-transform: uppercase;
+            font-size: .66rem;
+            letter-spacing: .1em;
+        }
+        .feed .head .source {
+            color: var(--text2);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 16rem;
+        }
+        .feed .head .title {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.45;
+            color: var(--text);
+            /* full width, normal wrap */
+        }
+        .feed .head .title a { color: var(--text); }
+        .feed .head .title a:hover { color: var(--gold-text); }
+        .feed .head .title-en-hint {
+            display: inline-block;
+            margin-left: .35rem;
+            font-family: var(--font-mono);
+            font-size: .72rem;
+            color: var(--text3);
+        }
+
+        /* Expandable summary — Phase 34-iii: padding-left kaldırıldı
+           (eski 12.6rem indent eski 4-col grid'in title kolonuna align idi). */
+        .feed .summary {
+            margin: .35rem 0 .15rem;
+            font-family: var(--font-body);
+            font-size: .88rem;
+            line-height: 1.55;
+            color: var(--text2);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            transition: color var(--t-fast);
+        }
+        .feed .entry.expanded .summary {
+            -webkit-line-clamp: unset;
+            color: var(--text);
+        }
+        .feed .summary:empty { display: none; }
+        .feed .summary-empty {
+            margin: .25rem 0 0;
+            font-size: .78rem; color: var(--text3); font-style: italic;
+        }
+
+        .feed .empty, .feed .loading {
+            padding: 3rem 1rem; text-align: center; color: var(--text3);
+            font-family: var(--font-mono); font-size: .82rem;
+        }
+        .feed .more {
+            display: block; width: 100%;
+            padding: .85rem;
+            background: transparent;
+            border: none; border-top: 1px solid var(--border);
+            font-family: var(--font-mono); font-size: .75rem;
+            color: var(--text2);
+            text-transform: uppercase; letter-spacing: .12em;
+            cursor: pointer; transition: all var(--t-fast);
+        }
+        .feed .more:hover { color: var(--gold-text); background: var(--hover); }
+
+        /* ════════════════════════════════════════════════════════════
+           SOURCES TABLE
+           ════════════════════════════════════════════════════════════ */
+        .sources-wrap { padding: 0; overflow: hidden; }
+        table.sources {
+            width: 100%; border-collapse: collapse;
+            font-size: .87rem;
+        }
+        table.sources th, table.sources td {
+            padding: .65rem .9rem; text-align: left;
+            border-top: 1px solid var(--border);
+        }
+        table.sources th {
+            border-top: none;
+            background: rgba(20,31,26,0.6);
+            font-family: var(--font-mono);
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--text3);
+            font-weight: 500;
+        }
+        table.sources tr { transition: background var(--t-fast); }
+        table.sources tbody tr:hover { background: var(--hover); }
+        table.sources tr.muted td { color: var(--text3); }
+        table.sources td strong { color: var(--text); font-weight: 500; }
+        table.sources .url-row { font-size: .72rem; color: var(--text3); margin-top: .2rem; }
+
+        /* Toggle switch */
+        .toggle {
+            display: inline-block; width: 2.6rem; height: 1.4rem;
+            background: var(--bg3); border: 1px solid var(--border2);
+            border-radius: 999px; position: relative;
+            cursor: pointer; transition: all var(--t-base);
+        }
+        .toggle.on {
+            background: linear-gradient(135deg, var(--teal) 0%, var(--teal-text) 100%);
+            border-color: transparent;
+            box-shadow: 0 0 12px rgba(46,107,94,0.4);
+        }
+        .toggle::after {
+            content: '';
+            position: absolute; top: 2px; left: 2px;
+            width: 1.05rem; height: 1.05rem;
+            background: var(--text2);
+            border-radius: 50%;
+            transition: all var(--t-base);
+        }
+        .toggle.on::after {
+            background: var(--text);
+            transform: translateX(1.15rem);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        /* Phase 15-i: yaml-disabled (operatör tarafından kapalı) — toggle pasif görünüm */
+        .toggle.locked {
+            opacity: .35;
+            cursor: not-allowed;
+            border-style: dashed;
+        }
+        .toggle.locked:hover { transform: none; }
+        .badge-yaml {
+            display: inline-block;
+            margin-left: .45rem;
+            padding: .08rem .42rem;
+            font-family: var(--font-mono); font-size: .68rem;
+            font-weight: 500;
+            color: var(--text3);
+            background: rgba(177, 132, 76, 0.08);
+            border: 1px dashed rgba(177, 132, 76, 0.4);
+            border-radius: 999px;
+            text-transform: lowercase;
+            letter-spacing: .04em;
+            vertical-align: middle;
+        }
+        .btn-sync {
+            background: transparent;
+            color: var(--gold-text);
+            border: 1px solid var(--gold-border);
+            padding: .35rem .8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            transition: all var(--t-fast);
+        }
+        .btn-sync:hover {
+            background: var(--gold-dim);
+            border-color: var(--gold);
+            transform: translateY(-1px);
+        }
+        .btn-sync:disabled {
+            opacity: .5; cursor: wait; transform: none;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           ANALYZE FORM
+           ════════════════════════════════════════════════════════════ */
+        form.analyze {
+            display: flex; flex-direction: column; gap: 1.1rem;
+            max-width: 720px;
+            padding: 2rem;
+            margin-top: 1rem;
+        }
+        form.analyze label {
+            font-family: var(--font-ui);
+            font-size: .85rem;
+            color: var(--text2);
+            margin-bottom: -.5rem;
+        }
+        form.analyze input[type=url] {
+            padding: .85rem 1.1rem;
+            font-size: 1rem;
+            font-family: var(--font-mono);
+            color: var(--text);
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            outline: none;
+            transition: all var(--t-base);
+        }
+        form.analyze input[type=url]:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px var(--gold-dim);
+        }
+        form.analyze button {
+            align-self: flex-start;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+            color: var(--bg);
+            border: none;
+            padding: .7rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: var(--font-ui);
+            font-size: .92rem;
+            font-weight: 600;
+            transition: all var(--t-base);
+            box-shadow: 0 4px 14px rgba(196,112,74,0.25);
+        }
+        form.analyze button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 22px rgba(196,112,74,0.4);
+        }
+        form.analyze button:disabled { opacity: .6; cursor: wait; transform: none; }
+        form.analyze .result {
+            background: var(--bg2);
+            padding: 1.1rem 1.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-family: var(--font-mono);
+            font-size: .85rem;
+            line-height: 1.7;
+            animation: rise .4s var(--ease-ghibli) both;
+        }
+        form.analyze .result.error {
+            background: rgba(176, 68, 55, 0.08);
+            border-color: rgba(176, 68, 55, 0.32);
+            color: #e89a90;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           BOOKMARK ICON — Phase 12-iii kütüphane
+           ════════════════════════════════════════════════════════════ */
+        .bookmark {
+            background: transparent;
+            border: none;
+            padding: .25rem .35rem;
+            cursor: pointer;
+            color: var(--text3);
+            transition: color var(--t-fast), transform var(--t-fast);
+            display: inline-flex; align-items: center;
+        }
+        .bookmark:hover {
+            color: var(--gold-text);
+            transform: translateY(-1px);
+        }
+        .bookmark.saved {
+            color: var(--gold);
+        }
+        .bookmark svg { display: block; }
+
+        /* ════════════════════════════════════════════════════════════
+           LIBRARY PAGE — Phase 12-iii
+           ════════════════════════════════════════════════════════════ */
+        .library-bar {
+            display: flex; align-items: center; gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.25rem;
+        }
+        .library-bar .search {
+            flex: 1 1 16rem;
+            min-width: 12rem;
+            padding: .5rem .9rem;
+            font-family: var(--font-body);
+            font-size: .92rem;
+            background: var(--bg2);
+            color: var(--text);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+        }
+        .library-bar .search:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px var(--gold-dim);
+        }
+        .lib-card {
+            padding: 1.1rem 1.35rem;
+            margin-bottom: .9rem;
+            position: relative;
+        }
+        .lib-card .lib-meta {
+            display: flex; align-items: baseline; gap: .85rem;
+            font-family: var(--font-mono);
+            font-size: .72rem;
+            color: var(--text3);
+            margin-bottom: .55rem;
+        }
+        .lib-card .lib-type {
+            text-transform: uppercase; letter-spacing: .12em;
+            color: var(--gold-text);
+        }
+        .lib-card .lib-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            color: var(--text);
+            margin: 0 0 .45rem;
+        }
+        .lib-card .lib-title a { color: var(--text); }
+        .lib-card .lib-title a:hover { color: var(--gold-text); }
+        .lib-card .lib-preview {
+            color: var(--text2);
+            font-size: .92rem;
+            line-height: 1.55;
+            margin: 0 0 .65rem;
+        }
+        .lib-card .lib-note {
+            background: var(--gold-dim);
+            border-left: 2px solid var(--gold-border);
+            padding: .55rem .85rem;
+            font-style: italic;
+            color: var(--text);
+            font-size: .88rem;
+            margin: 0 0 .55rem;
+            border-radius: 0 6px 6px 0;
+        }
+        /* Phase 19-iv: modern note editör */
+        .lib-card .lib-note-wrap {
+            margin: 0 0 .85rem;
+        }
+        .lib-card .lib-note-label {
+            display: flex; justify-content: space-between; align-items: center;
+            font-family: var(--font-mono);
+            font-size: .68rem;
+            text-transform: uppercase; letter-spacing: .1em;
+            color: var(--text3);
+            margin-bottom: .25rem;
+        }
+        .lib-card .lib-note-label .autosave-status {
+            color: var(--gold-text);
+            font-size: .65rem;
+            text-transform: none; letter-spacing: 0;
+            font-style: italic;
+            transition: opacity var(--t-fast);
+        }
+        .lib-card .lib-note-input {
+            width: 100%;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: .55rem .8rem;
+            border-radius: 6px;
+            font-family: var(--font-body);
+            font-size: .9rem;
+            line-height: 1.55;
+            resize: vertical;
+            min-height: 2.5rem;
+            transition: border-color var(--t-fast), box-shadow var(--t-fast);
+            box-sizing: border-box;
+        }
+        .lib-card .lib-note-input:focus {
+            outline: none;
+            border-color: var(--gold-border);
+            box-shadow: 0 0 0 3px rgba(177, 132, 76, 0.12);
+        }
+        .lib-card .lib-note-input::placeholder { color: var(--text3); }
+
+        /* Phase 19-iii: tam metin expand · Phase 22-ii: renk düzelt */
+        .lib-card.expanded {
+            border-color: var(--gold-border);
+        }
+        .lib-card .lib-full {
+            font-family: var(--font-serif, Georgia, serif);
+            font-size: .95rem;
+            line-height: 1.7;
+            color: var(--text);
+            margin: 0 0 .85rem;
+            max-height: 65vh;
+            overflow-y: auto;
+            padding: 1.25rem 1.5rem;
+            background: var(--bg2);
+            border: 1px solid var(--gold-border);
+            border-radius: 8px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            animation: rise .3s var(--ease-ghibli) both;
+        }
+        .lib-card .lib-full h2 { font-size: 1.05rem; margin: 1.2rem 0 .5rem; color: var(--text); }
+        .lib-card .lib-full h3 {
+            font-size: .95rem; margin: 1rem 0 .35rem; color: var(--text2);
+            border-bottom: 1px solid var(--border); padding-bottom: .2rem;
+        }
+        .lib-card .lib-full p { margin: .5rem 0; }
+        .lib-card .lib-full ul { margin: .35rem 0 .85rem; padding-left: 1.4rem; }
+        .lib-card .lib-full li { margin: .25rem 0; }
+        .lib-card .lib-full strong { color: var(--text); }
+        .lib-card .lib-full a { color: var(--gold-text); }
+        .lib-card .lib-full a:hover { text-decoration: underline; }
+
+        /* Phase 17-v: deep_analysis artifact links */
+        .lib-card .lib-deep-links {
+            display: flex; flex-wrap: wrap; gap: .55rem;
+            margin: 0 0 .65rem;
+        }
+        .lib-card .lib-deep-links a {
+            background: rgba(177, 132, 76, 0.08);
+            color: var(--gold-text);
+            border: 1px solid var(--gold-border);
+            padding: .25rem .65rem;
+            border-radius: 999px;
+            font-size: .76rem;
+            text-decoration: none;
+            transition: all var(--t-fast);
+        }
+        .lib-card .lib-deep-links a:hover {
+            background: rgba(177, 132, 76, 0.18);
+        }
+        .lib-card .lib-toggle, .lib-card .lib-delete {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text2);
+            padding: .35rem .85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: var(--font-sans, inherit);
+            font-size: .82rem;
+            transition: all var(--t-fast);
+        }
+        .lib-card .lib-toggle:hover {
+            color: var(--gold-text);
+            border-color: var(--gold-border);
+        }
+        .lib-card .lib-delete:hover {
+            color: #b54b3a;
+            border-color: rgba(176, 68, 55, 0.3);
+        }
+        /* Phase 19-v: kütüphane → planlar geçiş */
+        .btn-go-plans {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-text) 100%);
+            color: var(--bg);
+            padding: .4rem 1rem;
+            border-radius: 999px;
+            text-decoration: none;
+            font-size: .82rem;
+            font-weight: 500;
+            transition: all var(--t-fast);
+        }
+        .btn-go-plans:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(177, 132, 76, 0.3);
+        }
+        .lib-card .lib-actions {
+            display: flex; gap: .55rem; flex-wrap: wrap;
+        }
+        .lib-card .lib-actions button, .lib-card .lib-actions a {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text2);
+            padding: .3rem .7rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            transition: all var(--t-fast);
+            text-decoration: none;
+        }
+        .lib-card .lib-actions button:hover,
+        .lib-card .lib-actions a:hover {
+            color: var(--gold-text);
+            border-color: var(--gold-border);
+        }
+        /* Phase 28-iv: kütüphane sesli özet UI */
+        .lib-card .lib-audio {
+            margin: .65rem 0 .5rem;
+        }
+        .lib-card .lib-audio audio {
+            border-radius: 6px;
+        }
+        .lib-card .lib-audio-pending {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            margin: .5rem 0;
+            padding: .5rem .85rem;
+            background: rgba(177, 132, 76, 0.06);
+            border: 1px dashed var(--gold-border);
+            border-radius: 6px;
+            font-size: .82rem;
+            color: var(--gold-text);
+        }
+        .lib-card .lib-audio-elapsed {
+            margin-left: auto;
+            font-family: var(--font-mono);
+            font-size: .72rem;
+            color: var(--text3);
+        }
+        .lib-card .lib-audio-error {
+            margin: .5rem 0;
+            padding: .45rem .75rem;
+            background: rgba(220, 60, 60, 0.06);
+            border: 1px solid rgba(220, 60, 60, 0.3);
+            border-radius: 6px;
+            font-size: .76rem;
+            color: var(--red);
+        }
+        .lib-card .lib-actions .lib-audio-btn {
+            color: var(--text2);
+        }
+        .lib-card .lib-actions .lib-audio-btn:hover {
+            color: var(--gold-text);
+        }
+        .lib-card.dead-link::after {
+            content: 'KAYIP LİNK';
+            position: absolute; top: .8rem; right: 1rem;
+            font-family: var(--font-mono);
+            font-size: .62rem;
+            color: var(--red);
+            opacity: .7;
+            letter-spacing: .12em;
+        }
+
+        /* Long-summary expand panel */
+        .long-analysis {
+            margin: .65rem 0 .25rem;
+            padding: .85rem 1.1rem;
+            background: var(--bg2);
+            border-left: 2px solid var(--gold-border);
+            border-radius: 0 6px 6px 0;
+            font-family: var(--font-body);
+            font-size: .92rem;
+            line-height: 1.65;
+            color: var(--text);
+        }
+        .btn-expand {
+            background: transparent;
+            color: var(--gold-text);
+            border: 1px dashed var(--gold-border);
+            padding: .35rem .85rem;
+            font-family: var(--font-mono);
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: .55rem 0;
+        }
+        .btn-expand:hover { background: var(--gold-dim); }
+        .spinner-inline {
+            margin: .55rem 0;
+            color: var(--text3);
+            font-family: var(--font-mono);
+            font-size: .82rem;
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           PAGE NOTES + SUBTLE ELEMENTS
+           ════════════════════════════════════════════════════════════ */
+        .page-note {
+            color: var(--text3); font-size: .87rem;
+            margin: .35rem 0 1.5rem; max-width: 50rem;
+        }
+        .section-spacer { height: 2rem; }
+
+        /* ════════════════════════════════════════════════════════════
+           AUDIO PLAYER — Phase 30 custom + Phase 32-v: shared across pages
+           Used by: index.html (brief), analyze.html (YouTube/repo audio),
+           library.html (kütüphane audio). Single source of truth.
+           ════════════════════════════════════════════════════════════ */
+        .brief-audio-player {
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            margin: 1.1rem 1.2rem 0;
+            padding: .65rem .9rem;
+            background: var(--bg2);
+            border: 1px solid var(--gold-border);
+            border-radius: 999px;
+            animation: rise .3s var(--ease-ghibli) both;
+        }
+        .brief-audio-player .player-play {
+            flex-shrink: 0;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+            color: var(--bg);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform var(--t-fast), box-shadow var(--t-fast);
+            box-shadow: 0 2px 8px rgba(196, 112, 74, 0.25);
+        }
+        .brief-audio-player .player-play:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 14px rgba(196, 112, 74, 0.4);
+        }
+        .brief-audio-player .player-progress {
+            flex: 1;
+            height: 6px;
+            background: var(--bg3);
+            border-radius: 999px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: height var(--t-fast);
+        }
+        .brief-audio-player .player-progress:hover { height: 8px; }
+        .brief-audio-player .player-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), var(--gold2));
+            border-radius: 999px;
+            transition: width 100ms linear;
+        }
+        .brief-audio-player .player-time {
+            flex-shrink: 0;
+            font-family: var(--font-mono);
+            font-size: .76rem;
+            color: var(--text2);
+            font-variant-numeric: tabular-nums;
+            min-width: 5.5rem;
+            text-align: right;
+        }
+        .brief-audio-player .player-speed {
+            flex-shrink: 0;
+            background: transparent;
+            border: 1px solid var(--border2);
+            color: var(--text2);
+            padding: .25rem .55rem;
+            border-radius: 999px;
+            font-family: var(--font-mono);
+            font-size: .72rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--t-fast);
+            min-width: 2.6rem;
+        }
+        .brief-audio-player .player-speed:hover {
+            color: var(--gold-text);
+            border-color: var(--gold-border);
+        }
+        .brief-audio-player .player-download {
+            flex-shrink: 0;
+            color: var(--text3);
+            padding: .25rem;
+            border-radius: 4px;
+            transition: color var(--t-fast);
+            display: inline-flex;
+            align-items: center;
+        }
+        .brief-audio-player .player-download:hover { color: var(--gold-text); }
+
+        /* Mobile */
+        @media (max-width: 720px) {
+            .topbar { flex-wrap: wrap; gap: .75rem; padding: .65rem .9rem; }
+            .topbar-spacer { display: none; }
+            .container { padding: 1rem 1rem 3rem; }
+            .page-header { margin: .5rem 0 1.5rem; }
+            .page-header h1 { font-size: 2rem; }
+            .kpi-row { gap: .75rem; }
+            .kpi { padding: .9rem 1.1rem; }
+            .kpi .kpi-value { font-size: 1.65rem; }
+            .brief { padding: 1.5rem; }
+            /* Phase 34-iii: mobil de aynı flex 2-row pattern; eski grid-area
+               hack'i kaldırıldı (HTML'de .time/.cat/.source artık .meta-row
+               içinde nested — direct grid-area mapping çalışmıyordu). */
+            .feed .head .title { font-size: .96rem; }
+            .feed .head .meta-row { gap: .55rem; font-size: .72rem; }
+            .feed .head .source { max-width: 9rem; }
+            .feed .summary,
+            .feed .summary-empty { padding-left: 0; }
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           BRIEF SOURCES ACCORDION — Phase 33-i
+           ════════════════════════════════════════════════════════════ */
+        .brief-sources {
+            margin: 1.25rem 1.2rem 0;
+            border: 1px solid var(--gold-border);
+            border-radius: 8px;
+            background: var(--gold-dim);
+            transition: background var(--t-fast);
+        }
+        .brief-sources summary {
+            cursor: pointer;
+            padding: .85rem 1.1rem;
+            font-family: var(--font-mono);
+            font-size: .8rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--gold-text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            list-style: none;
+        }
+        .brief-sources summary::-webkit-details-marker { display: none; }
+        .brief-sources summary::after {
+            content: "▾";
+            transition: transform var(--t-fast);
+        }
+        .brief-sources[open] summary::after { transform: rotate(180deg); }
+        .brief-sources-count {
+            color: var(--text3);
+            font-weight: 400;
+            letter-spacing: .06em;
+        }
+        .brief-sources-body {
+            padding: 0 1.1rem 1rem;
+            border-top: 1px solid var(--gold-border);
+        }
+        .brief-sources-category {
+            margin: 1rem 0 .5rem;
+        }
+        .brief-sources-category h4 {
+            font-family: var(--font-mono);
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .14em;
+            color: var(--gold-text);
+            margin: 0 0 .5rem;
+        }
+        .brief-sources-category ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .brief-sources-category li {
+            padding: .3rem 0;
+            border-bottom: 1px dashed var(--border);
+            font-size: .88rem;
+            line-height: 1.45;
+        }
+        .brief-sources-category li:last-child { border-bottom: none; }
+        .brief-sources-category li a { color: var(--text); }
+        .brief-sources-category li a:hover { color: var(--gold-text); }
+        .brief-source-meta {
+            color: var(--text3);
+            font-family: var(--font-mono);
+            font-size: .72rem;
+            margin-left: .35rem;
+        }
+
+        /* Phase 34-v: muhakeme cross-link buton CSS kaldırıldı —
+           inject feature silindi (brief.py'da). */
+
+        /* ════════════════════════════════════════════════════════════
+           LIVE STREAM TABS — Phase 33-ii (Kaynaklar | Sosyal Medya)
+           ════════════════════════════════════════════════════════════ */
+        .live-tabs {
+            display: flex;
+            gap: .35rem;
+            margin: .25rem 0 .55rem;
+        }
+        .live-tab {
+            background: transparent;
+            border: 1px solid var(--border2);
+            color: var(--text2);
+            padding: .45rem 1rem;
+            border-radius: 999px;
+            font-family: var(--font-ui);
+            font-size: .82rem;
+            cursor: pointer;
+            transition: all var(--t-fast);
+        }
+        .live-tab:hover {
+            color: var(--text);
+            border-color: var(--gold-border);
+            transform: translateY(-1px);
+        }
+        .live-tab.active {
+            background: linear-gradient(135deg, var(--teal) 0%, var(--teal-text) 100%);
+            color: var(--bg);
+            border-color: transparent;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(46, 107, 94, 0.3);
+        }
+
+        .social-entry .platform-icon {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: .9rem;
+            color: var(--gold-text);
+            min-width: 1.4rem;
+            text-align: center;
+        }
+        .injection-warning {
+            margin: .5rem 0 0;
+            padding: .45rem .75rem;
+            background: rgba(176, 68, 55, 0.08);
+            border-left: 3px solid var(--red, #b04437);
+            border-radius: 0 6px 6px 0;
+            font-family: var(--font-mono);
+            font-size: .76rem;
+            color: var(--red, #b04437);
+        }
+
+        /* ════════════════════════════════════════════════════════════
+           PHASE 35-xv — Sessiz Kaynaklar (stale handles)
+           Time window dışında kalan ama cache'te son post'u olan
+           kaynaklar; UI gri-tonda + "X gün önce" zaman damgası.
+           ════════════════════════════════════════════════════════════ */
+        .stale-section {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--border2);
+        }
+        .stale-header {
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            padding: 0 1rem .55rem;
+            flex-wrap: wrap;
+        }
+        .stale-label {
+            font-family: var(--font-display);
+            font-size: .82rem;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: .12em;
+        }
+        .stale-hint {
+            font-family: var(--font-mono);
+            font-size: .68rem;
+            color: var(--text3);
+        }
+        .stale-entry {
+            opacity: .72;
+            transition: opacity var(--t-fast);
+        }
+        .stale-entry:hover {
+            opacity: 1;
+        }
+        .stale-entry .time.stale-ago {
+            color: var(--text3);
+            font-style: italic;
+            font-size: .74rem;
+        }
+        .stale-entry .title a {
+            color: var(--text2);
+        }
+        .stale-entry .title a:hover {
+            color: var(--gold-text);
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <a href="/" class="brand">
+            <img src="/static/logo.png" alt="Rasathane">
+            <span class="brand-text">Rasathane</span>
+        </a>
+        <nav class="nav">
+            <a href="/" class="{% if active == 'home' %}active{% endif %}">Bülten</a>
+            <a href="/canli-akis" class="{% if active == 'live' %}active{% endif %}">Canlı Akış</a>
+            <a href="/analyze" class="{% if active == 'analyze' %}active{% endif %}">Analiz</a>
+            <a href="/library" class="{% if active == 'library' %}active{% endif %}">Kütüphane</a>
+            <a href="/plans" class="{% if active == 'plans' %}active{% endif %}">Yapılacaklar</a>
+            <a href="/sources" class="{% if active == 'sources' %}active{% endif %}">Kaynaklar</a>
+            <a href="/voices" class="{% if active == 'studio' %}active{% endif %}">Stüdyo</a>
+        </nav>
+        <div class="topbar-spacer" aria-hidden="true"></div>
+    </header>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="foot">
+        <span><span class="status-dot"></span>Çalışıyor</span>
+        <span class="sep">·</span>
+        <a href="https://github.com/aringm/rasathane" target="_blank" rel="noopener">github.com/aringm/rasathane</a>
+        <span class="sep">·</span>
+        <span>Rasathane</span>
+    </footer>
+
+    <!-- Phase 30 + Phase 32-v: shared audio player component (her sayfada erişilebilir).
+         Tüm sayfaların (brief/analiz/kütüphane) custom player'ı bu fn'yi kullanır.
+         Önceden index.html'de tanımlıydı ve sadece anasayfada çalışıyordu. -->
+    <script>
+    function audioPlayer(src) {
+        return {
+            src,
+            playing: false,
+            current: 0,
+            duration: 0,
+            speed: 1,
+            speedSteps: [1, 1.25, 1.5, 2],
+            bind() {
+                this.$refs.el.src = this.src;
+                this.$refs.el.playbackRate = this.speed;
+            },
+            get progressPct() {
+                if (!this.duration) return 0;
+                return Math.min(100, (this.current / this.duration) * 100);
+            },
+            toggle() {
+                const a = this.$refs.el;
+                if (a.paused) a.play();
+                else a.pause();
+            },
+            onLoaded() {
+                this.duration = this.$refs.el.duration || 0;
+            },
+            onTime() {
+                this.current = this.$refs.el.currentTime || 0;
+            },
+            onEnded() {
+                this.playing = false;
+                this.current = 0;
+            },
+            seek(ev) {
+                const bar = ev.currentTarget;
+                const rect = bar.getBoundingClientRect();
+                const ratio = (ev.clientX - rect.left) / rect.width;
+                const t = Math.max(0, Math.min(1, ratio)) * (this.duration || 0);
+                this.$refs.el.currentTime = t;
+                this.current = t;
+            },
+            cycleSpeed() {
+                const i = this.speedSteps.indexOf(this.speed);
+                this.speed = this.speedSteps[(i + 1) % this.speedSteps.length];
+                this.$refs.el.playbackRate = this.speed;
+            },
+            fmtTime(t) {
+                if (!t || !isFinite(t)) return "0:00";
+                const m = Math.floor(t / 60);
+                const s = Math.floor(t % 60).toString().padStart(2, "0");
+                return `${m}:${s}`;
+            },
+        };
+    }
+    </script>
+</body>
+</html>

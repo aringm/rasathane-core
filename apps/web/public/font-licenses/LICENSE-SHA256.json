@@ -1,0 +1,23 @@
+[
+  {
+    "file": "Inter-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/OFL.txt",
+    "retrieved_at": "2026-10-03",
+    "bytes": 4377,
+    "sha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57"
+  },
+  {
+    "file": "Cormorant-Garamond-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/cormorantgaramond/OFL.txt",
+    "retrieved_at": "2026-10-03",
+    "bytes": 4387,
+    "sha256": "60700d351cac4650c51f3f9db318d2a420f8b45052dba2715eb5fec41f0f6956"
+  },
+  {
+    "file": "IBM-Plex-OFL.txt",
+    "source": "https://raw.githubusercontent.com/IBM/plex/master/LICENSE.txt",
+    "retrieved_at": "2026-10-03",
+    "bytes": 4456,
+    "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da"
+  }
+]

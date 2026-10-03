@@ -1,0 +1,2127 @@
+{% extends "_base.html" %}
+{% set active = "analyze" %}
+{% block title %}Rasathane · Analiz{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div class="heading">
+        <p class="eyebrow">Bağlantı Analizi</p>
+        <h1>Bir içeriği derinlemesine ele al</h1>
+        <p class="subtitle">
+            YouTube videosu, GitHub deposu ya da arXiv makalesinin bağlantısını
+            ver — önce kısa bilgi getirelim, dilersen sonra Türkçe ayrıntılı
+            analiz yazalım.
+        </p>
+    </div>
+</header>
+
+<div x-data="analyzePage()" x-init="initFromQuery(); loadPastJobs(); loadWhisperStatus(); loadUnanalyzed(); initMindmapFullscreen(); loadPresets()">
+    <section class="block">
+        <form class="analyze glass" @submit.prevent="submit()">
+            <label for="url-input">Bağlantı</label>
+            <input id="url-input"
+                   type="url"
+                   x-model="url"
+                   placeholder="https://..."
+                   required
+                   autofocus>
+
+            <div class="example-chips">
+                <span class="label-mono" style="margin-right: .5rem;">Örnek</span>
+                <template x-for="ex in examples" :key="ex.url">
+                    <button type="button" class="chip"
+                            @click="url = ex.url"
+                            x-text="ex.label"></button>
+                </template>
+            </div>
+
+            <button type="submit" :disabled="loading">
+                <span x-text="loading ? 'Analiz ediliyor…' : 'Analiz et →'"></span>
+            </button>
+        </form>
+
+        <template x-if="result">
+            <div class="analyze-result glass">
+                <div class="result-row">
+                    <span class="label-mono">Bağlantı</span>
+                    <a :href="result.url" target="_blank" rel="noopener" x-text="result.url"></a>
+                </div>
+                <div class="result-row">
+                    <span class="label-mono">Tip</span>
+                    <span class="type-badge"
+                          :class="result.detected_type === 'unknown' ? 'unknown' : 'known'"
+                          x-text="typeLabel(result.detected_type)"></span>
+                </div>
+                <template x-if="result.metadata">
+                    <div class="result-row">
+                        <span class="label-mono">Meta</span>
+                        <pre style="margin: .25rem 0 0; font-size: .78rem;
+                                    color: var(--text2); white-space: pre-wrap;
+                                    font-family: var(--font-mono);"
+                             x-text="JSON.stringify(result.metadata, null, 2)"></pre>
+                    </div>
+                </template>
+
+                <!-- Phase 14: deep-dive trigger; Phase 21-i: 3-stage core (audio ayrı) -->
+                <template x-if="result.detected_type !== 'unknown' && !deep">
+                    <div class="result-row" style="margin-top: 1.25rem;">
+                        <button class="deep-trigger"
+                                :disabled="deepLoading"
+                                @click="triggerDeep()">
+                            <span x-text="deepLoading ? 'Başlatılıyor…' : 'Özet üret'"></span>
+                        </button>
+                        <p style="margin: .35rem 0 0; color: var(--text3);
+                                  font-size: .76rem;">
+                            İçerik çekilir, yapay zeka Türkçe özet yazar (~30-60 sn).
+                            Zihin haritası ve sesli özet sonra <strong>ayrı butonlarla</strong>
+                            tetiklenir — istediğini iste, gerekmeyeni atla.
+                        </p>
+                        <template x-if="result.detected_type === 'youtube'">
+                            <div style="margin-top: .65rem;">
+                                <!-- Phase 27: Whisper her zaman opt-in checkbox.
+                                     Default: yt-dlp orijinal dil altyazısı; altyazı
+                                     varsa claude doğrudan o transkripte Türkçe
+                                     analiz yapar (ucuz, hızlı). Whisper sadece
+                                     altyazısız video için kullanıcı isterse. -->
+                                <label style="display: flex; align-items: center;
+                                              gap: .45rem;
+                                              font-size: .82rem; color: var(--text2);">
+                                    <input type="checkbox" x-model="useWhisper">
+                                    <span x-show="whisperApi.enabled">
+                                        Altyazısız videolar için whisper kullan
+                                        <span style="color: var(--gold-text);
+                                                     font-family: var(--font-mono);
+                                                     font-size: .7rem;">
+                                            (Docker, large-v3, ~30-60 sn)
+                                        </span>
+                                    </span>
+                                    <span x-show="!whisperApi.enabled">
+                                        Altyazısız videolar için whisper kullan
+                                        <span style="color: var(--text3);
+                                                     font-family: var(--font-mono);
+                                                     font-size: .7rem;">
+                                            (lokal, ~5-10 dk)
+                                        </span>
+                                    </span>
+                                </label>
+                                <p style="margin: .35rem 0 0; padding-left: 1.5rem;
+                                          font-size: .72rem; color: var(--text3);">
+                                    Default davranış: video orijinal dilindeki
+                                    altyazı (manuel > auto) çekilip claude'a verilir,
+                                    Türkçe analiz üretilir. Whisper transcribe
+                                    yalnız altyazı yoksa gerek.
+                                </p>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <template x-if="deep">
+            <div class="deep-panel glass">
+                <div class="deep-header">
+                    <h3 x-text="deep.meta?.title ? deep.meta.title : 'Ayrıntılı Analiz'"></h3>
+                    <div style="display: flex; gap: .65rem; align-items: center;">
+                        <template x-if="deep.status === 'done' || deep.status === 'already_exists'">
+                            <button class="bookmark"
+                                    :class="{ saved: deepInLibrary }"
+                                    @click="toggleDeepBookmark()"
+                                    :title="deepInLibrary ? 'Kütüphaneden çıkar' : 'Kütüphaneye kaydet'">
+                                <svg width="20" height="20" viewBox="0 0 24 24"
+                                     :fill="deepInLibrary ? 'currentColor' : 'none'"
+                                     stroke="currentColor" stroke-width="1.6"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                            </button>
+                        </template>
+                        <span class="deep-status"
+                              :class="deepStatusClass()"
+                              x-text="deepStatusLabel()"></span>
+                    </div>
+                </div>
+                <template x-if="deep.status === 'running'">
+                    <div class="empty-state">
+                        <p style="color: var(--text2); margin: 0;">
+                            <strong style="color: var(--text);">Analiz hazırlanıyor…</strong>
+                            <span x-text="(deep.elapsed_sec || 0) + ' sn'"></span>
+                        </p>
+                        <template x-if="deep.stage">
+                            <p style="color: var(--gold-text); font-family: var(--font-mono);
+                                      font-size: .76rem; margin: .35rem 0 0;">
+                                Aşama: <span x-text="stageLabel(deep.stage)"></span>
+                            </p>
+                        </template>
+                        <p style="color: var(--text3); font-size: .8rem;
+                                  margin: .5rem 0 0;">
+                            Transkript hazırlanır, özet ve zihin haritası
+                            yazılır, sesli okuma sentezlenir. 4 adım, ~3-5 dakika.
+                        </p>
+                    </div>
+                </template>
+                <template x-if="deep.status === 'done'">
+                    <div>
+                        <!-- Phase 17-iv: 4-tab navigation -->
+                        <nav class="deep-tabs">
+                            <button :class="{ active: tab === 'summary' }"
+                                    @click="tab = 'summary'">Özet</button>
+                            <button :class="{ active: tab === 'transcript' }"
+                                    @click="tab = 'transcript'"
+                                    x-show="deep.artifacts?.transcript">Transkript</button>
+                            <button :class="{ active: tab === 'mindmap' }"
+                                    @click="tab = 'mindmap'">Zihin Haritası</button>
+                            <button :class="{ active: tab === 'audio' }"
+                                    @click="tab = 'audio'">Ses</button>
+                            <!-- Phase 36-iii: Ek Analiz sekmesi -->
+                            <button :class="{ active: tab === 'addendum' }"
+                                    @click="tab = 'addendum'; loadAddendumIndex()">
+                                🎯 Ek Analiz
+                                <span class="tab-count" x-show="addendumEntries.length > 0"
+                                      x-text="addendumEntries.length"></span>
+                            </button>
+                        </nav>
+
+                        <!-- Phase 19-ii / 28-ii: yalnız Phase 14 legacy
+                             (result.md var, summary.md yok) için yeniden
+                             üret tavsiyesi. Phase 28-ii'de mindmap zaten
+                             default'ta üretilmediği için "summary yok"
+                             check'i artık geçerli değil. -->
+                        <template x-if="deep.artifacts?.legacy_result && !deep.artifacts?.summary">
+                            <div class="deep-legacy-notice">
+                                <p>
+                                    <strong>Bu analiz eski formatta üretildi.</strong>
+                                    Yeni format çoklu artifact (özet + zihin haritası
+                                    + sesli özet) — <button class="link-style"
+                                    @click="triggerDeep(true)">yeniden üret</button>.
+                                </p>
+                            </div>
+                        </template>
+
+                        <!-- Tab content -->
+                        <div class="deep-tab-content" x-show="tab === 'summary'">
+                            <div class="deep-content" x-html="renderMarkdown(deep.result)"></div>
+                        </div>
+
+                        <div class="deep-tab-content" x-show="tab === 'transcript'">
+                            <div class="deep-content"
+                                 x-html="renderMarkdown(transcriptText)"
+                                 x-init="loadArtifact('transcript')"></div>
+                            <template x-if="!transcriptText">
+                                <p style="color: var(--text3); padding: 1rem;">
+                                    Yükleniyor…
+                                </p>
+                            </template>
+                        </div>
+
+                        <div class="deep-tab-content" x-show="tab === 'mindmap'">
+                            <!-- Mindmap var: iframe + tam ekran butonu -->
+                            <template x-if="deep.artifacts?.mindmap">
+                                <div style="position: relative;" x-ref="mindmapWrapper">
+                                    <button class="btn-fullscreen-mindmap"
+                                            @click="toggleMindmapFullscreen()"
+                                            title="Tam ekran (büyük pencere)">
+                                        🔲 Tam ekran
+                                    </button>
+                                    <!-- Phase 28-v: cache-bust query — wrapper
+                                         güncellemeleri sonrası tarayıcı eski
+                                         mindmap.html'i cache'lemesin -->
+                                    <iframe :src="deep.artifacts?.mindmap + '?v=' + (deep.generated_at || Date.now())"
+                                            class="mindmap-frame"
+                                            title="Zihin Haritası"></iframe>
+                                </div>
+                            </template>
+                            <!-- Üretiliyor -->
+                            <template x-if="!deep.artifacts?.mindmap && mindmapGenerating">
+                                <div style="padding: 1.5rem; text-align: center;">
+                                    <p style="color: var(--text2); margin: 0 0 .35rem;">
+                                        <strong style="color: var(--text);">Zihin haritası hazırlanıyor…</strong>
+                                        <span x-text="(mindmapElapsed || 0) + ' sn'"></span>
+                                    </p>
+                                    <p style="color: var(--text3); font-size: .76rem; margin: 0;">
+                                        Yapay zeka NotebookLM tarzı kategorize harita
+                                        çıkarıyor (~30-60 sn).
+                                    </p>
+                                </div>
+                            </template>
+                            <!-- Hata -->
+                            <template x-if="!deep.artifacts?.mindmap && mindmapError">
+                                <div style="padding: 1.5rem; text-align: center;">
+                                    <p style="color: #b54b3a; margin: 0 0 .65rem;">
+                                        <strong>Zihin haritası üretilemedi.</strong>
+                                    </p>
+                                    <p style="color: var(--text3); font-size: .76rem;
+                                              font-family: var(--font-mono);
+                                              margin: 0 0 .85rem;"
+                                       x-text="mindmapError"></p>
+                                    <button class="deep-trigger" @click="triggerMindmap()">
+                                        Tekrar dene
+                                    </button>
+                                </div>
+                            </template>
+                            <!-- Henüz tetiklenmemiş: üret butonu -->
+                            <template x-if="!deep.artifacts?.mindmap && !mindmapGenerating && !mindmapError">
+                                <div style="padding: 1.5rem; text-align: center;">
+                                    <p style="color: var(--text3); margin: 0 0 .85rem;
+                                              font-size: .85rem;">
+                                        NotebookLM tarzı kategorize zihin haritası —
+                                        emoji'li ana dallar (📌 🔬 📊 ⚙️ 💡 ⚠️),
+                                        zoom/expand toolbar. Tek tıkla üretilir
+                                        (~30-60 sn).
+                                    </p>
+                                    <button class="deep-trigger"
+                                            @click="triggerMindmap()">
+                                        🧠 Zihin haritası üret
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="deep-tab-content" x-show="tab === 'audio'">
+                            <div style="padding: 1.5rem; text-align: center;">
+                                <!-- Ses var: anasayfa player'ıyla aynı stil (Phase 30 audioPlayer) -->
+                                <template x-if="deep.artifacts?.audio">
+                                    <div class="brief-audio-player"
+                                         x-data="audioPlayer(deep.artifacts.audio)" x-init="bind()">
+                                        <audio x-ref="el" preload="metadata"
+                                               @loadedmetadata="onLoaded()"
+                                               @timeupdate="onTime()"
+                                               @ended="onEnded()"
+                                               @play="playing = true"
+                                               @pause="playing = false"></audio>
+                                        <button class="player-play" @click="toggle()"
+                                                :aria-label="playing ? 'Duraklat' : 'Oynat'">
+                                            <svg x-show="!playing" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M8 5v14l11-7z"/>
+                                            </svg>
+                                            <svg x-show="playing" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M6 5h4v14H6zM14 5h4v14h-4z"/>
+                                            </svg>
+                                        </button>
+                                        <div class="player-progress" @click="seek($event)">
+                                            <div class="player-progress-fill" :style="`width: ${progressPct}%`"></div>
+                                        </div>
+                                        <span class="player-time"
+                                              x-text="`${fmtTime(current)} / ${fmtTime(duration)}`"></span>
+                                        <button class="player-speed" @click="cycleSpeed()"
+                                                :title="'Hız: ' + speed + 'x'"
+                                                x-text="speed + '×'"></button>
+                                        <a class="player-download" :href="deep.artifacts.audio" download
+                                           title="MP3 indir" aria-label="MP3 indir">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                                 stroke="currentColor" stroke-width="1.8"
+                                                 stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                <polyline points="7 10 12 15 17 10"/>
+                                                <line x1="12" y1="15" x2="12" y2="3"/>
+                                            </svg>
+                                        </a>
+                                    </div>
+                                </template>
+                                <!-- Ses yok ve üretiliyor: ilerleme -->
+                                <template x-if="!deep.artifacts?.audio && audioGenerating">
+                                    <div>
+                                        <p style="color: var(--text2); margin: 0 0 .35rem;">
+                                            <strong style="color: var(--text);">Sesli özet hazırlanıyor…</strong>
+                                            <span x-text="(audioElapsed || 0) + ' sn'"></span>
+                                        </p>
+                                        <p style="color: var(--text3); font-size: .76rem; margin: 0;">
+                                            Yapay zeka konuşma metni yazıyor, ardından
+                                            edge-tts ile mp3'e sentezleniyor (~30-60 sn).
+                                        </p>
+                                    </div>
+                                </template>
+                                <!-- Ses yok, fail: hata + tekrar -->
+                                <template x-if="!deep.artifacts?.audio && audioError">
+                                    <div>
+                                        <p style="color: #b54b3a; margin: 0 0 .65rem;">
+                                            <strong>Sesli özet üretilemedi.</strong>
+                                        </p>
+                                        <p style="color: var(--text3); font-size: .76rem;
+                                                  font-family: var(--font-mono);
+                                                  margin: 0 0 .85rem;"
+                                           x-text="audioError"></p>
+                                        <button class="deep-trigger" @click="triggerAudio()">
+                                            Tekrar dene
+                                        </button>
+                                    </div>
+                                </template>
+                                <!-- Ses yok, henüz tetiklenmemiş: üret butonu -->
+                                <template x-if="!deep.artifacts?.audio && !audioGenerating && !audioError">
+                                    <div>
+                                        <p style="color: var(--text3); margin: 0 0 .85rem;
+                                                  font-size: .85rem;">
+                                            Bu analiz için sesli özet henüz üretilmedi.
+                                            Konuşma metni + ses sentezi ~30-60 sn sürer.
+                                        </p>
+                                        <button class="deep-trigger"
+                                                @click="triggerAudio()">
+                                            🔊 Sesli özet üret
+                                        </button>
+                                    </div>
+                                </template>
+                                <!-- Phase 36-ii: Preset galerisi (audio mevcut/yok fark etmez) -->
+                                <div class="preset-gallery-wrapper" x-show="presets.length > 0" style="margin-top: 1.5rem;">
+                                    <div class="preset-gallery-header">
+                                        <button class="btn-pill"
+                                                @click="presetGalleryOpen = !presetGalleryOpen">
+                                            <span x-show="!presetGalleryOpen">🎛️ Preset değiştir</span>
+                                            <span x-show="presetGalleryOpen">▾ Gizle</span>
+                                        </button>
+                                        <span class="preset-active-badge" x-show="audioMeta?.preset_name">
+                                            🎛️ <span x-text="audioMeta?.preset_name"></span> ile üretildi
+                                        </span>
+                                    </div>
+                                    <div class="preset-gallery" x-show="presetGalleryOpen" x-transition>
+                                        <template x-for="p in presets" :key="p.id">
+                                            <article class="preset-card"
+                                                     :class="audioMeta?.preset_id === p.id ? 'active' : ''">
+                                                <h4 x-text="p.name"></h4>
+                                                <p x-text="p.description"></p>
+                                                <dl>
+                                                    <dt>Süre</dt>
+                                                    <dd x-text="`${p.target_minutes[0]}-${p.target_minutes[1]} dk`"></dd>
+                                                    <dt>Format</dt>
+                                                    <dd x-text="formatLabel(p.format)"></dd>
+                                                </dl>
+                                                <button class="deep-trigger"
+                                                        :disabled="audioGenerating"
+                                                        @click="triggerAudioWithPreset(p.id)">
+                                                    <span x-show="audioGenerating && pendingPresetId === p.id">
+                                                        Üretiliyor…
+                                                    </span>
+                                                    <span x-show="!(audioGenerating && pendingPresetId === p.id)">
+                                                        Bu preset ile üret
+                                                    </span>
+                                                </button>
+                                            </article>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Phase 36-iii: Ek Analiz sekmesi (Otomatik açılar + Serbest soru + Mukayese) -->
+                        <div class="deep-tab-content" x-show="tab === 'addendum'">
+                            <!-- Alt sekme seçici -->
+                            <div class="addendum-subtabs">
+                                <button :class="addendumSubTab === 'angles' ? 'active' : ''"
+                                        @click="addendumSubTab = 'angles'">🔍 Otomatik açılar</button>
+                                <button :class="addendumSubTab === 'freeform' ? 'active' : ''"
+                                        @click="addendumSubTab = 'freeform'">🎯 Serbest soru + tag</button>
+                                <button :class="addendumSubTab === 'compare' ? 'active' : ''"
+                                        @click="addendumSubTab = 'compare'">🔗 Mukayeseli kaynak</button>
+                            </div>
+
+                            <!-- 5a: Otomatik açılar -->
+                            <div x-show="addendumSubTab === 'angles'" class="addendum-pane">
+                                <template x-if="!angleSuggestions || angleSuggestions.length === 0">
+                                    <div style="padding: 1.5rem; text-align: center;">
+                                        <p style="color: var(--text3); margin-bottom: .85rem;">
+                                            Bu video özetine bakıp 4-5 ek analiz açısı önereceğim.
+                                        </p>
+                                        <button class="deep-trigger" :disabled="anglesLoading"
+                                                @click="loadAngles()">
+                                            <span x-show="!anglesLoading">🔍 Önerilen açıları üret</span>
+                                            <span x-show="anglesLoading">Üretiliyor…</span>
+                                        </button>
+                                    </div>
+                                </template>
+                                <template x-if="angleSuggestions && angleSuggestions.length > 0">
+                                    <div class="angles-grid">
+                                        <template x-for="a in angleSuggestions" :key="a.slug">
+                                            <article class="angle-card">
+                                                <h4 x-text="a.title"></h4>
+                                                <p x-text="a.why"></p>
+                                                <button class="btn-pill btn-pill-primary"
+                                                        :disabled="generatingAngle === a.slug"
+                                                        @click="generateAngleAddendum(a)">
+                                                    <span x-show="generatingAngle === a.slug">Üretiliyor…</span>
+                                                    <span x-show="generatingAngle !== a.slug">Bu açıyı analiz et</span>
+                                                </button>
+                                            </article>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- 5b: Serbest soru + tag -->
+                            <div x-show="addendumSubTab === 'freeform'" class="addendum-pane">
+                                <textarea x-model="freeformQuestion"
+                                          placeholder="Ne öğrenmek istiyorsun? Örn. 'Bunu Türk hukuku açısından değerlendir'"
+                                          rows="3"></textarea>
+                                <div class="tag-chips">
+                                    <template x-for="t in availableTags" :key="t.id">
+                                        <label class="tag-chip"
+                                               :class="freeformTags.includes(t.id) ? 'active' : ''">
+                                            <input type="checkbox" :value="t.id"
+                                                   @change="toggleFreeformTag(t.id)"
+                                                   :checked="freeformTags.includes(t.id)" />
+                                            <span x-text="t.label"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                                <button class="deep-trigger"
+                                        :disabled="!freeformQuestion.trim() || freeformGenerating"
+                                        @click="generateFreeformAddendum()">
+                                    <span x-show="!freeformGenerating">🎯 Bu soruyu analiz et</span>
+                                    <span x-show="freeformGenerating">Üretiliyor…</span>
+                                </button>
+                            </div>
+
+                            <!-- 5c: Mukayeseli kaynak -->
+                            <div x-show="addendumSubTab === 'compare'" class="addendum-pane">
+                                <template x-if="relatedSources.length === 0 && !relatedLoading">
+                                    <button class="deep-trigger" @click="loadRelatedSources()">
+                                        🔗 İlgili kaynakları getir
+                                    </button>
+                                </template>
+                                <template x-if="relatedLoading">
+                                    <p style="color: var(--text3); text-align: center;">İlgili kaynaklar aranıyor…</p>
+                                </template>
+                                <template x-if="relatedSources.length > 0">
+                                    <div>
+                                        <p style="color: var(--text3); font-size: .85rem; margin-bottom: .85rem;">
+                                            2-5 kaynak seç, sonra mukayeseli analiz tetikle.
+                                        </p>
+                                        <ul class="related-sources">
+                                            <template x-for="src in relatedSources" :key="src.id">
+                                                <li>
+                                                    <label>
+                                                        <input type="checkbox" :value="src.id"
+                                                               @change="toggleCompareSource(src.id)" />
+                                                        <span class="src-title" x-text="src.title"></span>
+                                                        <span class="src-meta" x-text="`${src.source_name} · ${formatDate(src.published_at)}`"></span>
+                                                    </label>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                        <button class="deep-trigger"
+                                                :disabled="compareSelectedIds.length < 2 || compareSelectedIds.length > 5 || compareGenerating"
+                                                @click="generateCompareAddendum()">
+                                            <span x-show="!compareGenerating">
+                                                Bu <span x-text="compareSelectedIds.length"></span> kaynakla mukayeseli analiz
+                                            </span>
+                                            <span x-show="compareGenerating">Üretiliyor…</span>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Mevcut addendum'ların listesi (accordion) -->
+                            <div class="addendum-list" x-show="addendumEntries.length > 0">
+                                <h3 style="margin-top: 2rem;">Üretilmiş ek analizler</h3>
+                                <template x-for="e in addendumEntries" :key="e.slug">
+                                    <details class="addendum-entry">
+                                        <summary>
+                                            <span class="addendum-type-badge" x-text="addendumTypeLabel(e.type)"></span>
+                                            <span class="addendum-title" x-text="e.title"></span>
+                                            <span class="addendum-date" x-text="formatDate(e.created_at)"></span>
+                                        </summary>
+                                        <div class="addendum-body"
+                                             x-html="addendumBodies[e.slug] ? renderMarkdown(addendumBodies[e.slug]) : 'Yükleniyor…'"
+                                             x-init="loadAddendumBody(e.slug)"></div>
+                                        <div class="addendum-actions">
+                                            <button class="btn-pill"
+                                                    :disabled="addendumAudioPending === e.slug"
+                                                    x-show="!e.has_audio"
+                                                    @click="generateAddendumAudio(e.slug)">
+                                                🔊 Sesle dinle
+                                            </button>
+                                            <audio x-show="e.has_audio"
+                                                   :src="`/archive/deep/${deep.job_id}/addendum_${e.slug}_audio.mp3`"
+                                                   controls></audio>
+                                            <button class="btn-pill danger"
+                                                    @click="deleteAddendum(e.slug)">Sil</button>
+                                        </div>
+                                    </details>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="deep.status === 'failed'">
+                    <div class="empty-state">
+                        <p style="color: #b54b3a; margin: 0;">
+                            <strong>Analiz başarısız.</strong>
+                        </p>
+                        <p style="color: var(--text3); font-size: .82rem;
+                                  margin: .5rem 0 0; font-family: var(--font-mono);"
+                           x-text="deep.error"></p>
+                        <button class="deep-trigger" style="margin-top: .85rem;"
+                                @click="triggerDeep(true)">Tekrar dene</button>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <template x-if="error">
+            <div class="analyze-result error glass">
+                <span class="label-mono" style="color: #e89a90;">Hata</span>
+                <p style="margin: .35rem 0 0; color: #e89a90;" x-text="error"></p>
+            </div>
+        </template>
+    </section>
+
+    <!-- Phase 32-v.3: Henüz Analiz Edilmemiş YouTube Videoları -->
+    <section class="block" x-show="!loadingUnanalyzed && unanalyzedVideos.length > 0">
+        <div class="block-header">
+            <h2>📺 Yeni Videolar
+                <span class="pill"
+                      x-text="`${unanalyzedVideos.length} henüz analiz edilmemiş`"></span>
+            </h2>
+            <button class="btn-pill" @click="loadUnanalyzed()">↻ Yenile</button>
+        </div>
+        <p class="page-note" style="margin: -.25rem 0 .85rem;">
+            Takip ettiğin YouTube kanallarından son 14 gün içinde gelen yeni videolar.
+            Tek tıkla analiz başlat — link otomatik doldurulur.
+        </p>
+        <div class="unanalyzed-grid">
+            <template x-for="v in unanalyzedVideos" :key="v.url">
+                <article class="unanalyzed-card glass">
+                    <p class="uv-channel" x-text="v.channel_name"></p>
+                    <h3 class="uv-title" x-text="v.title"></h3>
+                    <div class="uv-meta">
+                        <span x-text="formatDate(v.published_at || v.fetched_at)"></span>
+                    </div>
+                    <div class="uv-actions">
+                        <button class="btn-pill btn-pill-primary"
+                                @click="analyzeFromUnanalyzed(v.url)">
+                            🔬 Analiz et
+                        </button>
+                        <a :href="v.url" target="_blank" rel="noopener" class="btn-pill"
+                           style="text-decoration: none;">
+                            ↗ YouTube'da aç
+                        </a>
+                    </div>
+                </article>
+            </template>
+        </div>
+    </section>
+
+    <!-- Phase 23: Önceki Analizler — kart listesi -->
+    <section class="block past-analyses" x-show="pastJobs.length > 0" style="display: none;">
+        <h2 class="section-title">Önceki Analizler</h2>
+        <p class="section-sub">
+            Yapılan tüm analizler arşivde tutulur — bir tıkla yeniden açabilir,
+            kütüphaneye kaydedebilir veya kalıcı silebilirsin.
+        </p>
+        <div class="past-jobs-grid">
+            <template x-for="job in pastJobs" :key="job.job_id">
+                <article class="past-job-card glass">
+                    <div class="past-job-head">
+                        <span class="type-badge"
+                              :class="job.type === 'unknown' ? 'unknown' : 'known'"
+                              x-text="typeIcon(job.type) + ' ' + typeLabel(job.type)"></span>
+                        <span class="past-job-status"
+                              :class="pastJobStatusClass(job)"
+                              x-text="pastJobStatusLabel(job)"></span>
+                    </div>
+                    <h3 class="past-job-title"
+                        x-text="job.title || job.url || job.job_id"></h3>
+                    <template x-if="job.url">
+                        <a :href="job.url" target="_blank" rel="noopener"
+                           class="past-job-url" x-text="job.url"></a>
+                    </template>
+                    <div class="past-job-meta">
+                        <span x-text="formatDate(job.modified_at)"></span>
+                        <template x-if="job.in_library">
+                            <span class="past-job-bookmark">✓ Kütüphanede</span>
+                        </template>
+                    </div>
+                    <div class="past-job-artifacts">
+                        <template x-if="job.has_summary || job.has_legacy_result">
+                            <span class="artifact-pill">📝 Özet</span>
+                        </template>
+                        <template x-if="job.has_transcript">
+                            <span class="artifact-pill">📋 Transkript</span>
+                        </template>
+                        <template x-if="job.has_mindmap">
+                            <span class="artifact-pill">🧠 Zihin haritası</span>
+                        </template>
+                        <template x-if="job.has_audio">
+                            <span class="artifact-pill">🔊 Sesli özet</span>
+                        </template>
+                    </div>
+                    <div class="past-job-actions">
+                        <button class="btn-open"
+                                :disabled="job.status === 'running'"
+                                @click="openPastJob(job)">Aç</button>
+                        <button class="btn-delete"
+                                :disabled="job.status === 'running'"
+                                :title="job.status === 'running' ? 'Çalışan analiz silinemez' : 'Kalıcı sil'"
+                                @click="deletePastJob(job)">Sil</button>
+                    </div>
+                </article>
+            </template>
+        </div>
+    </section>
+
+    <!-- Phase 32-v.3: Mindmap full-screen modal — ESC + X + outside-click 3 yol close -->
+    <!-- Phase 36-i: native fullscreen API'a geçti, bu modal yalnız fallback olarak render -->
+    <template x-if="mindmapFullscreen && mindmapModalFallback">
+        <div class="mindmap-modal-overlay"
+             @click.self="toggleMindmapFullscreen()"
+             @keydown.escape.window="toggleMindmapFullscreen()">
+            <div class="mindmap-modal-box">
+                <button class="mindmap-modal-close" @click="toggleMindmapFullscreen()"
+                        title="Kapat (ESC)" aria-label="Kapat">✕</button>
+                <iframe :src="deep.artifacts?.mindmap + '?v=' + (deep.generated_at || Date.now())"
+                        class="mindmap-modal-frame"
+                        title="Zihin Haritası — Tam Ekran"></iframe>
+            </div>
+        </div>
+    </template>
+</div>
+
+<style>
+    /* Phase 32-v.3: Yeni Videolar grid */
+    .unanalyzed-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+    .unanalyzed-card {
+        padding: 1rem 1.15rem;
+        display: flex;
+        flex-direction: column;
+        gap: .55rem;
+    }
+    .uv-channel {
+        font-family: var(--font-mono);
+        font-size: .68rem;
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        color: var(--gold-text);
+        margin: 0;
+    }
+    .uv-title {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        line-height: 1.35;
+        color: var(--text);
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .uv-meta {
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        color: var(--text3);
+    }
+    .uv-actions {
+        display: flex;
+        gap: .5rem;
+        flex-wrap: wrap;
+        margin-top: auto;
+    }
+    .btn-pill {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text2);
+        padding: .4rem .85rem;
+        border-radius: 999px;
+        font-family: var(--font-ui);
+        font-size: .8rem;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .btn-pill:hover:not(:disabled) {
+        color: var(--text); border-color: var(--gold-border);
+        transform: translateY(-1px);
+    }
+    .btn-pill-primary {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--terra) 100%);
+        border-color: transparent; color: var(--bg);
+        font-weight: 600;
+    }
+    .btn-pill-primary:hover:not(:disabled) {
+        box-shadow: 0 4px 12px rgba(196,112,74,0.3);
+    }
+
+    /* Phase 32-v.3: Mindmap full-screen modal */
+    .btn-fullscreen-mindmap {
+        position: absolute;
+        top: .85rem; right: .85rem;
+        z-index: 5;
+        background: rgba(20, 31, 26, 0.92);
+        color: var(--gold-text);
+        border: 1px solid var(--gold-border);
+        padding: .45rem .85rem;
+        border-radius: 999px;
+        font-family: var(--font-mono);
+        font-size: .76rem;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        transition: all var(--t-fast);
+    }
+    .btn-fullscreen-mindmap:hover {
+        background: var(--gold-dim);
+        border-color: var(--gold);
+        transform: translateY(-1px);
+    }
+    .mindmap-modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.78);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        animation: rise .25s var(--ease-ghibli) both;
+    }
+    .mindmap-modal-box {
+        position: relative;
+        width: 96vw;
+        height: 92vh;
+        max-width: 1800px;
+        background: var(--bg);
+        border: 1px solid var(--gold-border);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--gold-border);
+    }
+    .mindmap-modal-close {
+        position: absolute;
+        top: .85rem; right: .85rem;
+        z-index: 10;
+        background: rgba(20, 31, 26, 0.95);
+        color: var(--text);
+        border: 1px solid var(--border2);
+        padding: 0;
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        transition: all var(--t-fast);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+    .mindmap-modal-close:hover {
+        background: rgba(176, 68, 55, 0.18);
+        color: #e89a90;
+        border-color: rgba(176, 68, 55, 0.4);
+        transform: scale(1.05);
+    }
+    .mindmap-modal-frame {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #fff;
+    }
+
+    .example-chips {
+        display: flex; align-items: center; flex-wrap: wrap;
+        gap: .35rem; margin: -.25rem 0 .15rem;
+    }
+    .example-chips .chip {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text2);
+        padding: .3rem .7rem;
+        font-family: var(--font-mono); font-size: .72rem;
+        border-radius: 999px; cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .example-chips .chip:hover {
+        color: var(--gold-text); border-color: var(--gold-border);
+        transform: translateY(-1px);
+    }
+    .analyze-result {
+        margin-top: 1.25rem; max-width: 720px;
+        padding: 1.4rem 1.6rem;
+        animation: rise .4s var(--ease-ghibli) both;
+    }
+    .analyze-result.error {
+        background: rgba(176, 68, 55, 0.08);
+        border-color: rgba(176, 68, 55, 0.32);
+    }
+    .result-row {
+        margin-bottom: 1rem;
+    }
+    .result-row:last-child { margin-bottom: 0; }
+    .result-row .label-mono { display: block; margin-bottom: .25rem; }
+    .result-row a { font-family: var(--font-mono); font-size: .9rem; word-break: break-all; }
+    .type-badge {
+        display: inline-block;
+        padding: .3rem .85rem;
+        font-family: var(--font-mono); font-size: .82rem;
+        font-weight: 500;
+        border-radius: 999px;
+        text-transform: uppercase; letter-spacing: .08em;
+    }
+    .type-badge.known {
+        background: var(--teal-dim); color: var(--teal-text);
+        border: 1px solid var(--teal-border);
+    }
+    .type-badge.unknown {
+        background: rgba(176, 68, 55, 0.08); color: #e89a90;
+        border: 1px solid rgba(176, 68, 55, 0.32);
+    }
+
+    /* Phase 14: deep-dive panel */
+    .deep-trigger {
+        padding: .55rem 1.1rem;
+        font-family: var(--font-sans, inherit);
+        font-size: .88rem;
+        color: var(--text);
+        background: rgba(177, 132, 76, 0.18);
+        border: 1px solid rgba(177, 132, 76, 0.5);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background var(--t-fast), border-color var(--t-fast);
+    }
+    .deep-trigger:hover:not(:disabled) {
+        background: rgba(177, 132, 76, 0.3);
+        border-color: rgba(177, 132, 76, 0.8);
+    }
+    .deep-trigger:disabled { opacity: .65; cursor: not-allowed; }
+
+    .deep-panel {
+        margin-top: 1.4rem; max-width: 820px;
+        padding: 1.4rem 1.7rem;
+        animation: rise .4s var(--ease-ghibli) both;
+    }
+    .deep-header {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: .85rem;
+        padding-bottom: .6rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .deep-header h3 { margin: 0; font-size: 1rem; }
+    .deep-status {
+        font-family: var(--font-mono); font-size: .72rem;
+        padding: .2rem .65rem;
+        border-radius: 999px;
+        text-transform: uppercase; letter-spacing: .08em;
+    }
+    .deep-status.running {
+        background: rgba(177, 132, 76, 0.12); color: var(--gold-text);
+        border: 1px solid var(--gold-border);
+    }
+    .deep-status.ok {
+        background: var(--teal-dim); color: var(--teal-text);
+        border: 1px solid var(--teal-border);
+    }
+    .deep-status.err {
+        background: rgba(176, 68, 55, 0.08); color: #e89a90;
+        border: 1px solid rgba(176, 68, 55, 0.32);
+    }
+
+    /* Phase 17-iv: 4-tab deep panel */
+    .deep-tabs {
+        display: flex; gap: .5rem;
+        margin-bottom: 1.1rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: .5rem;
+    }
+    .deep-tabs button {
+        background: transparent;
+        color: var(--text3);
+        border: 1px solid transparent;
+        padding: .45rem .9rem;
+        font-family: var(--font-sans, inherit);
+        font-size: .85rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .deep-tabs button:hover {
+        color: var(--text);
+        background: rgba(177, 132, 76, 0.05);
+    }
+    .deep-tabs button.active {
+        color: var(--gold-text);
+        background: rgba(177, 132, 76, 0.12);
+        border-color: var(--gold-border);
+    }
+    .deep-tab-content {
+        animation: rise .2s var(--ease-ghibli) both;
+    }
+    .mindmap-frame {
+        width: 100%;
+        height: 600px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: #f9f5ec;
+    }
+    /* Phase 19-ii: eski format için yardım kutusu */
+    .deep-legacy-notice {
+        background: rgba(177, 132, 76, 0.08);
+        border: 1px dashed rgba(177, 132, 76, 0.5);
+        padding: .75rem 1rem;
+        border-radius: 6px;
+        margin: 0 0 1rem;
+    }
+    .deep-legacy-notice p {
+        margin: 0; color: var(--text2); font-size: .85rem;
+    }
+    .deep-legacy-notice strong { color: var(--text); }
+    .link-style {
+        background: none; border: none; padding: 0;
+        color: var(--gold-text); text-decoration: underline;
+        cursor: pointer; font-size: inherit; font-family: inherit;
+    }
+    .link-style:hover { color: var(--text); }
+
+    .deep-content { font-family: var(--font-serif, Georgia, serif); line-height: 1.6; }
+    .deep-content h2 { font-size: 1.1rem; margin: 1.4rem 0 .55rem; }
+    .deep-content h3 {
+        font-size: .98rem; margin: 1.2rem 0 .45rem;
+        color: var(--text2);
+        border-bottom: 1px solid var(--border);
+        padding-bottom: .25rem;
+    }
+    .deep-content h3:first-child { margin-top: 0; }
+    .deep-content p { margin: .55rem 0; color: var(--text2); }
+    .deep-content ul { margin: .35rem 0 .85rem; padding-left: 1.4rem; }
+    .deep-content li { margin: .3rem 0; color: var(--text2); }
+    .deep-content strong { color: var(--text); }
+
+    .empty-state {
+        padding: 2rem 1.5rem; text-align: center;
+        max-width: 32rem; margin: 0 auto;
+    }
+
+    /* Phase 26: Docker whisper aktif bilgi pill'i */
+    .whisper-info-pill {
+        display: inline-block;
+        margin: 0;
+        padding: .35rem .75rem;
+        font-size: .78rem;
+        background: rgba(99, 174, 130, 0.1);
+        border: 1px solid rgba(99, 174, 130, 0.4);
+        color: var(--teal-text, #6cb88f);
+        border-radius: 999px;
+    }
+
+    /* Phase 23: Önceki Analizler — kart listesi */
+    .past-analyses { margin-top: 2.5rem; }
+    .section-title { font-size: 1.1rem; margin: 0 0 .35rem; color: var(--text); }
+    .section-sub {
+        color: var(--text3); font-size: .85rem;
+        margin: 0 0 1.1rem; max-width: 48rem;
+    }
+    .past-jobs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+    .past-job-card {
+        padding: 1.1rem 1.2rem 1rem;
+        display: flex; flex-direction: column;
+        transition: transform var(--t-fast), border-color var(--t-fast);
+    }
+    .past-job-card:hover {
+        transform: translateY(-1px);
+        border-color: var(--gold-border);
+    }
+    .past-job-head {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: .65rem; margin-bottom: .55rem;
+    }
+    .past-job-status {
+        font-family: var(--font-mono); font-size: .68rem;
+        padding: .15rem .55rem; border-radius: 999px;
+        text-transform: uppercase; letter-spacing: .08em;
+    }
+    .past-job-status.ok {
+        background: var(--teal-dim); color: var(--teal-text);
+        border: 1px solid var(--teal-border);
+    }
+    .past-job-status.running {
+        background: rgba(177, 132, 76, 0.12); color: var(--gold-text);
+        border: 1px solid var(--gold-border);
+    }
+    .past-job-status.err {
+        background: rgba(176, 68, 55, 0.08); color: #e89a90;
+        border: 1px solid rgba(176, 68, 55, 0.32);
+    }
+    .past-job-title {
+        font-size: .92rem; margin: 0 0 .35rem; color: var(--text);
+        line-height: 1.35; font-weight: 600;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .past-job-url {
+        font-family: var(--font-mono); font-size: .72rem;
+        color: var(--text3); word-break: break-all;
+        display: block; margin-bottom: .55rem;
+        text-decoration: none;
+    }
+    .past-job-url:hover { color: var(--gold-text); text-decoration: underline; }
+    .past-job-meta {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: .5rem; margin-bottom: .65rem;
+        font-size: .72rem; color: var(--text3);
+    }
+    .past-job-bookmark {
+        color: var(--gold-text); font-family: var(--font-mono);
+        font-size: .68rem;
+    }
+    .past-job-artifacts {
+        display: flex; flex-wrap: wrap; gap: .25rem;
+        margin-bottom: .85rem; min-height: 1.1rem;
+    }
+    .artifact-pill {
+        font-size: .68rem;
+        padding: .12rem .5rem;
+        background: rgba(177, 132, 76, 0.06);
+        border: 1px solid var(--border);
+        color: var(--text3);
+        border-radius: 999px;
+        font-family: var(--font-mono);
+    }
+    .past-job-actions {
+        display: flex; gap: .45rem; margin-top: auto;
+    }
+    .btn-open, .btn-delete {
+        flex: 1;
+        padding: .4rem .65rem;
+        font-size: .8rem; font-family: var(--font-sans, inherit);
+        border-radius: 5px; cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .btn-open {
+        background: rgba(177, 132, 76, 0.18);
+        border: 1px solid rgba(177, 132, 76, 0.5);
+        color: var(--text);
+    }
+    .btn-open:hover:not(:disabled) {
+        background: rgba(177, 132, 76, 0.3);
+        border-color: rgba(177, 132, 76, 0.8);
+    }
+    .btn-delete {
+        background: transparent;
+        border: 1px solid rgba(176, 68, 55, 0.32);
+        color: #e89a90;
+    }
+    .btn-delete:hover:not(:disabled) {
+        background: rgba(176, 68, 55, 0.08);
+        border-color: rgba(176, 68, 55, 0.5);
+    }
+    .btn-open:disabled, .btn-delete:disabled {
+        opacity: .45; cursor: not-allowed;
+    }
+    /* Phase 36-ii: preset gallery */
+    .preset-gallery-wrapper { display: flex; flex-direction: column; gap: .85rem; }
+    .preset-gallery-header {
+        display: flex; gap: .85rem; align-items: center; justify-content: center;
+        flex-wrap: wrap;
+    }
+    .preset-active-badge {
+        font-family: var(--font-mono); font-size: .76rem;
+        color: var(--gold-text);
+        padding: .3rem .75rem;
+        border: 1px solid var(--gold-border);
+        border-radius: 999px;
+        background: rgba(20, 31, 26, 0.5);
+    }
+    .preset-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-top: .5rem;
+        text-align: left;
+    }
+    .preset-card {
+        background: rgba(20, 31, 26, 0.65);
+        border: 1px solid var(--border2);
+        border-radius: 12px;
+        padding: 1rem 1.15rem;
+        display: flex; flex-direction: column; gap: .55rem;
+        transition: all var(--t-fast);
+    }
+    .preset-card.active {
+        border-color: var(--gold-border);
+        box-shadow: 0 0 0 1px var(--gold-border), 0 4px 14px rgba(196,112,74,0.25);
+    }
+    .preset-card h4 {
+        font-family: var(--font-display);
+        font-size: 1rem; margin: 0; color: var(--text);
+    }
+    .preset-card p {
+        font-size: .82rem; color: var(--text2); margin: 0;
+    }
+    .preset-card dl {
+        display: grid; grid-template-columns: auto 1fr;
+        gap: .2rem .65rem; margin: .35rem 0 0;
+        font-family: var(--font-mono); font-size: .72rem;
+        color: var(--text3);
+    }
+    .preset-card dt { color: var(--text3); }
+    .preset-card dd { color: var(--text2); margin: 0; }
+    .preset-card .deep-trigger { margin-top: auto; }
+
+    /* Phase 36-iii: Ek Analiz UI */
+    .addendum-subtabs {
+        display: flex; gap: .5rem; padding: 0 1rem 1rem;
+        border-bottom: 1px solid var(--border2);
+        margin-bottom: 1rem;
+    }
+    .addendum-subtabs button {
+        background: transparent; border: none;
+        color: var(--text3); padding: .5rem .85rem;
+        font-family: var(--font-mono); font-size: .78rem;
+        cursor: pointer; border-radius: 8px;
+        transition: all var(--t-fast);
+    }
+    .addendum-subtabs button:hover { color: var(--text2); }
+    .addendum-subtabs button.active {
+        color: var(--gold-text);
+        background: var(--gold-dim);
+    }
+    .addendum-pane { padding: 1rem 1.5rem; }
+    .addendum-pane textarea {
+        width: 100%;
+        background: rgba(20, 31, 26, 0.55);
+        border: 1px solid var(--border2);
+        border-radius: 10px;
+        color: var(--text);
+        padding: .75rem .9rem;
+        font-family: inherit;
+        font-size: .9rem;
+        resize: vertical;
+    }
+    .angles-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1rem;
+    }
+    .angle-card {
+        padding: 1rem 1.15rem;
+        background: rgba(20, 31, 26, 0.55);
+        border: 1px solid var(--border2);
+        border-radius: 12px;
+        display: flex; flex-direction: column; gap: .55rem;
+    }
+    .angle-card h4 {
+        font-family: var(--font-display); font-size: .95rem;
+        color: var(--text); margin: 0;
+    }
+    .angle-card p {
+        color: var(--text2); font-size: .82rem; margin: 0;
+    }
+    .tag-chips {
+        display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0;
+    }
+    .tag-chip {
+        display: inline-flex; align-items: center; gap: .35rem;
+        padding: .35rem .75rem;
+        background: transparent;
+        border: 1px solid var(--border2);
+        border-radius: 999px;
+        font-family: var(--font-mono); font-size: .74rem;
+        color: var(--text2); cursor: pointer;
+        transition: all var(--t-fast);
+    }
+    .tag-chip.active {
+        border-color: var(--gold-border);
+        background: var(--gold-dim);
+        color: var(--gold-text);
+    }
+    .tag-chip input { display: none; }
+    .related-sources { list-style: none; padding: 0; margin: 0 0 1rem; }
+    .related-sources li {
+        padding: .65rem .85rem;
+        border-bottom: 1px solid var(--border2);
+    }
+    .related-sources label {
+        display: flex; gap: .65rem; align-items: flex-start; cursor: pointer;
+    }
+    .src-title { color: var(--text); font-size: .88rem; }
+    .src-meta { color: var(--text3); font-family: var(--font-mono); font-size: .72rem; }
+    .addendum-list { margin-top: 2rem; padding: 0 1.5rem; }
+    .addendum-entry {
+        border: 1px solid var(--border2); border-radius: 10px;
+        padding: .85rem 1.15rem; margin-bottom: .75rem;
+        background: rgba(20, 31, 26, 0.4);
+    }
+    .addendum-entry summary {
+        cursor: pointer; display: flex; gap: .75rem; align-items: center;
+        list-style: none;
+    }
+    .addendum-type-badge {
+        font-family: var(--font-mono); font-size: .7rem;
+        color: var(--gold-text); padding: .2rem .55rem;
+        border-radius: 999px; background: var(--gold-dim);
+    }
+    .addendum-title { color: var(--text); flex: 1; }
+    .addendum-date { color: var(--text3); font-size: .72rem; }
+    .addendum-body { padding: 1rem 0; color: var(--text2); line-height: 1.55; }
+    .addendum-actions { display: flex; gap: .5rem; margin-top: .85rem; align-items: center; }
+    .btn-pill.danger { color: #e89a90; border-color: rgba(176, 68, 55, 0.4); }
+    .tab-count {
+        display: inline-block; min-width: 18px;
+        padding: 0 6px; margin-left: 4px;
+        font-size: .7rem; font-family: var(--font-mono);
+        background: var(--gold); color: var(--bg);
+        border-radius: 999px;
+    }
+</style>
+
+<script>
+const TYPE_LABELS = {
+    youtube: "YouTube",
+    github:  "GitHub",
+    arxiv:   "arXiv",
+    unknown: "Bilinmeyen",
+};
+
+function analyzePage() {
+    return {
+        url: "",
+        loading: false,
+        result: null,
+        error: null,
+        // Phase 14 deep-dive state + Phase 17-iv tabs + 17-v library
+        deep: null,
+        deepLoading: false,
+        deepPollTimer: null,
+        tab: "summary",
+        transcriptText: "",
+        deepInLibrary: false,
+        deepLibraryItemId: null,
+        // Phase 21-i: whisper opt-in + audio ayrı buton
+        useWhisper: false,
+        audioGenerating: false,
+        audioElapsed: 0,
+        audioTimer: null,
+        audioPollTimer: null,
+        audioError: null,
+        // Phase 23: önceki analizler listesi
+        pastJobs: [],
+        // Phase 28-ii: zihin haritası ayrı buton (audio pattern'iyle simetrik)
+        mindmapGenerating: false,
+        mindmapElapsed: 0,
+        mindmapTimer: null,
+        mindmapPollTimer: null,
+        mindmapError: null,
+        // Phase 32-v.3: mindmap full-screen modal state
+        mindmapFullscreen: false,
+        // Phase 36-i: native fullscreen API + CSS modal fallback
+        mindmapModalFallback: false,
+        // Phase 36-ii: preset gallery state
+        presets: [],
+        presetGalleryOpen: false,
+        audioMeta: null,
+        pendingPresetId: null,
+        // Phase 36-iii: Ek Analiz state
+        addendumSubTab: "angles",
+        addendumEntries: [],
+        addendumBodies: {},
+        angleSuggestions: [],
+        anglesLoading: false,
+        generatingAngle: null,
+        freeformQuestion: "",
+        freeformTags: [],
+        freeformGenerating: false,
+        relatedSources: [],
+        relatedLoading: false,
+        compareSelectedIds: [],
+        compareGenerating: false,
+        addendumAudioPending: null,
+        availableTags: [
+            { id: "tr_hukuk", label: "Türk Hukuku" },
+            { id: "tr_avukat", label: "Avukatlık" },
+            { id: "tr_ai", label: "Türkiye AI" },
+            { id: "dunya_ai", label: "Dünya AI" },
+            { id: "acik_kaynak_ai", label: "Açık Kaynak AI" },
+            { id: "legaltech", label: "Legaltech" },
+            { id: "resmi_mevzuat", label: "Resmi Mevzuat" },
+        ],
+        // Phase 32-v.3: henüz analiz edilmemiş YouTube videoları
+        unanalyzedVideos: [],
+        loadingUnanalyzed: false,
+        // Phase 26: Docker whisper service durumu
+        whisperApi: { enabled: false, api_url: null },
+        examples: [
+            { label: "YouTube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+            { label: "GitHub",  url: "https://github.com/anthropics/anthropic-sdk-python" },
+            { label: "arXiv",   url: "https://arxiv.org/abs/2511.01234" },
+        ],
+        typeLabel(t) { return TYPE_LABELS[t] || t; },
+        // Phase 24: brief'ten gelen "?url=..." linki — otomatik analiz tetikle
+        async initFromQuery() {
+            const params = new URLSearchParams(window.location.search);
+            const incoming = params.get("url");
+            if (!incoming) return;
+            this.url = incoming;
+            // İlk metadata fetch
+            await this.submit();
+            // Tip tanındıysa deep-dive'ı da otomatik tetikle
+            if (this.result?.detected_type
+                && this.result.detected_type !== "unknown") {
+                await this.triggerDeep();
+            }
+            // Query param'ı URL'den temizle — sayfa yenilenince tekrar
+            // tetiklenmesin
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, "", cleanUrl);
+        },
+        // Phase 23: önceki analizler — helper'lar
+        typeIcon(t) {
+            return ({ youtube: "📺", github: "📦", arxiv: "📄" })[t] || "🔗";
+        },
+        formatDate(iso) {
+            if (!iso) return "—";
+            try {
+                const d = new Date(iso);
+                return d.toLocaleString("tr-TR", {
+                    year: "numeric", month: "short", day: "numeric",
+                    hour: "2-digit", minute: "2-digit",
+                });
+            } catch (_) {
+                return iso;
+            }
+        },
+        pastJobStatusLabel(job) {
+            const map = {
+                done: "Hazır",
+                running: "Çalışıyor",
+                failed: "Başarısız",
+                not_found: "Boş",
+            };
+            return map[job.status] || job.status;
+        },
+        pastJobStatusClass(job) {
+            if (job.status === "done") return "ok";
+            if (job.status === "running") return "running";
+            return "err";
+        },
+        async loadPastJobs() {
+            try {
+                const r = await fetch("/api/analyze/deep");
+                if (r.ok) {
+                    const body = await r.json();
+                    this.pastJobs = body.jobs || [];
+                }
+            } catch (_) {
+                // sessizce yut — UI'da liste boş kalır
+            }
+        },
+        // Phase 26: Docker whisper service ping
+        async loadWhisperStatus() {
+            try {
+                const r = await fetch("/api/system/whisper");
+                if (r.ok) this.whisperApi = await r.json();
+            } catch (_) {
+                // env yoksa enabled=false zaten
+            }
+        },
+        // Phase 32-v.3: henüz analiz edilmemiş YouTube videoları
+        async loadUnanalyzed() {
+            this.loadingUnanalyzed = true;
+            try {
+                const r = await fetch("/api/youtube/unanalyzed?limit=20&days=14");
+                if (r.ok) {
+                    const body = await r.json();
+                    this.unanalyzedVideos = body.videos || [];
+                }
+            } catch (_) {
+                this.unanalyzedVideos = [];
+            } finally {
+                this.loadingUnanalyzed = false;
+            }
+        },
+        analyzeFromUnanalyzed(url) {
+            // URL'i form input'a yerleştir + scroll + auto-submit
+            this.url = url;
+            this.metadata = null;
+            this.deep = null;
+            // Form'a scroll
+            const formEl = document.querySelector("form.analyze");
+            if (formEl) formEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            // Otomatik fetch metadata + trigger deep
+            this.fetchMetadata().then(() => {
+                this.triggerDeep();
+            });
+        },
+        formatDate(iso) {
+            if (!iso) return "—";
+            try {
+                const d = new Date(iso);
+                return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+            } catch (_) {
+                return iso.slice(0, 10);
+            }
+        },
+        async openPastJob(job) {
+            // Mevcut polling'i durdur, state'i temizle
+            clearInterval(this.deepPollTimer);
+            clearInterval(this.audioPollTimer);
+            clearInterval(this.audioTimer);
+            this.transcriptText = "";
+            this.tab = "summary";
+            this.audioGenerating = false;
+            this.audioError = null;
+            this.deep = { job_id: job.job_id, status: "running",
+                          meta: { title: job.title }, artifacts: {} };
+            // Tam payload (result + artifacts) için status endpoint'ini çağır
+            try {
+                const r = await fetch(`/api/analyze/deep/${job.job_id}`);
+                if (r.ok) this.deep = await r.json();
+            } catch (_) {}
+            // Library state
+            this.deepInLibrary = job.in_library;
+            this.deepLibraryItemId = job.library_item_id;
+            // Result panel'ini de set et — kullanıcı URL ve tipi görsün
+            this.result = {
+                url: job.url || "",
+                detected_type: job.type || "unknown",
+            };
+            // Phase 36-ii: yeni job açıldı, audio_meta sidecar'ı da yükle
+            await this.loadAudioMeta();
+            // Phase 36-iii: addendum index'ini de yükle
+            await this.loadAddendumIndex();
+            // Sayfa scroll: deep panel'a kaydır
+            await this.$nextTick();
+            const panel = document.querySelector(".deep-panel");
+            if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+        async deletePastJob(job) {
+            const libWarning = job.in_library
+                ? "\n\nUyarı: Bu analiz kütüphanenizde — kütüphane kaydı kalır ama dosyalar silinir (zihin haritası, sesli özet linkleri 404 olur)."
+                : "";
+            const label = job.title || job.url || job.job_id;
+            if (!confirm(`"${label}" silinsin mi?${libWarning}`)) return;
+            try {
+                const r = await fetch(`/api/analyze/deep/${job.job_id}`, {
+                    method: "DELETE",
+                });
+                if (r.ok) {
+                    this.pastJobs = this.pastJobs.filter(
+                        (j) => j.job_id !== job.job_id,
+                    );
+                    // Açık olan deep panel bu mu? Kapat
+                    if (this.deep?.job_id === job.job_id) {
+                        this.deep = null;
+                        this.result = null;
+                    }
+                } else if (r.status === 409) {
+                    alert("Çalışan bir analizi silemezsin — önce tamamlanmasını bekle.");
+                } else if (r.status === 404) {
+                    // Zaten silinmiş — listeden de kaldır
+                    this.pastJobs = this.pastJobs.filter(
+                        (j) => j.job_id !== job.job_id,
+                    );
+                } else {
+                    alert("Silme başarısız: HTTP " + r.status);
+                }
+            } catch (e) {
+                alert("İstek başarısız: " + e);
+            }
+        },
+        async submit() {
+            this.loading = true;
+            this.result = null;
+            this.error = null;
+            this.deep = null;
+            clearInterval(this.deepPollTimer);
+            try {
+                const r = await fetch("/api/analyze", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: this.url }),
+                });
+                if (!r.ok) {
+                    const detail = await r.json().catch(() => ({}));
+                    throw new Error(detail.detail || `HTTP ${r.status}`);
+                }
+                this.result = await r.json();
+            } catch (e) {
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+        async triggerDeep(force = false) {
+            // Phase 14: heavy fetch + claude analiz
+            if (!this.result?.url) return;
+            this.deepLoading = true;
+            try {
+                const r = await fetch("/api/analyze/deep", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        url: this.result.url,
+                        use_whisper: this.useWhisper,
+                    }),
+                });
+                const body = await r.json().catch(() => ({}));
+                if (r.status === 422) {
+                    alert("URL türü desteklenmiyor (yt/gh/arxiv bekleniyor)");
+                    return;
+                }
+                if (r.status === 409) {
+                    // in_progress — polling'e geç (job_id detail içinde)
+                    this.deep = { status: "running", elapsed_sec: 0,
+                                  job_id: body.detail?.job_id };
+                    this.startPolling(body.detail?.job_id);
+                    return;
+                }
+                if (!r.ok) {
+                    alert("Deep analiz tetiklenemedi: " + r.status);
+                    return;
+                }
+                // Cache hit (already_exists) veya queued
+                if (body.status === "already_exists") {
+                    this.deep = body;  // result + meta zaten dolu
+                    return;
+                }
+                // queued
+                this.deep = { status: "running", elapsed_sec: 0,
+                              job_id: body.job_id };
+                this.startPolling(body.job_id);
+                // Phase 23: yeni job listede de görünsün
+                this.loadPastJobs();
+            } catch (e) {
+                alert("İstek başarısız: " + e);
+            } finally {
+                this.deepLoading = false;
+            }
+        },
+        startPolling(jobId) {
+            if (!jobId) return;
+            clearInterval(this.deepPollTimer);
+            this.deepPollTimer = setInterval(async () => {
+                try {
+                    const r = await fetch(`/api/analyze/deep/${jobId}`);
+                    const body = await r.json();
+                    this.deep = body;
+                    if (body.status === "done" || body.status === "failed" ||
+                        body.status === "not_found") {
+                        clearInterval(this.deepPollTimer);
+                        // Phase 23: liste artifact rozetleri + status taze olsun
+                        this.loadPastJobs();
+                    }
+                } catch (e) {
+                    // bir sonraki tick'te tekrar dener
+                }
+            }, 3000);
+            // Hard ceiling: 12 dk
+            setTimeout(() => clearInterval(this.deepPollTimer), 12 * 60 * 1000);
+        },
+        deepStatusLabel() {
+            if (!this.deep) return "";
+            const map = {
+                running: "Çalışıyor",
+                done: "Tamamlandı",
+                failed: "Başarısız",
+                not_found: "Bulunamadı",
+                already_exists: "Önbellekten",
+            };
+            return map[this.deep.status] || this.deep.status;
+        },
+        deepStatusClass() {
+            const s = this.deep?.status;
+            if (s === "done" || s === "already_exists") return "ok";
+            if (s === "failed" || s === "not_found") return "err";
+            return "running";
+        },
+        // Phase 17-iv: tab + stage helpers
+        stageLabel(stage) {
+            const map = {
+                transcript_clean: "Transkript temizleniyor",
+                summary: "Özet yazılıyor",
+                mindmap: "Zihin haritası çıkarılıyor",
+                audio: "Sesli özet sentezleniyor",
+            };
+            return map[stage] || stage;
+        },
+        // Phase 28-ii: ayrı zihin haritası tetikleme (audio pattern'iyle simetrik)
+        async triggerMindmap() {
+            if (!this.deep?.job_id) return;
+            this.mindmapGenerating = true;
+            this.mindmapError = null;
+            this.mindmapElapsed = 0;
+            const start = Date.now();
+            this.mindmapTimer = setInterval(() => {
+                this.mindmapElapsed = Math.floor((Date.now() - start) / 1000);
+            }, 1000);
+            try {
+                const r = await fetch(`/api/analyze/deep/${this.deep.job_id}/mindmap`, {
+                    method: "POST",
+                });
+                if (r.status === 404) {
+                    this.mindmapError = "Önce özet üretilmeli (404 summary_missing).";
+                    this.mindmapGenerating = false;
+                    clearInterval(this.mindmapTimer);
+                    return;
+                }
+                if (!r.ok) {
+                    this.mindmapError = "Tetiklenemedi: HTTP " + r.status;
+                    this.mindmapGenerating = false;
+                    clearInterval(this.mindmapTimer);
+                    return;
+                }
+                const body = await r.json();
+                if (body.status === "already_exists") {
+                    this.mindmapGenerating = false;
+                    clearInterval(this.mindmapTimer);
+                    await this.refreshDeepStatus();
+                    return;
+                }
+                // Queued — polling
+                this.mindmapPollTimer = setInterval(async () => {
+                    await this.refreshDeepStatus();
+                    if (this.deep?.artifacts?.mindmap) {
+                        this.mindmapGenerating = false;
+                        clearInterval(this.mindmapTimer);
+                        clearInterval(this.mindmapPollTimer);
+                    }
+                }, 3000);
+                // Hard ceiling: 5 dk
+                setTimeout(() => {
+                    if (this.mindmapGenerating) {
+                        this.mindmapGenerating = false;
+                        clearInterval(this.mindmapTimer);
+                        clearInterval(this.mindmapPollTimer);
+                        if (!this.deep?.artifacts?.mindmap) {
+                            this.mindmapError = "Üretim 5 dakikayı aştı; tekrar deneyin.";
+                        }
+                    }
+                }, 5 * 60 * 1000);
+            } catch (e) {
+                this.mindmapError = "İstek başarısız: " + e;
+                this.mindmapGenerating = false;
+                clearInterval(this.mindmapTimer);
+            }
+        },
+        // Phase 36-i: native browser fullscreen API + CSS modal fallback
+        async toggleMindmapFullscreen() {
+            const wrapper = this.$refs.mindmapWrapper;
+            if (!wrapper) return;
+            if (document.fullscreenElement) {
+                try { await document.exitFullscreen(); } catch (_) {}
+                return;
+            }
+            if (wrapper.requestFullscreen) {
+                try {
+                    await wrapper.requestFullscreen();
+                    this.mindmapFullscreen = true;
+                    this.mindmapModalFallback = false;
+                } catch (_) {
+                    this.mindmapFullscreen = true;
+                    this.mindmapModalFallback = true;
+                }
+            } else {
+                this.mindmapFullscreen = true;
+                this.mindmapModalFallback = true;
+            }
+        },
+        initMindmapFullscreen() {
+            document.addEventListener("fullscreenchange", () => {
+                if (!document.fullscreenElement) {
+                    this.mindmapFullscreen = false;
+                    this.mindmapModalFallback = false;
+                }
+            });
+        },
+        // Phase 36-ii: preset listesi yükle (/api/tts/presets)
+        async loadPresets() {
+            try {
+                const r = await fetch("/api/tts/presets");
+                if (r.ok) {
+                    const body = await r.json();
+                    this.presets = body.active || [];
+                }
+            } catch (_) {
+                this.presets = [];
+            }
+        },
+        // Phase 36-ii: audio_meta.json sidecar yükle (preset_id badge için)
+        async loadAudioMeta() {
+            if (!this.deep?.job_id) {
+                this.audioMeta = null;
+                return;
+            }
+            try {
+                const r = await fetch(`/archive/deep/${this.deep.job_id}/audio_meta.json`);
+                if (r.ok) {
+                    this.audioMeta = await r.json();
+                } else {
+                    this.audioMeta = null;
+                }
+            } catch (_) {
+                this.audioMeta = null;
+            }
+        },
+        // Phase 36-ii: format slug -> TR label
+        formatLabel(format) {
+            const map = {
+                panel_3: "3-sesli panel",
+                duo_expert_critic: "2-sesli uzman",
+                solo_narrator: "Tek-sesli",
+                debate: "Münazara",
+            };
+            return map[format] || format;
+        },
+        // Phase 36-ii: belirli preset ile audio regen tetikle (force=true)
+        async triggerAudioWithPreset(presetId) {
+            if (!this.deep?.job_id) return;
+            this.pendingPresetId = presetId;
+            this.audioGenerating = true;
+            this.audioError = null;
+            this.audioElapsed = 0;
+            const start = Date.now();
+            this.audioTimer = setInterval(() => {
+                this.audioElapsed = Math.floor((Date.now() - start) / 1000);
+            }, 1000);
+            const url = `/api/analyze/deep/${this.deep.job_id}/audio?force=true&preset_id=${encodeURIComponent(presetId)}`;
+            try {
+                const r = await fetch(url, { method: "POST" });
+                if (!r.ok) {
+                    this.audioError = "Tetiklenemedi: HTTP " + r.status;
+                    this.audioGenerating = false;
+                    this.pendingPresetId = null;
+                    clearInterval(this.audioTimer);
+                    return;
+                }
+                this.audioPollTimer = setInterval(async () => {
+                    await this.refreshDeepStatus();
+                    await this.loadAudioMeta();
+                    if (this.deep?.artifacts?.audio
+                        && this.audioMeta?.preset_id === presetId) {
+                        this.audioGenerating = false;
+                        this.pendingPresetId = null;
+                        this.presetGalleryOpen = false;
+                        clearInterval(this.audioTimer);
+                        clearInterval(this.audioPollTimer);
+                    }
+                }, 3000);
+                setTimeout(() => {
+                    if (this.audioGenerating) {
+                        this.audioGenerating = false;
+                        this.pendingPresetId = null;
+                        clearInterval(this.audioTimer);
+                        clearInterval(this.audioPollTimer);
+                        if (!this.deep?.artifacts?.audio) {
+                            this.audioError = "Üretim 5 dakikayı aştı; tekrar deneyin.";
+                        }
+                    }
+                }, 5 * 60 * 1000);
+            } catch (e) {
+                this.audioError = "İstek başarısız: " + e;
+                this.audioGenerating = false;
+                this.pendingPresetId = null;
+                clearInterval(this.audioTimer);
+            }
+        },
+        // Phase 36-iii: Ek Analiz methods
+        async loadAddendumIndex() {
+            if (!this.deep?.job_id) return;
+            try {
+                const r = await fetch(`/api/analyze/deep/${this.deep.job_id}/addendum`);
+                if (r.ok) {
+                    const body = await r.json();
+                    this.addendumEntries = body.entries || [];
+                }
+            } catch (_) { this.addendumEntries = []; }
+        },
+        addendumTypeLabel(type) {
+            return { angle: "🔍 Açı", freeform: "🎯 Serbest", compare: "🔗 Mukayese" }[type] || type;
+        },
+        async loadAddendumBody(slug) {
+            if (this.addendumBodies[slug]) return;
+            try {
+                const r = await fetch(`/archive/deep/${this.deep.job_id}/addendum_${slug}.md`);
+                if (r.ok) this.addendumBodies[slug] = await r.text();
+            } catch (_) {}
+        },
+        async loadAngles() {
+            this.anglesLoading = true;
+            try {
+                const r = await fetch(
+                    `/api/analyze/deep/${this.deep.job_id}/addendum/angles`,
+                    { method: "POST" }
+                );
+                if (r.ok) {
+                    const body = await r.json();
+                    this.angleSuggestions = body.angles || [];
+                }
+            } catch (_) {} finally { this.anglesLoading = false; }
+        },
+        async generateAngleAddendum(angle) {
+            this.generatingAngle = angle.slug;
+            try {
+                const r = await fetch(
+                    `/api/analyze/deep/${this.deep.job_id}/addendum`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            type: "angle",
+                            slug: angle.slug,
+                            title: angle.title,
+                        }),
+                    }
+                );
+                if (r.ok) await this.loadAddendumIndex();
+            } catch (_) {} finally { this.generatingAngle = null; }
+        },
+        toggleFreeformTag(tagId) {
+            if (this.freeformTags.includes(tagId)) {
+                this.freeformTags = this.freeformTags.filter((t) => t !== tagId);
+            } else {
+                this.freeformTags.push(tagId);
+            }
+        },
+        async generateFreeformAddendum() {
+            if (!this.freeformQuestion.trim()) return;
+            this.freeformGenerating = true;
+            try {
+                const r = await fetch(
+                    `/api/analyze/deep/${this.deep.job_id}/addendum`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            type: "freeform",
+                            question: this.freeformQuestion,
+                            tags: this.freeformTags,
+                        }),
+                    }
+                );
+                if (r.ok) {
+                    await this.loadAddendumIndex();
+                    this.freeformQuestion = "";
+                    this.freeformTags = [];
+                }
+            } catch (_) {} finally { this.freeformGenerating = false; }
+        },
+        async loadRelatedSources() {
+            this.relatedLoading = true;
+            try {
+                const r = await fetch(
+                    `/api/articles/related?job_id=${this.deep.job_id}&limit=5`
+                );
+                if (r.ok) {
+                    const body = await r.json();
+                    this.relatedSources = body.sources || [];
+                }
+            } catch (_) {} finally { this.relatedLoading = false; }
+        },
+        toggleCompareSource(id) {
+            if (this.compareSelectedIds.includes(id)) {
+                this.compareSelectedIds = this.compareSelectedIds.filter((x) => x !== id);
+            } else {
+                this.compareSelectedIds.push(id);
+            }
+        },
+        async generateCompareAddendum() {
+            this.compareGenerating = true;
+            try {
+                const r = await fetch(
+                    `/api/analyze/deep/${this.deep.job_id}/addendum`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            type: "compare",
+                            source_ids: this.compareSelectedIds,
+                        }),
+                    }
+                );
+                if (r.ok) {
+                    await this.loadAddendumIndex();
+                    this.compareSelectedIds = [];
+                }
+            } catch (_) {} finally { this.compareGenerating = false; }
+        },
+        async generateAddendumAudio(slug) {
+            this.addendumAudioPending = slug;
+            try {
+                const r = await fetch(
+                    `/api/analyze/deep/${this.deep.job_id}/addendum/${slug}/audio`,
+                    { method: "POST" }
+                );
+                if (r.ok) await this.loadAddendumIndex();
+            } catch (_) {} finally { this.addendumAudioPending = null; }
+        },
+        async deleteAddendum(slug) {
+            if (!confirm("Bu ek analizi silelim mi?")) return;
+            try {
+                const r = await fetch(
+                    `/api/analyze/deep/${this.deep.job_id}/addendum/${slug}`,
+                    { method: "DELETE" }
+                );
+                if (r.ok) await this.loadAddendumIndex();
+            } catch (_) {}
+        },
+        // Phase 21-i: ayrı sesli özet tetikleme (mevcut job için)
+        async triggerAudio() {
+            if (!this.deep?.job_id) return;
+            this.audioGenerating = true;
+            this.audioError = null;
+            this.audioElapsed = 0;
+            const start = Date.now();
+            this.audioTimer = setInterval(() => {
+                this.audioElapsed = Math.floor((Date.now() - start) / 1000);
+            }, 1000);
+            try {
+                const r = await fetch(`/api/analyze/deep/${this.deep.job_id}/audio`, {
+                    method: "POST",
+                });
+                if (r.status === 404) {
+                    this.audioError = "Önce özet üretilmeli (404 summary_missing).";
+                    this.audioGenerating = false;
+                    clearInterval(this.audioTimer);
+                    return;
+                }
+                if (!r.ok) {
+                    this.audioError = "Tetiklenemedi: HTTP " + r.status;
+                    this.audioGenerating = false;
+                    clearInterval(this.audioTimer);
+                    return;
+                }
+                const body = await r.json();
+                if (body.status === "already_exists") {
+                    // Cache hit — artifacts'i yenile
+                    this.audioGenerating = false;
+                    clearInterval(this.audioTimer);
+                    await this.refreshDeepStatus();
+                    return;
+                }
+                // Queued — polling başlat
+                this.audioPollTimer = setInterval(async () => {
+                    await this.refreshDeepStatus();
+                    if (this.deep?.artifacts?.audio) {
+                        this.audioGenerating = false;
+                        clearInterval(this.audioTimer);
+                        clearInterval(this.audioPollTimer);
+                    }
+                }, 3000);
+                // Hard ceiling: 5 dk
+                setTimeout(() => {
+                    if (this.audioGenerating) {
+                        this.audioGenerating = false;
+                        clearInterval(this.audioTimer);
+                        clearInterval(this.audioPollTimer);
+                        if (!this.deep?.artifacts?.audio) {
+                            this.audioError = "Üretim 5 dakikayı aştı; tekrar deneyin.";
+                        }
+                    }
+                }, 5 * 60 * 1000);
+            } catch (e) {
+                this.audioError = "İstek başarısız: " + e;
+                this.audioGenerating = false;
+                clearInterval(this.audioTimer);
+            }
+        },
+        async refreshDeepStatus() {
+            if (!this.deep?.job_id) return;
+            try {
+                const r = await fetch(`/api/analyze/deep/${this.deep.job_id}`);
+                if (r.ok) this.deep = await r.json();
+            } catch (_) {}
+        },
+        async loadArtifact(key) {
+            // Transkript markdown'u CDN ya da static olarak indir
+            if (key === "transcript" && !this.transcriptText) {
+                const url = this.deep?.artifacts?.transcript;
+                if (!url) return;
+                try {
+                    const r = await fetch(url);
+                    if (r.ok) this.transcriptText = await r.text();
+                } catch (_) {}
+            }
+        },
+        async toggleDeepBookmark() {
+            // Phase 17-v: deep-analyze sonucunu kütüphaneye ekle/çıkar
+            const jobId = this.deep?.job_id;
+            if (!jobId) return;
+            if (this.deepInLibrary) {
+                if (!confirm("Bu analiz kütüphaneden çıkarılsın mı?")) return;
+                if (!this.deepLibraryItemId) return;
+                try {
+                    const r = await fetch(`/api/library/${this.deepLibraryItemId}`, {
+                        method: "DELETE",
+                    });
+                    if (r.ok) {
+                        this.deepInLibrary = false;
+                        this.deepLibraryItemId = null;
+                    }
+                } catch (e) {
+                    alert("Silme başarısız: " + e);
+                }
+                return;
+            }
+            try {
+                const r = await fetch("/api/library", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        item_type: "deep_analysis",
+                        deep_analysis_job_id: jobId,
+                        note: null,
+                    }),
+                });
+                if (r.status === 201) {
+                    const body = await r.json();
+                    this.deepInLibrary = true;
+                    this.deepLibraryItemId = body.id;
+                } else if (r.status === 409) {
+                    const body = await r.json();
+                    this.deepInLibrary = true;
+                    this.deepLibraryItemId = body.detail?.id;
+                } else {
+                    alert("Kaydetme başarısız: HTTP " + r.status);
+                }
+            } catch (e) {
+                alert("İstek başarısız: " + e);
+            }
+        },
+        renderMarkdown(text) {
+            // Reuse the lightweight md renderer pattern from index.html.
+            // Phase 15-ii: [text](url) → <a target="_blank" rel="noopener">
+            if (!text) return "";
+            const escape = (s) => s.replace(/[&<>"']/g, (m) => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;",
+                '"': "&quot;", "'": "&#39;"
+            }[m]));
+            const inline = (s) => {
+                let out = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+                out = out.replace(
+                    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+                    (_m, label, url) =>
+                        `<a href="${url}" target="_blank" rel="noopener">${label}</a>`,
+                );
+                return out;
+            };
+            const lines = text.split("\n");
+            let html = "";
+            let inList = false;
+            for (const raw of lines) {
+                const line = raw.trimEnd();
+                if (line.startsWith("### ")) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h3>${escape(line.slice(4))}</h3>`;
+                } else if (line.startsWith("## ")) {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<h2>${escape(line.slice(3))}</h2>`;
+                } else if (line.startsWith("- ")) {
+                    if (!inList) { html += "<ul>"; inList = true; }
+                    html += `<li>${inline(escape(line.slice(2)))}</li>`;
+                } else if (line === "") {
+                    if (inList) { html += "</ul>"; inList = false; }
+                } else {
+                    if (inList) { html += "</ul>"; inList = false; }
+                    html += `<p>${inline(escape(line))}</p>`;
+                }
+            }
+            if (inList) html += "</ul>";
+            return html;
+        },
+    };
+}
+</script>
+{% endblock %}
