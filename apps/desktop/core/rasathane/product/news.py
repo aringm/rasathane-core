@@ -62,9 +62,9 @@ def _words(value: str) -> list[str]:
     ]
 
 
-def _extract(text: str, title: str) -> str:
+def _extract(text: str, title: str, limit: int = MAX_SUMMARY_CHARS) -> str:
     """Cümleleri yeniden yazmadan seçer; kesilen tek uzun cümleyi açıkça işaretler."""
-    if len(text) <= MAX_SUMMARY_CHARS:
+    if len(text) <= limit:
         return text
     sentences = re.split(r"(?<=[.!?])\s+(?=[A-ZÇĞİÖŞÜ0-9])", text)
     frequency = Counter(_words(text))
@@ -76,7 +76,7 @@ def _extract(text: str, title: str) -> str:
         score += len(words & title_words) * 2 + (2 if index == 0 else 0)
         ranked.append((score, index, sentence))
     selected: list[tuple[int, str]] = []
-    remaining = MAX_SUMMARY_CHARS
+    remaining = limit
     for _, index, sentence in sorted(ranked, key=lambda item: (-item[0], item[1])):
         if len(sentence) <= remaining:
             selected.append((index, sentence))
@@ -85,7 +85,7 @@ def _extract(text: str, title: str) -> str:
             break
     if selected:
         return " ".join(sentence for _, sentence in sorted(selected))
-    return text[: MAX_SUMMARY_CHARS - 1].rsplit(" ", 1)[0] + "…"
+    return text[: limit - 1].rsplit(" ", 1)[0] + "…"
 
 
 def summarize_article(store: ProductStore, article_id: str) -> dict[str, Any]:
@@ -131,12 +131,17 @@ def speak_article(store: ProductStore, article_id: str) -> bytes:
     result = summarize_article(store, article_id)
     if result["status"] != "ready":
         raise ValueError(result["notice"])
+    return speak_text(result["summary"])
+
+
+def speak_text(text: str, *, max_audio_bytes: int = MAX_AUDIO_BYTES) -> bytes:
+    """Sunucuda üretilen kaynak özetini yerel sesle okur; API serbest metin kabul etmez."""
     if not _speech_lock.acquire(blocking=False):
         raise ValueError("Bir sesli özet hazırlanıyor. Tamamlandığında yeniden deneyin.")
     try:
         with tempfile.TemporaryDirectory(prefix="rasathane-news-") as directory:
             audio_path = Path(directory) / "summary.wav"
-            output = WindowsTTS().seslendir(result["summary"], audio_path)
+            output = WindowsTTS().seslendir(text, audio_path)
             if output.durum == "ses_modeli_yok":
                 raise ValueError(
                     "Türkçe Windows sesi bulunamadı. Windows Dil ve Konuşma ayarlarından "
@@ -144,8 +149,8 @@ def speak_article(store: ProductStore, article_id: str) -> bytes:
                 )
             if output.durum != "uretildi" or not audio_path.is_file():
                 raise ValueError("Sesli özet oluşturulamadı. Yeniden deneyin.")
-            if audio_path.stat().st_size > MAX_AUDIO_BYTES:
-                raise ValueError("Sesli özet izin verilen boyutu aşıyor.")
+            if audio_path.stat().st_size > max_audio_bytes:
+                raise ValueError("Sesli özet izin verilen boyutu aşıyor. Daha az haber seçin.")
             try:
                 with wave.open(str(audio_path), "rb") as audio:
                     if audio.getnframes() == 0 or audio.getframerate() == 0:

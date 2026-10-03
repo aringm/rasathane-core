@@ -68,6 +68,13 @@ for index in range(1, 56):
     archive_id = archive_job["request"]["conversation_id"]
     store.update_job(archive_job["id"], "completed", result={"answer": f"Arşiv yanıtı {index:02d}"})
 
+if "--seed-only" in sys.argv[2:]:
+    # Frozen acceptance uses the real scheduler, while fixture records remain local.
+    # Disable web through the normal persisted product setting, not a runtime bypass.
+    store.save_settings({"web_enabled": False})
+    (run / "seed.json").write_text(json.dumps({"workspace": space["id"]}))
+    sys.exit(0)
+
 
 def worker():
     while True:

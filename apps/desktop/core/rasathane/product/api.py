@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import threading
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from fastmcp import FastMCP
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, ValidationError
@@ -46,6 +46,14 @@ class Research(Input):
 
 class Workspace(Input):
     name: str = Field(min_length=1, max_length=120)
+
+
+class Bulletin(Input):
+    article_ids: list[Annotated[str, Field(min_length=1, max_length=64)]] = Field(
+        min_length=1, max_length=20
+    )
+    title: str = Field(default="Akış bülteni", min_length=1, max_length=120)
+    workspace_id: str | None = Field(default=None, min_length=1, max_length=64)
 
 
 class Note(Input):
@@ -124,6 +132,7 @@ def register_routes(mcp: FastMCP) -> None:
                     "library": lambda: store.library(brief=True),
                     "sources": store.list_feeds,
                     "articles": store.list_articles,
+                    "bulletins": store.list_bulletins,
                     "conversations": lambda: store.list_conversations(
                         request.query_params.get("workspace_id")
                     ),
@@ -160,6 +169,7 @@ def register_routes(mcp: FastMCP) -> None:
                 "topics": Topic,
                 "sources": Source,
                 "settings": Settings,
+                "bulletins": Bulletin,
             }
             if resource not in models:
                 return JSONResponse({"error": "Uç bulunamadı."}, status_code=404)
@@ -168,7 +178,11 @@ def register_routes(mcp: FastMCP) -> None:
                 return JSONResponse(
                     await run_in_threadpool(service.submit, resource, body), status_code=202
                 )
-            if resource == "workspaces":
+            if resource == "bulletins":
+                from rasathane.product.bulletins import create_bulletin
+
+                result = await run_in_threadpool(create_bulletin, store, **body)
+            elif resource == "workspaces":
                 result = await run_in_threadpool(store.create_workspace, body["name"].strip())
             elif resource == "notes":
                 result = await run_in_threadpool(store.save_note, **body)
@@ -212,6 +226,13 @@ def register_routes(mcp: FastMCP) -> None:
             return JSONResponse({"error": "Kimlik geçersiz."}, status_code=400)
         service = get_service()
         try:
+            if resource == "bulletins" and action == "speech":
+                from rasathane.product.bulletins import speak_bulletin
+
+                audio = await run_in_threadpool(speak_bulletin, service.store, item_id)
+                return Response(
+                    audio, media_type="audio/wav", headers={"Cache-Control": "no-store"}
+                )
             if resource == "articles" and action in {"summary", "speech"}:
                 from rasathane.product.news import speak_article, summarize_article
 
@@ -248,6 +269,32 @@ def register_routes(mcp: FastMCP) -> None:
             return JSONResponse({"error": "Uç bulunamadı."}, status_code=404)
         except ValueError as exc:
             return JSONResponse({"error": str(exc)[:300]}, status_code=400)
+
+    @mcp.custom_route("/api/rasathane/topics/{item_id}", methods=["GET", "OPTIONS"])
+    async def product_topic(request: Request) -> Response:
+        if request.method == "OPTIONS":
+            return Response(status_code=204)
+        try:
+            return JSONResponse(
+                await run_in_threadpool(
+                    get_service().store.get_topic, request.path_params["item_id"]
+                )
+            )
+        except ValueError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=404)
+
+    @mcp.custom_route("/api/rasathane/bulletins/{item_id}", methods=["GET", "OPTIONS"])
+    async def product_bulletin(request: Request) -> Response:
+        if request.method == "OPTIONS":
+            return Response(status_code=204)
+        try:
+            return JSONResponse(
+                await run_in_threadpool(
+                    get_service().store.get_bulletin, request.path_params["item_id"]
+                )
+            )
+        except ValueError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=404)
 
     @mcp.custom_route("/api/rasathane/conversations/{item_id}", methods=["GET", "OPTIONS"])
     async def product_conversation(request: Request) -> Response:

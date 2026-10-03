@@ -8,6 +8,53 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
   const input = $("arastir-sorgu");
   const form = $("arastir-form");
   const history = $("arastir-gecmis");
+  const historyPanel = $("arastir-gecmis-panel");
+  const historyToggle = $("arastir-gecmis-ac");
+  const historySearch = $("arastir-gecmis-ara");
+  let historyItems = [];
+  function closeHistory(restore = false) {
+    historyPanel.hidden = true;
+    historyToggle.setAttribute("aria-expanded", "false");
+    if (restore) historyToggle.focus();
+  }
+  historyToggle.addEventListener("click", () => {
+    if (!historyPanel.hidden) return closeHistory();
+    historyPanel.hidden = false;
+    historyToggle.setAttribute("aria-expanded", "true");
+    historySearch.focus();
+    refreshHistory();
+  });
+  historyPanel.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeHistory(true);
+    }
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!historyPanel.contains(event.target) && !historyToggle.contains(event.target)) closeHistory();
+  });
+  historyPanel.addEventListener("focusout", () => queueMicrotask(() => {
+    if (!historyPanel.contains(document.activeElement) && document.activeElement !== historyToggle) closeHistory();
+  }));
+  function renderHistory() {
+    const query = historySearch.value.trim().toLocaleLowerCase("tr-TR");
+    const items = historyItems.filter(item => (item.title || "Araştırma konuşması").toLocaleLowerCase("tr-TR").includes(query));
+    history.replaceChildren(...items.map(item => el("button", {
+      type: "button", class: "chat-history-item", "aria-current": String(item.id === conversation),
+      onclick: async () => {
+        if (busy) return;
+        await open(item.id);
+        input.focus();
+      }, disabled: busy,
+    }, item.title || "Araştırma konuşması")));
+    if (!items.length) history.append(el("p", { class: "field-note" }, query ? "Bu aramayla eşleşen konuşma yok." : "İlk sorunuzla konuşma geçmişiniz oluşur."));
+  }
+  historySearch.addEventListener("input", renderHistory);
+  function resizeInput() {
+    input.style.height = "auto";
+    input.style.height = `${Math.min(input.scrollHeight, 180)}px`;
+  }
+  input.addEventListener("input", resizeInput);
   function bubble(message, target = messages) {
     const result = message.result || {};
     const sources = result.citations?.length
@@ -119,23 +166,8 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
     try {
       const data = await api("/conversations");
       if (current !== epoch) return;
-      history.replaceChildren(
-        ...(data.items || []).map((item) =>
-          el(
-            "button",
-            {
-              type: "button",
-              class: "chat-history-item",
-              "aria-current": String(item.id === conversation),
-              onclick: () => {
-                if (!busy) open(item.id);
-              },
-              disabled: busy,
-            },
-            item.title || "Araştırma konuşması",
-          ),
-        ),
-      );
+      historyItems = data.items || [];
+      renderHistory();
     } catch (error) {
       if (current === epoch) status.textContent = error.message;
     }
@@ -146,6 +178,8 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
       const data = await api(`/conversations/${encodeURIComponent(id)}`);
       if (current !== epoch) return;
       conversation = data.id;
+      $("arastir-baslik").textContent = data.title || "Araştırma konuşması";
+      closeHistory();
       $("arastir-alan").value = data.workspace_id || "";
       controls();
       messages.replaceChildren();
@@ -163,6 +197,9 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
     $("arastir-btn").disabled = busy;
     $("arastir-yeni").disabled = busy;
     $("arastir-alan").disabled = busy || !!conversation;
+    $("arastir-alan-not").textContent = conversation
+      ? "Bu konuşmanın çalışma alanı sabittir. Başka bir alan için yeni konuşma açın."
+      : "Çalışma alanı konuşma boyunca aynı kalır.";
     for (const button of history.querySelectorAll("button"))
       button.disabled = busy;
   }
@@ -172,6 +209,11 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
     nextBefore = null;
     busy = false;
     input.value = "";
+    input.style.height = "";
+    historySearch.value = "";
+    historyItems = [];
+    closeHistory();
+    $("arastir-baslik").textContent = "Yeni konuşma";
     history.replaceChildren();
     welcome();
     controls();
@@ -199,6 +241,7 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
     if (!conversation) messages.replaceChildren();
     bubble({ role: "user", content: query });
     input.value = "";
+    resizeInput();
     try {
       const job = await api("/research", {
         method: "POST",
@@ -228,6 +271,7 @@ export function createResearchChat({ $, el, api, waitJob, sourceLink }) {
       else
         bubble({ role: "assistant", content: error.message, status: "failed" });
       input.value = query;
+      resizeInput();
     } finally {
       busy = false;
       controls();

@@ -1,6 +1,7 @@
 import { createLoginGate } from "./login-gate.js";
 let loginGate;
 import { createProductUI } from "./product.js";
+import { createProfileSettings } from "./profile-settings.js";
 import {
   renderArtifact,
   clearArtifact,
@@ -1350,12 +1351,17 @@ const GORUNUMLER = [
   "arastir",
   "calisma",
   "konular",
-  "ayarlar",
 ];
 function setGorunum(ad) {
   if (!loginGate?.allowed()) return;
+  if (ad === "ayarlar") {
+    if (!$("gorunum-ayarlar").open) $("gorunum-ayarlar").showModal();
+    ayarlarYukle();
+    return;
+  }
   if (ad === "kutuphane") ad = "calisma";
   if (!GORUNUMLER.includes(ad)) ad = "akis";
+  document.body.classList.toggle("research-active", ad === "arastir");
   for (const g of GORUNUMLER) {
     $(`gorunum-${g}`).classList.toggle("gizli", g !== ad);
     const s = $(`sekme-${g}`);
@@ -1363,7 +1369,6 @@ function setGorunum(ad) {
     s.tabIndex = g === ad ? 0 : -1; // roving tabindex (WAI-ARIA tab klavye sözleşmesi)
   }
   if (ad === "calisma") kutuphaneYukle();
-  else if (ad === "ayarlar") ayarlarYukle();
   productUI.viewChanged(ad);
 }
 
@@ -1538,7 +1543,7 @@ async function ayarlarYukle() {
         varsayilan: "varsayılan",
       };
       $("ayar-host-kaynak").textContent =
-        `Kaynak: ${kaynak[d.ollama_host_kaynak] || d.ollama_host_kaynak}`;
+        `Kaynak: ${kaynak[d.ollama_host_kaynak] || d.ollama_host_kaynak || "yapılandırma bilgisi yok"}`;
       $("ayar-motor-kok").value = d.output_base || "";
       $("ayar-motor-durum").textContent =
         "Yeni analizlerin çalışma dosyaları burada tutulur. Varsayılan konum uygulamanın yerel veri alanıdır. OneDrive gibi eşitleme kapsamındaki bir klasörü seçerseniz o servis dosyaları eşitleyebilir. Veritabanı uygulamanın yerel veri alanında kalır.";
@@ -1781,6 +1786,7 @@ const productUI = createProductUI({
     kurulumDurumu();
   },
 });
+createProfileSettings({ $, onSettings: () => setGorunum("ayarlar") });
 loginGate = createLoginGate({
   $,
   onUnlock: () => {

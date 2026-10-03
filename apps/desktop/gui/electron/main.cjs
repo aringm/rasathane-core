@@ -91,13 +91,14 @@ function installBridge() {
       await configureSidecarSession(accessToken, lease);
     }
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 120000);
+    const bulletinSpeech = /^\/api\/rasathane\/bulletins\/[a-zA-Z0-9_-]+\/speech$/.test(request.route);
+    const timer = setTimeout(() => controller.abort(), bulletinSpeech ? 210000 : 120000);
     try {
       const response = await fetch(`http://127.0.0.1:${sidecarPort}${request.route}`, {
         method: request.method, body: request.body, redirect: "error", signal: AbortSignal.any([controller.signal, lease.signal]),
         headers: { "Content-Type": "application/json", Origin: APP_ORIGIN, "X-Rasathane-Session": sessionToken },
       });
-      const cap = 8 * 1024 * 1024;
+      const cap = (bulletinSpeech ? 32 : 8) * 1024 * 1024;
       if (Number(response.headers.get("content-length")) > cap) { await response.body?.cancel(); throw new Error("Yanıt sınırı aşıldı."); }
       const chunks = []; let size = 0;
       if (response.body) for await (const chunk of response.body) {

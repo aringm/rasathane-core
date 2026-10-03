@@ -356,6 +356,38 @@ class ProductStore:
                 receipt,
             )
 
+    def save_bulletin(self, snapshot: dict[str, Any]) -> dict[str, Any]:
+        """Bülten, oluşturulduğu andaki kaynak özetleriyle birlikte yerelde saklanır."""
+        with self.connection() as conn:
+            self._require_workspace(conn, snapshot.get("workspace_id"))
+            self._document(
+                conn,
+                snapshot["id"],
+                "bulletin",
+                snapshot.get("workspace_id"),
+                snapshot["title"],
+                snapshot["summary"],
+                provenance={"bulletin": snapshot, "content_hash": snapshot["content_hash"]},
+            )
+        return self.get_bulletin(snapshot["id"])
+
+    def get_bulletin(self, item_id: str) -> dict[str, Any]:
+        rows = self.rows(
+            "SELECT provenance FROM documents WHERE id=? AND kind='bulletin'", (item_id,)
+        )
+        if not rows:
+            raise ValueError("Bülten bulunamadı.")
+        snapshot: dict[str, Any] = rows[0]["provenance"]["bulletin"]
+        return snapshot
+
+    def list_bulletins(self) -> list[dict[str, Any]]:
+        return self.rows(
+            "SELECT id,title,created_at,workspace_id,"
+            "json_extract(provenance,'$.bulletin.article_count') AS article_count,"
+            "json_extract(provenance,'$.bulletin.ready_count') AS ready_count "
+            "FROM documents WHERE kind='bulletin' ORDER BY created_at DESC,id DESC LIMIT 50"
+        )
+
     def create_topic(self, name: str, query: str) -> dict[str, Any]:
         name, query = name.strip(), query.strip()
         if not name or not query:
@@ -367,6 +399,23 @@ class ProductStore:
 
     def list_topics(self) -> list[dict[str, Any]]:
         return self.rows("SELECT * FROM topics ORDER BY name")
+
+    def get_topic(self, item_id: str) -> dict[str, Any]:
+        with self.connection() as conn:
+            topic = self.decoded(
+                conn.execute("SELECT * FROM topics WHERE id=?", (item_id,)).fetchone()
+            )
+            if topic is None:
+                raise ValueError("Konu takibi bulunamadı.")
+            latest = self.decoded(
+                conn.execute(
+                    "SELECT result FROM jobs WHERE kind='refresh' AND status='completed' "
+                    "AND json_extract(request,'$.topic_id')=? "
+                    "ORDER BY updated_at DESC,created_at DESC,id DESC LIMIT 1",
+                    (item_id,),
+                ).fetchone()
+            )
+        return {"topic": topic, "latest_result": latest["result"] if latest else None}
 
     def record_topic_hits(self, topic_id: str, hits: list[dict[str, Any]]) -> int:
         inserted = 0

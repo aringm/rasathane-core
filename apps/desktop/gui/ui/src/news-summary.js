@@ -112,5 +112,5 @@ export function createNewsSummary({ el, api, request }) {
     });
     return el("div", { class: "news-summary-control" }, button, summary);
   }
-  return { control, stopAll };
+  return { control, stopAll, pauseAll() { for (const item of active) item.audio.pause(); } };
 }

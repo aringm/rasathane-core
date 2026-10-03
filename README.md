@@ -4,12 +4,12 @@
 
 | Bölüm | İşlev |
 | --- | --- |
-| Akış | RSS/Atom, Resmî Gazete ve resmî karar metadata takibi; tarih, kaynak ve yenileme durumu |
+| Akış | RSS/Atom ve resmî kaynak takibi; tek haber özeti, kalıcı toplu bülten ve Türkçe seslendirme |
 | Analiz | Video, web, GitHub, arXiv ve sosyal kaynak analizi; özet, çeviri, değerlendirme ve üretim araçları |
-| Araştır | Web ve yerel tam metin araması; kaynak sürümü, hash ve citation |
+| Araştır | Tek chat görünümü; header'da konuşma geçmişi, web ve yerel kaynaklarla devam soruları |
 | Çalışma alanı | Kalıcı notlar, araştırma geçmişi ve kaynaklar |
-| Konu takibi | Değişiklikleri kaydetme, yenileme aralığı ve hata/güncellik durumu |
-| Ayarlar | Kurulum sihirbazı, model kontrolü, çalışma klasörü ve Muhakeme hesabı |
+| Konu takibi | Web sorgusunu düzenli kontrol etme; yeni URL sayısı ve son başarılı sonuçlara erişim |
+| Profil ve ayarlar | Sol alttaki profil kartından hesap, sekmeli ayarlar, kurulum ve çıkış |
 
 Yerel çekirdek **AGPL-3.0-or-later** lisansıyla ücretsizdir; ticari kullanım dahil AGPL hakları geçerlidir. Masaüstü uygulamasında Muhakeme hesabıyla giriş zorunludur; yerel özellikler ücretli abonelik gerektirmez. Yönetilen servisler için aylık toplam **49 TL** ve **14 günlük** deneme sözleşmesi ayrı yürütülür. Marka ve üçüncü taraf model lisansları: [NOTICE](NOTICE.md).
 
@@ -33,6 +33,10 @@ pnpm check
 Site için `apps/web` içinde `pnpm lint` ve `pnpm build` kullanılır. Windows paketi `apps/desktop/infra/build-electron.ps1` ile üretilir. Release build geçerli certificate store/Windows SDK imzası ve zaman damgası ister; kendi geliştirici paketi için açıkça `-Unsigned` kullanılır. İmza hesabının kimlik bilgileri kaynak veya `.env` dosyalarına yazılmaz. Model ağırlıkları ve uygulama verileri Git'e girmez.
 
 ## Çalışma sınırları
+
+Akıştaki **Bülten hazırla / aç**, mevcut filtrelerdeki en fazla 20 haberden kaynak alıntılarına dayalı bir derleme oluşturur. Metin ve kaynaklar yerel snapshot olarak saklanır; yeniden açıldığında değişmez. Türkçe ses Windows konuşma motoruyla üretilir. Tam karar metni bulunmayan künyelerden karar özeti üretilmez. LLM veya model indirmesi gerektirmez.
+
+Çalışma alanı notları ve o alana bağlı araştırma kayıtlarını toplar. **Örnek çalışma alanlarını kur**, iki araştırma planı ve iki bağımsız takip sorgusu ekler; tekrar çalıştırmak mükerrer kayıt oluşturmaz. Konu takibi çalışma alanına otomatik bağlanmaz ve RSS akışını filtrelemez. İlk manuel kontrolden sonra, uygulama ve oturum açıkken belirlenen aralıkta web'de arar. Son başarılı kontrol **Sonuçları aç** ile görülebilir. Kullanım adımları: [bülten ve araştırma](docs/urun/BULTEN-ARASTIRMA.md).
 
 8 GB profilinde 4096 context, CPU inference ve tek ağır iş kullanılır. LLM/embedding birlikte yüklenmez; worker spawn öncesinde anlık boş RAM denetlenir. Bu profil gerçek bir 8 GB makinenin kabul testini ikame etmez.
 

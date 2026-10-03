@@ -203,24 +203,20 @@
           tabindex="-1"
         >
           <span aria-hidden="true">◎</span>Konu takibi</button
-        ><button
-          class="sekme"
-          id="sekme-ayarlar"
-          type="button"
-          role="tab"
-          data-gorunum="ayarlar"
-          aria-controls="gorunum-ayarlar"
-          aria-selected="false"
-          tabindex="-1"
         >
-          <span aria-hidden="true">⚙</span>Ayarlar
-        </button>
       </nav>
-      <div class="sidebar-foot">
-        <span>Yerel çalışma</span>
-        <p>Kaynaklarınız, notlarınız ve analizleriniz tek yerde.</p>
-        <button type="button" class="sidebar-account" id="hesap-ac">
-          Hesap ve plan
+      <div class="sidebar-foot profile-card">
+        <div id="profil-menu" class="profile-menu" role="menu" aria-label="Hesap ve ayarlar" hidden>
+          <div class="profile-menu-heading"><strong id="profil-menu-ad">Muhakeme hesabı</strong><span id="profil-menu-plan">Rasathane</span></div>
+          <button type="button" role="menuitem" id="hesap-ac">Hesap ve plan</button>
+          <button type="button" role="menuitem" id="profil-ayarlar">Ayarlar</button>
+          <div class="profile-menu-divider"></div>
+          <button type="button" role="menuitem" id="profil-cikis">Çıkış yap</button>
+        </div>
+        <button type="button" id="profil-ac" class="profile-trigger" aria-haspopup="menu" aria-controls="profil-menu" aria-expanded="false">
+          <span id="profil-avatar" class="profile-avatar" aria-hidden="true">M</span>
+          <span class="profile-meta"><strong id="profil-ad">Muhakeme hesabı</strong><span id="profil-plan">Hesap ve ayarlar</span></span>
+          <span aria-hidden="true">⌃</span>
         </button>
       </div>
     </aside>
@@ -660,68 +656,34 @@
         aria-labelledby="sekme-arastir"
         tabindex="0"
       >
-        <div class="page-heading">
-          <div>
-            <h1>Araştır</h1>
-            <p>
-              Yerel notları ve kayıtları web kaynaklarıyla birlikte inceleyin.
-            </p>
-          </div>
-        </div>
-        <div class="chat-layout">
-          <aside class="chat-sidebar" aria-label="Araştırma konuşmaları">
-            <button type="button" class="btn btn-ikincil" id="arastir-yeni">
-              Yeni konuşma
-            </button>
-            <div id="arastir-gecmis" class="chat-history"></div>
-          </aside>
-          <div class="chat-main">
-            <div
-              id="arastir-sonuc"
-              class="chat-messages"
-              role="log"
-              aria-label="Araştırma mesajları"
-              aria-live="polite"
-            ></div>
-            <div
-              id="arastir-durum"
-              class="product-status"
-              role="status"
-              aria-live="polite"
-            >
-              Bir soru sorun; yanıtın dayandığı kaynakları birlikte inceleyin.
+        <header class="research-heading">
+          <div><h1>Araştır</h1><p id="arastir-baslik">Yeni konuşma</p></div>
+          <div class="research-heading-actions">
+            <div class="research-history-anchor">
+              <button type="button" class="btn btn-ikincil" id="arastir-gecmis-ac" aria-expanded="false" aria-controls="arastir-gecmis-panel">Geçmiş</button>
+              <section id="arastir-gecmis-panel" class="research-history-panel" aria-label="Konuşma geçmişi" hidden>
+                <h2>Konuşma geçmişi</h2>
+                <label for="arastir-gecmis-ara" class="sr-only">Konuşmalarda ara</label>
+                <input id="arastir-gecmis-ara" type="search" placeholder="Konuşmalarda ara…" autocomplete="off" />
+                <div id="arastir-gecmis" class="chat-history"></div>
+              </section>
             </div>
-            <form id="arastir-form" class="chat-composer">
-              <label for="arastir-sorgu" class="field-note">Mesajınız</label>
-              <textarea
-                id="arastir-sorgu"
-                required
-                maxlength="500"
-                rows="3"
-                placeholder="Bir konu sorun veya önceki sorunuza devam edin…"
-              ></textarea>
-              <div class="chat-options">
-                <div class="alan">
-                  <label for="arastir-alan">Çalışma alanı</label
-                  ><select id="arastir-alan">
-                    <option value="">Tüm yerel kayıtlar</option>
-                  </select>
-                </div>
-                <label class="check-line"
-                  ><input id="arastir-web" type="checkbox" />Web’de de
-                  ara</label
-                >
-                <button class="btn" id="arastir-btn" type="submit">
-                  Gönder ↑
-                </button>
-              </div>
-              <p class="field-note">
-                Web’e yalnız bu mesajdaki sorgu gönderilir. Önceki konuşmalar ve
-                yerel notlar cihazda kalır. Enter ile gönderin, Shift+Enter ile
-                satır ekleyin.
-              </p>
-            </form>
+            <button type="button" class="btn btn-ikincil" id="arastir-yeni">Yeni konuşma</button>
           </div>
+        </header>
+        <div class="chat-main">
+          <div id="arastir-sonuc" class="chat-messages" role="log" aria-label="Araştırma mesajları" aria-live="polite"></div>
+          <div id="arastir-durum" class="product-status" role="status" aria-live="polite">Bir soru sorun; yanıtın dayandığı kaynakları birlikte inceleyin.</div>
+          <form id="arastir-form" class="chat-composer">
+            <label for="arastir-sorgu" class="sr-only">Mesajınız</label>
+            <textarea id="arastir-sorgu" required maxlength="500" rows="2" placeholder="Bir konu sorun veya önceki sorunuza devam edin…" aria-describedby="arastir-gizlilik arastir-alan-not"></textarea>
+            <div class="chat-options">
+              <div class="chat-workspace-control"><label for="arastir-alan" class="sr-only">Çalışma alanı</label><select id="arastir-alan" aria-describedby="arastir-alan-not"><option value="">Tüm yerel kayıtlar</option></select></div>
+              <label class="check-line"><input id="arastir-web" type="checkbox" />Web’de de ara</label>
+              <button class="btn chat-send" id="arastir-btn" type="submit" aria-label="Gönder" title="Gönder (Enter)">↑</button>
+            </div>
+          </form>
+          <div class="chat-footnotes"><p id="arastir-alan-not" class="field-note">Çalışma alanı konuşma boyunca aynı kalır.</p><p id="arastir-gizlilik" class="field-note">Web’e yalnız gönderdiğiniz sorgu iletilir. Enter: gönder · Shift+Enter: yeni satır</p></div>
         </div>
       </section>
       <section
@@ -903,8 +865,8 @@
           </div>
           <p class="field-note">
             Konu kontrolü web araması kullanır. İlk kontrolden sonra uygulama
-            açıkken Ayarlar’daki sıklıkla yenilenir. Yeni kaynaklar akışta
-            görünür.
+            açık ve oturumunuz açıkken Ayarlar’daki sıklıkla yenilenir.
+            Sonuçlar bu ekrandan açılır; konu takibi çalışma alanlarından bağımsızdır.
           </p>
         </form>
         <div
@@ -915,18 +877,14 @@
         ></div>
         <div id="konu-liste" class="record-list"></div>
       </section>
-      <div
-        id="gorunum-ayarlar"
-        class="gizli"
-        role="tabpanel"
-        aria-labelledby="sekme-ayarlar"
-        tabindex="0"
-      >
-        <div class="page-heading">
+    </main>
+    <dialog id="gorunum-ayarlar" class="settings-dialog" aria-labelledby="ayarlar-baslik">
+        <div class="page-heading settings-heading">
           <div>
-            <h1>Ayarlar</h1>
+            <h2 id="ayarlar-baslik">Ayarlar</h2>
             <p>Yerel profil, internet erişimi ve çalışma konumu.</p>
           </div>
+          <button type="button" class="btn btn-ikincil" id="ayarlar-kapat" aria-label="Ayarları kapat">Kapat</button>
           <button class="btn btn-ikincil" id="ilk-kurulum-btn" type="button">
             İlk kurulum
           </button>
@@ -1094,8 +1052,9 @@
             </button>
           </div>
         </section>
-      </div>
-    </main>
+        <section id="ayarlar-hesap-icerik" class="bolum"></section>
+    </dialog>
+
     <footer class="app-footer">
       Rasathane · Yerel öncelikli çalışma<br />Av. Mehmet Arın Gülüm
     </footer>

@@ -1,5 +1,7 @@
 import { createResearchChat } from "./research-chat.js";
 import { createNewsSummary } from "./news-summary.js";
+import { createNewsBulletin } from "./news-bulletin.js";
+import { createWorkspaceExamples } from "./workspace-examples.js";
 // Birleşik ürünün gerçek kayıtları. Dış metinler yalnız güvenli DOM helper'ıyla yazılır.
 import { recordDate } from "./record-provenance.js";
 
@@ -56,6 +58,8 @@ export function createProductUI({
     note: "Not",
     article: "Kaynak",
     web: "Web kaynağı",
+    web_source: "Konu / web kaynağı",
+    bulletin: "Bülten",
   };
   const feedRefresh = el(
     "button",
@@ -275,14 +279,14 @@ export function createProductUI({
   const settingsAccountNotice = el(
     "p",
     { class: "field-note" },
-    "Rasathane ekranlarını kullanmak için Muhakeme hesabınıza giriş yapın.",
+    "Muhakeme hesabınızın planını ve hizmet erişimini buradan yönetin.",
   );
   const settingsAccountButton = el(
     "button",
     { type: "button", class: "btn btn-ikincil" },
     "Hesap ve planı aç",
   );
-  $("gorunum-ayarlar").append(
+  $("ayarlar-hesap-icerik").append(
     el(
       "section",
       { class: "account-settings kart" },
@@ -472,6 +476,7 @@ export function createProductUI({
             .toLocaleLowerCase("tr-TR")
             .includes(query)),
     );
+    bulletin.updateItems(items);
     $("akis-liste").replaceChildren(
       ...(items.length
         ? items.slice(0, feedVisible).map((item) =>
@@ -508,7 +513,7 @@ export function createProductUI({
             empty(
               query || feedSource.value
                 ? "Bu filtreyle eşleşen içerik yok."
-                : "Henüz içerik yok. Kaynakları kontrol edin veya konu takibinde bir kontrol başlatın.",
+                : "Henüz içerik yok. Kaynakları kontrol et düğmesiyle takip kaynaklarını yenileyin.",
             ),
           ]),
     );
@@ -619,7 +624,7 @@ export function createProductUI({
                 await load();
                 message(
                   $("konu-durum"),
-                  "Konu kontrolü tamamlandı. Yeni kaynaklar akışta görünür.",
+                  "Konu kontrolü tamamlandı. Bulunan kaynakları Sonuçları aç düğmesiyle inceleyebilirsiniz.",
                 );
               } catch (error) {
                 message($("konu-durum"), errorMessage(error), true);
@@ -627,6 +632,25 @@ export function createProductUI({
                 button.disabled = false;
               }
             });
+            const results = el("button", { type: "button", class: "btn btn-ikincil mini topic-results", onclick: async () => {
+              results.disabled = true;
+              try {
+                const data = await api(`/topics/${encodeURIComponent(topic.id)}`);
+                const result = data.latest_result;
+                topicResultBody.replaceChildren(
+                  el("h3", {}, topic.name),
+                  el("p", { class: "field-note" }, topic.query),
+                  ...(result ? [
+                    el("p", {}, `${(result.web_results || []).length} kaynak · Son başarılı kontrolün sonuçları`),
+                    ...(result.web_results || []).map((item) => record(item)),
+                    ...(!result.web_results?.length ? [empty("Son kontrol bu sorguyla kaynak bulamadı.")] : []),
+                    ...(result.errors || []).map((text) => el("p", { class: "field-note" }, text)),
+                  ] : [empty("Henüz tamamlanmış kontrol yok. Web aramasını açıp Şimdi kontrol et düğmesini kullanın.")]),
+                );
+                topicResultDialog.showModal();
+              } catch (error) { message($("konu-durum"), errorMessage(error), true); }
+              finally { results.disabled = false; }
+            } }, "Sonuçları aç");
             return el(
               "article",
               { class: "record topic-record" },
@@ -656,7 +680,7 @@ export function createProductUI({
                     )
                   : null,
               ),
-              button,
+              el("div", { class: "form-actions" }, button, results),
             );
           })
         : [
@@ -1033,6 +1057,23 @@ export function createProductUI({
   }
   const research = createResearchChat({ $, el, api, waitJob, sourceLink });
   const news = createNewsSummary({ el, api, request });
+  const bulletin = createNewsBulletin({ el, api, request, sourceLink, beforePlay: () => news.pauseAll() });
+  document.addEventListener("play", (event) => {
+    if (event.target instanceof HTMLMediaElement)
+      for (const audio of document.querySelectorAll("audio")) if (audio !== event.target) audio.pause();
+  }, true);
+  $("gorunum-akis").querySelector(".feed-layout").before(bulletin.node);
+  const bulletinStyle = el("link", { rel: "stylesheet", href: "./bulletin.css" });
+  document.head.append(bulletinStyle);
+  const topicResultBody = el("div", { class: "record-list", id: "konu-sonuc-liste" });
+  const topicResultClose = el("button", { type: "button", class: "btn btn-ikincil", onclick: () => topicResultDialog.close() }, "Kapat");
+  const topicResultDialog = el("dialog", { class: "setup-dialog", id: "konu-sonuc-dialog", "aria-labelledby": "konu-sonuc-baslik" },
+    el("div", { class: "page-heading" }, el("h2", { id: "konu-sonuc-baslik" }, "Takip sonuçları"), topicResultClose), topicResultBody);
+  document.body.append(topicResultDialog);
+  const examples = createWorkspaceExamples({ el, api, onCreated: async () => { await load(); await loadNotes(); } });
+  $("gorunum-calisma").querySelector(".page-heading").after(examples.node);
+  $("gorunum-calisma").querySelector(".page-heading p").textContent = "Notlarınızı ve bu alana bağlı araştırmaları bir arada tutun. Konu takibi tüm alanlardan bağımsız çalışır.";
+  $("yerel-kitaplik").before(el("p", { class: "field-note" }, "Bu alana bağlı araştırmalar ve ortak kitaplıktaki kayıtlar gösterilir. Araştır’da alan seçtiğinizde o alanın not ve kaynaklarıyla genel haberler aranır; ortak konu kaynaklarını aramak için Tüm yerel kayıtlar’ı seçin."));
   function renderResearch(result) {
     research.showResult(result);
   }
@@ -1606,6 +1647,7 @@ export function createProductUI({
       unlocked = true;
       modelStatus();
       research.refreshHistory();
+      bulletin.refreshHistory();
     },
     lock() {
       unlocked = false;
@@ -1617,6 +1659,9 @@ export function createProductUI({
       pendingJobs.clear();
       research.reset();
       news.stopAll();
+      bulletin.reset();
+      topicResultBody.replaceChildren();
+      topicResultDialog.close();
       for (const id of [
         "akis-liste",
         "kaynak-liste",

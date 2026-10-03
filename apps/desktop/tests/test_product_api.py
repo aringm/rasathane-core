@@ -55,6 +55,36 @@ async def test_user_flow_workspace_note_search_export(service):
         assert "attachment" in exported.headers["content-disposition"]
 
 
+async def test_topic_detail_restores_latest_completed_result_outside_recent_jobs(service):
+    store = service.store
+    topic = store.create_topic("İş hukuku", "işçilik alacağı")
+    path = "/api/rasathane/topics/" + topic["id"]
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=gui_http_app()),
+        base_url="http://localhost",
+        headers={"Origin": "rasathane://app"},
+    ) as client:
+        assert (await client.get(path)).json() == {"topic": topic, "latest_result": None}
+        assert (await client.get("/api/rasathane/topics/olmayan")).status_code == 404
+        old = store.enqueue("refresh", {"topic_id": topic["id"]})
+        store.update_job(old["id"], "completed", result={"web_results": []})
+        latest = store.enqueue("refresh", {"topic_id": topic["id"]})
+        expected = {
+            "web_results": [{"url": "https://example.org/karar", "title": "Karar"}],
+            "new_count": 1,
+        }
+        store.update_job(latest["id"], "completed", result=expected)
+        failed = store.enqueue("refresh", {"topic_id": topic["id"]})
+        store.update_job(failed["id"], "failed", error="Kaynak erişilemedi.")
+        for _ in range(101):
+            unrelated = store.enqueue("refresh", {"topic_id": "other-topic"})
+            store.update_job(unrelated["id"], "completed", result={"web_results": []})
+        assert latest["id"] not in {job["id"] for job in store.list_jobs()}
+        response = await client.get(path)
+        assert response.status_code == 200
+        assert response.json() == {"topic": topic, "latest_result": expected}
+
+
 async def test_analysis_user_flow_executes_full_public_engine_and_persists_artifacts(
     service, tmp_output_base
 ):

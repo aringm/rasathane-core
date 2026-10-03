@@ -32,8 +32,8 @@
     },
     {
       "path": "AGENTS.md",
-      "source_sha256": "e27cf91c50301b3f6c1d4d618683d902fc1bd5120043fb1b599ca7e99504f239",
-      "sha256": "fe9c6966adfba4f34a6c8eb4537229a6920c6f2d30581ae3091b7930cd9db79b",
+      "source_sha256": "4622da8d337d18870a3215b5913a4d2b6143b6de9ef2e1dddbc0d773ae15bf36",
+      "sha256": "2ef0ce52dfca302a448cd0def077fd13681f02a5d194e7bb4764fa8c840891ff",
       "bytes": 3017
     },
     {
@@ -56,9 +56,9 @@
     },
     {
       "path": "README.md",
-      "source_sha256": "27a3a737bae96cff634e347da8e1a0adbcc6cf21ef58b7a6caefd65924923969",
-      "sha256": "27a3a737bae96cff634e347da8e1a0adbcc6cf21ef58b7a6caefd65924923969",
-      "bytes": 4700
+      "source_sha256": "1d0120408462e2e998222ceda281f4a4ed5947989c976134479ebc10c08d7e0c",
+      "sha256": "1d0120408462e2e998222ceda281f4a4ed5947989c976134479ebc10c08d7e0c",
+      "bytes": 5699
     },
     {
       "path": "apps/desktop/.env.example",
@@ -92,15 +92,21 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/api.py",
-      "source_sha256": "7388068ce85c70553e5d5f65338579e72459c5c75a7457f2ebe9ecda8884b8f8",
-      "sha256": "7388068ce85c70553e5d5f65338579e72459c5c75a7457f2ebe9ecda8884b8f8",
-      "bytes": 12118
+      "source_sha256": "e7fae7be862be3eab5dfa43315c80ddad359a312ffc24fbcd6da39a28e9598cd",
+      "sha256": "e7fae7be862be3eab5dfa43315c80ddad359a312ffc24fbcd6da39a28e9598cd",
+      "bytes": 14171
     },
     {
       "path": "apps/desktop/core/rasathane/product/artifacts.py",
       "source_sha256": "e5fbd8ba145fe670e249b691bc2dc5032a9e9d2c5f5bb302bd93cf54a1925e2a",
       "sha256": "e5fbd8ba145fe670e249b691bc2dc5032a9e9d2c5f5bb302bd93cf54a1925e2a",
       "bytes": 2858
+    },
+    {
+      "path": "apps/desktop/core/rasathane/product/bulletins.py",
+      "source_sha256": "7a6c1feaa03bc192e43b14e52ee84a346bacb8cc17b2075ff08f7499224e1613",
+      "sha256": "7a6c1feaa03bc192e43b14e52ee84a346bacb8cc17b2075ff08f7499224e1613",
+      "bytes": 3389
     },
     {
       "path": "apps/desktop/core/rasathane/product/capabilities.py",
@@ -122,9 +128,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/news.py",
-      "source_sha256": "43f9c222d56b0142c641234e8df9eabcd0bcb51c63298f772a29a8fa29230368",
-      "sha256": "43f9c222d56b0142c641234e8df9eabcd0bcb51c63298f772a29a8fa29230368",
-      "bytes": 6203
+      "source_sha256": "2d9df87629f7b5583f968b9ba9af978eab0f4174f8bd040b5ffd9af2efd9ea0f",
+      "sha256": "2d9df87629f7b5583f968b9ba9af978eab0f4174f8bd040b5ffd9af2efd9ea0f",
+      "bytes": 6424
     },
     {
       "path": "apps/desktop/core/rasathane/product/research_chat.py",
@@ -140,9 +146,9 @@
     },
     {
       "path": "apps/desktop/core/rasathane/product/store.py",
-      "source_sha256": "ab36717b2fab47175ea4ee63e1867893c9bf268b7336066b56e61ecb680fb9d8",
-      "sha256": "ab36717b2fab47175ea4ee63e1867893c9bf268b7336066b56e61ecb680fb9d8",
-      "bytes": 45266
+      "source_sha256": "d89fef6f15213f5a2415e4b7b35f381e5b5cb76a9eaf2e191bf098e4cba0a7da",
+      "sha256": "d89fef6f15213f5a2415e4b7b35f381e5b5cb76a9eaf2e191bf098e4cba0a7da",
+      "bytes": 47473
     },
     {
       "path": "apps/desktop/core/rasathane/product/web.py",
@@ -770,21 +776,21 @@
     },
     {
       "path": "apps/desktop/gui/electron/ipc-policy.cjs",
-      "source_sha256": "206e9fd6a864dbe45a0bb66747650134ba2fddf9d1c2788cc57d11a23070d791",
-      "sha256": "206e9fd6a864dbe45a0bb66747650134ba2fddf9d1c2788cc57d11a23070d791",
-      "bytes": 3726
+      "source_sha256": "8a604172bbd9b9fbad7e07d78296b5756b0a690f1a771843cc458a28655c2ecf",
+      "sha256": "8a604172bbd9b9fbad7e07d78296b5756b0a690f1a771843cc458a28655c2ecf",
+      "bytes": 3826
     },
     {
       "path": "apps/desktop/gui/electron/ipc-policy.test.cjs",
-      "source_sha256": "039230ee144c980015a8de1d2e288ae381b627e64bbe221656b60b3335f8f486",
-      "sha256": "039230ee144c980015a8de1d2e288ae381b627e64bbe221656b60b3335f8f486",
-      "bytes": 2888
+      "source_sha256": "565c7afcf986562e8a6664ca8865992057074ccbb13207b296f69702416b32d9",
+      "sha256": "565c7afcf986562e8a6664ca8865992057074ccbb13207b296f69702416b32d9",
+      "bytes": 3367
     },
     {
       "path": "apps/desktop/gui/electron/main.cjs",
-      "source_sha256": "af07fa5c5bf2c283e3080349f341852cf399ded02317e6634db31afd656378ac",
-      "sha256": "af07fa5c5bf2c283e3080349f341852cf399ded02317e6634db31afd656378ac",
-      "bytes": 29505
+      "source_sha256": "6cfdc6b63554029b113cd68ac427b9a0b36017274f7f65daf92658dc96ad9d37",
+      "sha256": "6cfdc6b63554029b113cd68ac427b9a0b36017274f7f65daf92658dc96ad9d37",
+      "bytes": 29659
     },
     {
       "path": "apps/desktop/gui/electron/model-catalog.json",
@@ -848,8 +854,8 @@
     },
     {
       "path": "apps/desktop/gui/package.json",
-      "source_sha256": "fd5e8a01fd668a810e85ee9e1d8f006cd63092a2bb691e58fc4b007d624e710c",
-      "sha256": "fd5e8a01fd668a810e85ee9e1d8f006cd63092a2bb691e58fc4b007d624e710c",
+      "source_sha256": "5dcf7da8b853db98585c8711c4475a2c16ccb48231a9505a3f7673b4290e0972",
+      "sha256": "5dcf7da8b853db98585c8711c4475a2c16ccb48231a9505a3f7673b4290e0972",
       "bytes": 4242
     },
     {
@@ -1034,21 +1040,27 @@
     },
     {
       "path": "apps/desktop/gui/tests/product-flow.cjs",
-      "source_sha256": "21091dd173764b0ce1b2f19d1e2a6bd061c372088634902fb8d2e5877ad60d0a",
-      "sha256": "21091dd173764b0ce1b2f19d1e2a6bd061c372088634902fb8d2e5877ad60d0a",
-      "bytes": 12891
+      "source_sha256": "69a6423401ebd31668cbf3918f58067d3a36445c7886f4f18a21ee28d33944b2",
+      "sha256": "69a6423401ebd31668cbf3918f58067d3a36445c7886f4f18a21ee28d33944b2",
+      "bytes": 20214
     },
     {
       "path": "apps/desktop/gui/tests/qa-product-server.py",
-      "source_sha256": "abb8df6063805b92bc470b7bce6aceb9c1b9cf320e174c26f37f69284198c7f3",
-      "sha256": "abb8df6063805b92bc470b7bce6aceb9c1b9cf320e174c26f37f69284198c7f3",
-      "bytes": 3011
+      "source_sha256": "8dee7d730b8f6b695858ff3d78b4a961143707801cec2dccf598e22be33f6cc1",
+      "sha256": "8dee7d730b8f6b695858ff3d78b4a961143707801cec2dccf598e22be33f6cc1",
+      "bytes": 3356
     },
     {
       "path": "apps/desktop/gui/ui/brand/rasathane-mark.svg",
       "source_sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
       "sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
       "bytes": 918
+    },
+    {
+      "path": "apps/desktop/gui/ui/bulletin.css",
+      "source_sha256": "3e5cad94322f73f44dc96a8c29347c056a087d6a061a1be1f50f3885d7ef6cb3",
+      "sha256": "3e5cad94322f73f44dc96a8c29347c056a087d6a061a1be1f50f3885d7ef6cb3",
+      "bytes": 1247
     },
     {
       "path": "apps/desktop/gui/ui/fonts/ibm-plex-mono-400-latin-ext.woff2",
@@ -1130,9 +1142,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/index.html",
-      "source_sha256": "b91e3a6a88a6c620e0a4a8f5681481768e7ef55eb84df9b95bb72b7fb910abf0",
-      "sha256": "b91e3a6a88a6c620e0a4a8f5681481768e7ef55eb84df9b95bb72b7fb910abf0",
-      "bytes": 43442
+      "source_sha256": "afb45ab9cca9ca65d7ceccff38e2da324b941c6247a6e32692da802bdfee8f4c",
+      "sha256": "afb45ab9cca9ca65d7ceccff38e2da324b941c6247a6e32692da802bdfee8f4c",
+      "bytes": 44289
     },
     {
       "path": "apps/desktop/gui/ui/lib/pdfjs/LICENSE",
@@ -2378,21 +2390,33 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/main.js",
-      "source_sha256": "e571736df078524153acd60cc461842544f4fa77405e609006924d85f668f52e",
-      "sha256": "e571736df078524153acd60cc461842544f4fa77405e609006924d85f668f52e",
-      "bytes": 58841
+      "source_sha256": "6b6f7b2c3d458dd4dcd6f4ba3d266b64fc6850165c76414ea78193306c104d07",
+      "sha256": "6b6f7b2c3d458dd4dcd6f4ba3d266b64fc6850165c76414ea78193306c104d07",
+      "bytes": 59152
+    },
+    {
+      "path": "apps/desktop/gui/ui/src/news-bulletin.js",
+      "source_sha256": "fd8a163b01c77e261ff78a5fd9e73e6ac483b31f339df34177d0992c0150645d",
+      "sha256": "fd8a163b01c77e261ff78a5fd9e73e6ac483b31f339df34177d0992c0150645d",
+      "bytes": 8561
     },
     {
       "path": "apps/desktop/gui/ui/src/news-summary.js",
-      "source_sha256": "72d5c11e4346ef7fdbb879bb8d23f80194a4e6b7777c47a199e01c81b41244e2",
-      "sha256": "72d5c11e4346ef7fdbb879bb8d23f80194a4e6b7777c47a199e01c81b41244e2",
-      "bytes": 3859
+      "source_sha256": "87a23fb4ce03589e2b64eee5259a57dd502709b81339b57f56c8f19eab038771",
+      "sha256": "87a23fb4ce03589e2b64eee5259a57dd502709b81339b57f56c8f19eab038771",
+      "bytes": 3922
     },
     {
       "path": "apps/desktop/gui/ui/src/product.js",
-      "source_sha256": "728938ea625a2bc3f3086ce32ecd0e0832715cb7ad09f37a7b5060bd9700a03d",
-      "sha256": "728938ea625a2bc3f3086ce32ecd0e0832715cb7ad09f37a7b5060bd9700a03d",
-      "bytes": 54327
+      "source_sha256": "af1c5a6c2e9c080c0c109b558add42c4e6fb206a54d22fe597157b404c52d2e7",
+      "sha256": "af1c5a6c2e9c080c0c109b558add42c4e6fb206a54d22fe597157b404c52d2e7",
+      "bytes": 57817
+    },
+    {
+      "path": "apps/desktop/gui/ui/src/profile-settings.js",
+      "source_sha256": "e3660737e2d79a89b234889036310f56430354a495945171469bffff4c8bec2d",
+      "sha256": "e3660737e2d79a89b234889036310f56430354a495945171469bffff4c8bec2d",
+      "bytes": 7046
     },
     {
       "path": "apps/desktop/gui/ui/src/record-provenance.js",
@@ -2402,15 +2426,21 @@
     },
     {
       "path": "apps/desktop/gui/ui/src/research-chat.js",
-      "source_sha256": "cdd7d96b94e29335b397fd82d4829b77093e1a25e62d4afbbe1caae67e39be54",
-      "sha256": "cdd7d96b94e29335b397fd82d4829b77093e1a25e62d4afbbe1caae67e39be54",
-      "bytes": 8035
+      "source_sha256": "dab879263fd80c0444c0d284605311095d58b01b534530745f86f6611cbb8ec4",
+      "sha256": "dab879263fd80c0444c0d284605311095d58b01b534530745f86f6611cbb8ec4",
+      "bytes": 10235
+    },
+    {
+      "path": "apps/desktop/gui/ui/src/workspace-examples.js",
+      "source_sha256": "3cbff7a589f6871653273f0f1cc3ee84d8bc6fafcde6db0ded3966973d79e525",
+      "sha256": "3cbff7a589f6871653273f0f1cc3ee84d8bc6fafcde6db0ded3966973d79e525",
+      "bytes": 6277
     },
     {
       "path": "apps/desktop/gui/ui/styles.css",
-      "source_sha256": "3c88ab061ea6aa70604844a2412ce558a0ec3a77c3f68cc92a0a9292f0075808",
-      "sha256": "3c88ab061ea6aa70604844a2412ce558a0ec3a77c3f68cc92a0a9292f0075808",
-      "bytes": 66578
+      "source_sha256": "f24ebf0d0a52b3fd4508ec332350f841b25093edeeca589d526e4042bad68197",
+      "sha256": "f24ebf0d0a52b3fd4508ec332350f841b25093edeeca589d526e4042bad68197",
+      "bytes": 74370
     },
     {
       "path": "apps/desktop/gui/ui/tests/artifact-data.test.mjs",
@@ -2425,10 +2455,22 @@
       "bytes": 8372
     },
     {
+      "path": "apps/desktop/gui/ui/tests/news-bulletin.test.mjs",
+      "source_sha256": "2d15af1a704810819a2a720aee97ae4980b9768e62845fb36d636e535198bfe9",
+      "sha256": "2d15af1a704810819a2a720aee97ae4980b9768e62845fb36d636e535198bfe9",
+      "bytes": 782
+    },
+    {
       "path": "apps/desktop/gui/ui/tests/record-provenance.test.mjs",
       "source_sha256": "1e458cf1ac2847f5f826fff548a932985825fb499a5609de3d999ceca9b87f5f",
       "sha256": "1e458cf1ac2847f5f826fff548a932985825fb499a5609de3d999ceca9b87f5f",
       "bytes": 1959
+    },
+    {
+      "path": "apps/desktop/gui/ui/tests/workspace-examples.test.mjs",
+      "source_sha256": "495e6e01721fb354ee01cbdaab153aad998e58da316cbf0928d02b05fe0de476",
+      "sha256": "495e6e01721fb354ee01cbdaab153aad998e58da316cbf0928d02b05fe0de476",
+      "bytes": 3151
     },
     {
       "path": "apps/desktop/infra/.env.example",
@@ -2570,8 +2612,8 @@
     },
     {
       "path": "apps/desktop/pyproject.toml",
-      "source_sha256": "ccabd681e470218c874ca5a37a6b0008c1e902e9cbd9cd5e275e7dc42e146496",
-      "sha256": "ccabd681e470218c874ca5a37a6b0008c1e902e9cbd9cd5e275e7dc42e146496",
+      "source_sha256": "11121efeced5a2b28bd04fe4e8a4b44bf9d8fc43e20ce44dc0f85e2c8c9ea7e7",
+      "sha256": "11121efeced5a2b28bd04fe4e8a4b44bf9d8fc43e20ce44dc0f85e2c8c9ea7e7",
       "bytes": 3878
     },
     {
@@ -2960,15 +3002,21 @@
     },
     {
       "path": "apps/desktop/tests/test_product_api.py",
-      "source_sha256": "c515fd4c78cfa6beb4eff8dc182772a28703f838f78d047b2e76eac6df2a3451",
-      "sha256": "c515fd4c78cfa6beb4eff8dc182772a28703f838f78d047b2e76eac6df2a3451",
-      "bytes": 9561
+      "source_sha256": "e7142c88484135b2808c5092a10a53520c1a40d4d453bc5643da7e78351ea11a",
+      "sha256": "e7142c88484135b2808c5092a10a53520c1a40d4d453bc5643da7e78351ea11a",
+      "bytes": 11175
     },
     {
       "path": "apps/desktop/tests/test_product_artifacts.py",
       "source_sha256": "9f7fe466ffeeb5623536c4abcd59273f311af1518fe731e262c18ea615c01e24",
       "sha256": "9f7fe466ffeeb5623536c4abcd59273f311af1518fe731e262c18ea615c01e24",
       "bytes": 6853
+    },
+    {
+      "path": "apps/desktop/tests/test_product_bulletins.py",
+      "source_sha256": "fd980d69f52696052c90c16e993211e199c6f49c9bec75d67763f6268e28a377",
+      "sha256": "fd980d69f52696052c90c16e993211e199c6f49c9bec75d67763f6268e28a377",
+      "bytes": 6044
     },
     {
       "path": "apps/desktop/tests/test_product_capabilities.py",
@@ -3158,8 +3206,8 @@
     },
     {
       "path": "apps/desktop/uv.lock",
-      "source_sha256": "b33b9c3a4f3ebb6ddfb1031c0cd70d6d327660af53359b359048d1f0d862b174",
-      "sha256": "b33b9c3a4f3ebb6ddfb1031c0cd70d6d327660af53359b359048d1f0d862b174",
+      "source_sha256": "2be0ddcdf63e2e5d60ae9515f9d501c2e26c124b6a082e1107a6a7aaa3c5f35e",
+      "sha256": "2be0ddcdf63e2e5d60ae9515f9d501c2e26c124b6a082e1107a6a7aaa3c5f35e",
       "bytes": 370814
     },
     {
@@ -4613,6 +4661,12 @@
       "source_sha256": "e6f69d7319a27b0b687c4e3f8b64795d991bd7c01bd9e14f48b2895a90a29306",
       "sha256": "e6f69d7319a27b0b687c4e3f8b64795d991bd7c01bd9e14f48b2895a90a29306",
       "bytes": 2642
+    },
+    {
+      "path": "docs/urun/BULTEN-ARASTIRMA.md",
+      "source_sha256": "f37e8704a894c43334ca177488893914a657e0e86080e0ca39d62198fea4cc88",
+      "sha256": "f37e8704a894c43334ca177488893914a657e0e86080e0ca39d62198fea4cc88",
+      "bytes": 3848
     },
     {
       "path": "docs/urun/CALISMA-PLANI.md",
