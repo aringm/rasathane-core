@@ -70,8 +70,47 @@ class Topic(Input):
 class Source(Input):
     name: str = Field(min_length=1, max_length=120)
     url: str = Field(min_length=1, max_length=2048)
-    kind: Literal["rss", "resmi_gazete", "yargitay_public", "yargitay", "mevzuat"] = "rss"
+    kind: Literal[
+        "rss",
+        "arxiv",
+        "reddit",
+        "youtube_channel",
+        "resmi_gazete",
+        "yargitay_public",
+        "yargitay",
+        "mevzuat",
+    ] = "rss"
     enabled: StrictBool = True
+    category: str | None = Field(default=None, min_length=1, max_length=80)
+
+
+class SourceUpdate(Input):
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    url: str | None = Field(default=None, min_length=1, max_length=2048)
+    kind: (
+        Literal[
+            "rss",
+            "arxiv",
+            "reddit",
+            "youtube_channel",
+            "resmi_gazete",
+            "yargitay_public",
+            "yargitay",
+            "mevzuat",
+        ]
+        | None
+    ) = None
+    enabled: StrictBool | None = None
+    category: str | None = Field(default=None, min_length=1, max_length=80)
+
+
+class ArticleQuery(Input):
+    source_id: str | None = Field(default=None, max_length=64)
+    category: str | None = Field(default=None, max_length=80)
+    query: str | None = Field(default=None, max_length=500)
+    days: int = Field(default=0, ge=0, le=36500)
+    limit: int = Field(default=100, ge=1, le=200)
+    offset: int = Field(default=0, ge=0, le=10_000_000)
 
 
 class Settings(Input):
@@ -125,13 +164,17 @@ def register_routes(mcp: FastMCP) -> None:
             if request.method == "GET":
                 if resource == "state":
                     return JSONResponse(await run_in_threadpool(service.state))
+                if resource == "articles":
+                    filters = ArticleQuery.model_validate(dict(request.query_params))
+                    return JSONResponse(
+                        await run_in_threadpool(store.article_page, **filters.model_dump())
+                    )
                 lists = {
                     "jobs": lambda: store.list_jobs(brief=True),
                     "workspaces": store.list_workspaces,
                     "topics": store.list_topics,
                     "library": lambda: store.library(brief=True),
                     "sources": store.list_feeds,
-                    "articles": store.list_articles,
                     "bulletins": store.list_bulletins,
                     "conversations": lambda: store.list_conversations(
                         request.query_params.get("workspace_id")
@@ -226,6 +269,13 @@ def register_routes(mcp: FastMCP) -> None:
             return JSONResponse({"error": "Kimlik geçersiz."}, status_code=400)
         service = get_service()
         try:
+            if resource == "sources" and action == "update":
+                body = await _input(request, SourceUpdate)
+                if "url" in body:
+                    body["url"] = validate_public_url(body["url"])
+                return JSONResponse(
+                    await run_in_threadpool(service.store.update_feed, item_id, **body)
+                )
             if resource == "bulletins" and action == "speech":
                 from rasathane.product.bulletins import speak_bulletin
 
@@ -267,6 +317,8 @@ def register_routes(mcp: FastMCP) -> None:
                     status_code=202,
                 )
             return JSONResponse({"error": "Uç bulunamadı."}, status_code=404)
+        except ValidationError:
+            return JSONResponse({"error": "Kaynak bilgileri geçersiz."}, status_code=422)
         except ValueError as exc:
             return JSONResponse({"error": str(exc)[:300]}, status_code=400)
 

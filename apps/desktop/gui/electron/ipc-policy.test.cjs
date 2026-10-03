@@ -3,6 +3,15 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { validateRequest, trustedSender } = require("./ipc-policy.cjs");
 
+test("kaynak düzenleme yalnız POST ve tek kaynak için açıktır", () => {
+  const route = "/api/rasathane/sources/source_123/update";
+  assert.equal(validateRequest(route, { method: "POST", body: { enabled: false } }).method, "POST");
+  assert.throws(() => validateRequest(route));
+  assert.throws(() => validateRequest(route, { method: "DELETE" }));
+  assert.throws(() => validateRequest("/api/rasathane/sources/source_123/delete", { method: "POST" }));
+  assert.equal(validateRequest("/api/rasathane/articles?category=turk_hukuku&offset=100").method, "GET");
+});
+
 test("dar API sözleşmesi ve tek iş iptali", () => {
   assert.equal(validateRequest("/api/rasathane/bulletins", { method: "POST", body: {article_ids: ["abc"]} }).method, "POST");
   assert.equal(validateRequest("/api/rasathane/bulletins/abc").method, "GET");

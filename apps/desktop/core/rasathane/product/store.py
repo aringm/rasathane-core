@@ -39,6 +39,19 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "topic_refresh_minutes": 180,
 }
 
+SUPPORTED_FEED_KINDS = frozenset(
+    {
+        "rss",
+        "arxiv",
+        "reddit",
+        "youtube_channel",
+        "resmi_gazete",
+        "yargitay_public",
+        "yargitay",
+        "mevzuat",
+    }
+)
+
 
 class ProductStore:
     """Tek kullanıcı ürün kaydı; her operasyon ayrı connection/transaction kullanır."""
@@ -117,6 +130,29 @@ class ProductStore:
             if version < 2:
                 self._rebuild_index(conn)
                 conn.execute("PRAGMA user_version=2")
+            self._restore_source_categories(conn)
+
+    @staticmethod
+    def _restore_source_categories(conn: sqlite3.Connection) -> None:
+        from rasathane.product.source_catalog import RADAR_CATEGORIES
+
+        for row in conn.execute("SELECT id,url,kind,metadata FROM feeds").fetchall():
+            metadata = json.loads(row["metadata"])
+            if metadata.get("category"):
+                continue
+            category = RADAR_CATEGORIES.get(row["url"].rstrip("/"))
+            if category is None:
+                category = {
+                    "resmi_gazete": "resmi_mevzuat",
+                    "mevzuat": "resmi_mevzuat",
+                    "yargitay_public": "turk_hukuku",
+                    "yargitay": "turk_hukuku",
+                }.get(row["kind"])
+            if category:
+                metadata["category"] = category
+                conn.execute(
+                    "UPDATE feeds SET metadata=? WHERE id=?", (json_text(metadata), row["id"])
+                )
 
     @contextmanager
     def connection(self) -> Iterator[sqlite3.Connection]:
@@ -446,23 +482,105 @@ class ProductStore:
         *,
         feed_id: str | None = None,
         enabled: bool = True,
+        category: str | None = None,
     ) -> dict[str, Any]:
+        name = name.strip()
+        if not name:
+            raise ValueError("Kaynak adı boş olamaz.")
         with self.connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
             existing = conn.execute(
-                "SELECT id FROM feeds WHERE url=? AND kind=?", (url, kind)
+                "SELECT id,metadata,enabled FROM feeds WHERE url=? AND kind=?", (url, kind)
             ).fetchone()
             item_id = existing[0] if existing else (feed_id or uuid.uuid4().hex)
+            merged_metadata = json.loads(existing["metadata"]) if existing else {}
+            merged_metadata.update(metadata or {})
+            if existing and bool(existing["enabled"]) != enabled:
+                merged_metadata["config_revision"] = uuid.uuid4().hex
+                merged_metadata.pop("next_attempt_at", None)
+            if category is not None:
+                if not category.strip():
+                    raise ValueError("Kaynak kategorisi boş olamaz.")
+                merged_metadata["category"] = category.strip()
             conn.execute(
                 "INSERT INTO feeds(id,name,url,kind,enabled,metadata) VALUES(?,?,?,?,?,?) "
                 "ON CONFLICT(id) DO UPDATE SET name=excluded.name,enabled=excluded.enabled,"
                 "metadata=excluded.metadata",
-                (item_id, name, url, kind, int(enabled), json_text(metadata or {})),
+                (item_id, name, url, kind, int(enabled), json_text(merged_metadata)),
             )
-        return self.rows("SELECT * FROM feeds WHERE id=?", (item_id,))[0]
+        return next(row for row in self.list_feeds() if row["id"] == item_id)
+
+    def update_feed(
+        self,
+        feed_id: str,
+        *,
+        name: str | None = None,
+        url: str | None = None,
+        kind: str | None = None,
+        enabled: bool | None = None,
+        category: str | None = None,
+    ) -> dict[str, Any]:
+        with self.connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            current = self.decoded(
+                conn.execute("SELECT * FROM feeds WHERE id=?", (feed_id,)).fetchone()
+            )
+            if current is None:
+                raise ValueError("Kaynak bulunamadı.")
+            if name is not None:
+                if not name.strip():
+                    raise ValueError("Kaynak adı boş olamaz.")
+                current["name"] = name.strip()
+            if category is not None:
+                if not category.strip():
+                    raise ValueError("Kaynak kategorisi boş olamaz.")
+                current["metadata"]["category"] = category.strip()
+            current["metadata"]["config_revision"] = uuid.uuid4().hex
+            if kind is not None and kind not in SUPPORTED_FEED_KINDS:
+                raise ValueError("Kaynak türü desteklenmiyor.")
+            if url is not None:
+                from rasathane.product.web import validate_public_url
+
+                url = validate_public_url(url)
+            address_changed = (url is not None and url != current["url"]) or (
+                kind is not None and kind != current["kind"]
+            )
+            if address_changed:
+                current["last_refreshed_at"] = None
+                current["last_error"] = None
+            if address_changed or (enabled is not None and enabled != current["enabled"]):
+                for key in ("next_attempt_at", "last_attempt_at"):
+                    current["metadata"].pop(key, None)
+            if conn.execute(
+                "SELECT 1 FROM feeds WHERE url=? AND kind=? AND id!=?",
+                (url or current["url"], kind or current["kind"], feed_id),
+            ).fetchone():
+                raise ValueError("Bu adres ve türde bir kaynak zaten kayıtlı.")
+            conn.execute(
+                "UPDATE feeds SET name=?,url=?,kind=?,enabled=?,metadata=?,"
+                "last_refreshed_at=?,last_error=? WHERE id=?",
+                (
+                    current["name"],
+                    url or current["url"],
+                    kind or current["kind"],
+                    int(current["enabled"] if enabled is None else enabled),
+                    json_text(current["metadata"]),
+                    current["last_refreshed_at"],
+                    current["last_error"],
+                    feed_id,
+                ),
+            )
+        return next(row for row in self.list_feeds() if row["id"] == feed_id)
 
     def list_feeds(self) -> list[dict[str, Any]]:
-        rows = self.rows("SELECT * FROM feeds ORDER BY name")
+        rows = self.rows(
+            "SELECT f.*,COALESCE(a.article_count,0) AS article_count FROM feeds f LEFT JOIN "
+            "(SELECT source_id,COUNT(*) AS article_count FROM articles GROUP BY source_id) a "
+            "ON a.source_id=f.id ORDER BY f.name"
+        )
         for row in rows:
+            row["category"] = row["metadata"].get("category") or "genel"
+            row["supported"] = row["kind"] in SUPPORTED_FEED_KINDS
             row["freshness"] = "never_refreshed"
             if row["last_error"]:
                 row["freshness"] = "error"
@@ -476,6 +594,76 @@ class ProductStore:
                 except (ValueError, TypeError):
                     row["freshness"] = "stale"
         return rows
+
+    def get_feed(self, feed_id: str) -> dict[str, Any] | None:
+        rows = self.rows("SELECT * FROM feeds WHERE id=?", (feed_id,))
+        return rows[0] if rows else None
+
+    @staticmethod
+    def _matching_feed(conn: sqlite3.Connection, snapshot: dict[str, Any]) -> dict[str, Any] | None:
+        current = ProductStore.decoded(
+            conn.execute("SELECT * FROM feeds WHERE id=?", (snapshot["id"],)).fetchone()
+        )
+        if current is None or not current["enabled"]:
+            return None
+        if any(current[key] != snapshot[key] for key in ("url", "kind")):
+            return None
+        if current["metadata"].get("config_revision") != snapshot["metadata"].get(
+            "config_revision"
+        ):
+            return None
+        return current
+
+    def begin_feed_attempt(self, snapshot: dict[str, Any]) -> bool:
+        with self.connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            current = self._matching_feed(conn, snapshot)
+            if current is None:
+                return False
+            stamp = datetime.now(UTC)
+            current["metadata"].update(
+                last_attempt_at=stamp.isoformat(),
+                next_attempt_at=(stamp + timedelta(seconds=600)).isoformat(),
+            )
+            conn.execute(
+                "UPDATE feeds SET metadata=? WHERE id=?",
+                (json_text(current["metadata"]), snapshot["id"]),
+            )
+        return True
+
+    def finish_feed_attempt(
+        self,
+        snapshot: dict[str, Any],
+        articles: list[dict[str, Any]] | None = None,
+        *,
+        error: str | None = None,
+        delay_seconds: int = 600,
+    ) -> int | None:
+        """Publish fetched data and status atomically only for the same active configuration."""
+        with self.connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            current = self._matching_feed(conn, snapshot)
+            if current is None:
+                return None
+            metadata = current["metadata"]
+            if error is not None:
+                stamp = datetime.now(UTC)
+                metadata["last_attempt_at"] = stamp.isoformat()
+                metadata["next_attempt_at"] = (
+                    stamp + timedelta(seconds=max(60, min(delay_seconds, 86400)))
+                ).isoformat()
+                conn.execute(
+                    "UPDATE feeds SET last_error=?,metadata=? WHERE id=?",
+                    (error[:500], json_text(metadata), snapshot["id"]),
+                )
+                return 0
+            count = self._add_articles(conn, snapshot["id"], articles or [])
+            metadata.pop("next_attempt_at", None)
+            conn.execute(
+                "UPDATE feeds SET last_refreshed_at=?,last_error=NULL,metadata=? WHERE id=?",
+                (now(), json_text(metadata), snapshot["id"]),
+            )
+            return count
 
     def add_articles(self, feed_id: str | None, articles: list[dict[str, Any]]) -> int:
         with self.connection() as conn:
@@ -520,9 +708,12 @@ class ProductStore:
             if error:
                 conn.execute("UPDATE feeds SET last_error=? WHERE id=?", (error[:500], feed_id))
             else:
+                row = conn.execute("SELECT metadata FROM feeds WHERE id=?", (feed_id,)).fetchone()
+                metadata = json.loads(row[0]) if row else {}
+                metadata.pop("next_attempt_at", None)
                 conn.execute(
-                    "UPDATE feeds SET last_refreshed_at=?,last_error=NULL WHERE id=?",
-                    (now(), feed_id),
+                    "UPDATE feeds SET last_refreshed_at=?,last_error=NULL,metadata=? WHERE id=?",
+                    (now(), json_text(metadata), feed_id),
                 )
 
     def record_feed_attempt(self, feed_id: str, delay_seconds: int = 600) -> None:
@@ -549,6 +740,59 @@ class ProductStore:
             "LIMIT ?",
             (limit,),
         )
+
+    def article_page(
+        self,
+        *,
+        source_id: str | None = None,
+        category: str | None = None,
+        query: str | None = None,
+        days: int = 0,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        """Filter the complete archive before pagination, retaining paused sources' history."""
+        if not 1 <= limit <= 200 or not 0 <= offset <= 10_000_000 or not 0 <= days <= 36500:
+            raise ValueError("Akış sayfalama değerleri geçersiz.")
+        where: list[str] = []
+        params: list[Any] = []
+        category_sql = "COALESCE(NULLIF(json_extract(f.metadata,'$.category'),''),'genel')"
+        # Decision date is distinct from publication, but remains the established
+        # chronological ordering for official decisions in this feed.
+        date_sql = (
+            "COALESCE(json_extract(a.provenance,'$.decision_date'),a.published_at,a.created_at)"
+        )
+        if source_id:
+            where.append("a.source_id=?")
+            params.append(source_id)
+        if category:
+            where.append(category_sql + "=?")
+            params.append(category)
+        if query and query.strip():
+            where.append("instr(turkish_fold(a.title || ' ' || COALESCE(a.summary,'')),?)>0")
+            params.append(fold(query.strip()))
+        if days:
+            where.append("julianday(" + date_sql + ")>=julianday(?)")
+            params.append((datetime.now(UTC) - timedelta(days=days)).isoformat())
+        from_sql = " FROM articles a LEFT JOIN feeds f ON f.id=a.source_id"
+        if where:
+            from_sql += " WHERE " + " AND ".join(where)
+        with self.connection() as conn:
+            conn.create_function("turkish_fold", 1, fold, deterministic=True)
+            conn.execute("BEGIN")
+            total = conn.execute("SELECT COUNT(*)" + from_sql, params).fetchone()[0]
+            rows = conn.execute(
+                "SELECT a.*,f.name AS source_name,f.kind AS source_kind,"
+                + category_sql
+                + " AS category"
+                + from_sql
+                + " ORDER BY "
+                + date_sql
+                + " DESC,a.id DESC LIMIT ? OFFSET ?",
+                [*params, limit, offset],
+            )
+            items = [item for row in rows if (item := self.decoded(row)) is not None]
+        return {"items": items, "total": total, "limit": limit, "offset": offset}
 
     def enqueue(self, kind: str, request: dict[str, Any]) -> dict[str, Any]:
         item: dict[str, Any] = {
@@ -769,7 +1013,9 @@ class ProductStore:
             ).fetchone():
                 return None
             row = conn.execute(
-                "SELECT * FROM jobs WHERE status='queued' ORDER BY created_at LIMIT 1"
+                "SELECT * FROM jobs WHERE status='queued' ORDER BY "
+                "CASE WHEN kind='feed_refresh' AND json_extract(request,'$.automatic')=1 "
+                "THEN 1 ELSE 0 END,created_at,rowid LIMIT 1"
             ).fetchone()
             if row is None:
                 return None
@@ -944,6 +1190,7 @@ class ProductStore:
                 {
                     **(row.get("metadata") or {}),
                     "fetch_interval_minutes": row.get("fetch_interval_minutes", 180),
+                    **({"category": row["category"]} if row.get("category") else {}),
                 },
                 feed_id=str(row["id"]),
                 enabled=bool(row.get("enabled", True))

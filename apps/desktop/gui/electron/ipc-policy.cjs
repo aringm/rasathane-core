@@ -23,7 +23,7 @@ function validateRequest(route, options = {}) {
   if (!options || typeof options !== "object" || Array.isArray(options)) throw new Error("Geçersiz istek.");
   if (Object.keys(options).some(key => !["method", "body"].includes(key))) throw new Error("İzin verilmeyen istek alanı.");
   const method = options.method || "GET";
-  const methods = JSON_ROUTES.get(url.pathname) || (/^\/api\/rasathane\/(jobs|conversations|bulletins|topics)\/[a-zA-Z0-9_-]+$/.test(url.pathname) ? ["GET"] : /^\/api\/rasathane\/(bulletins\/[a-zA-Z0-9_-]+\/speech|articles\/[a-zA-Z0-9_-]+\/(summary|speech)|jobs\/[a-zA-Z0-9_-]+\/cancel|(topics|sources)\/[a-zA-Z0-9_-]+\/refresh)$/.test(url.pathname) ? ["POST"] : []);
+  const methods = JSON_ROUTES.get(url.pathname) || (/^\/api\/rasathane\/(jobs|conversations|bulletins|topics)\/[a-zA-Z0-9_-]+$/.test(url.pathname) ? ["GET"] : /^\/api\/rasathane\/(bulletins\/[a-zA-Z0-9_-]+\/speech|articles\/[a-zA-Z0-9_-]+\/(summary|speech)|jobs\/[a-zA-Z0-9_-]+\/cancel|(topics|sources)\/[a-zA-Z0-9_-]+\/refresh|sources\/[a-zA-Z0-9_-]+\/update)$/.test(url.pathname) ? ["POST"] : []);
   if (!methods.includes(method)) throw new Error("Bu API işlemi izinli değil.");
   if (method === "GET" && options.body !== undefined) throw new Error("GET gövdesi desteklenmiyor.");
   const body = options.body === undefined ? undefined : JSON.stringify(options.body);

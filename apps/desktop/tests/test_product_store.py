@@ -99,6 +99,108 @@ def test_feed_failure_retains_last_success_and_exposes_stale_error(tmp_path):
     assert current["freshness"] == "error"
 
 
+def test_source_edit_preserves_identity_history_and_metadata(tmp_path):
+    store = ProductStore(tmp_path)
+    feed = store.upsert_feed(
+        "Eski ad", "https://example.org/feed", metadata={"origin": "radar", "category": "hukuk"}
+    )
+    store.add_articles(feed["id"], [{"title": "Haber", "url": "https://example.org/1"}])
+    store.mark_feed(feed["id"])
+    before = store.list_feeds()[0]
+    updated = store.update_feed(feed["id"], name="Yeni ad", enabled=False)
+    assert updated["id"] == feed["id"] and updated["enabled"] is False
+    assert updated["article_count"] == 1 and updated["supported"] is True
+    assert updated["metadata"].items() >= feed["metadata"].items()
+    assert updated["metadata"]["config_revision"]
+    assert updated["last_refreshed_at"] == before["last_refreshed_at"]
+    assert store.upsert_feed("Yeni ad", feed["url"])["metadata"].items() >= feed["metadata"].items()
+    store.record_feed_attempt(feed["id"])
+    changed = store.update_feed(feed["id"], url="https://example.org/new", category="teknoloji")
+    assert changed["last_refreshed_at"] is None and changed["last_error"] is None
+    assert "next_attempt_at" not in changed["metadata"]
+    assert changed["category"] == "teknoloji" and changed["metadata"]["origin"] == "radar"
+    assert store.list_articles()[0]["source_id"] == feed["id"]
+    other = store.upsert_feed("Başka", "https://example.org/other")
+    with pytest.raises(ValueError, match="zaten"):
+        store.update_feed(feed["id"], url=other["url"])
+    assert store.list_articles()[0]["source_id"] == feed["id"]
+    with pytest.raises(ValueError, match="boş"):
+        store.update_feed(feed["id"], name="  ")
+    with pytest.raises(ValueError, match="bulunamadı"):
+        store.update_feed("missing", enabled=False)
+    legacy = store.upsert_feed("Özel", "https://example.org/custom", "unknown_legacy")
+    assert not legacy["supported"]
+    assert store.update_feed(legacy["id"], enabled=False)["enabled"] is False
+
+
+def test_source_categories_import_and_non_destructive_startup_backfill(tmp_path):
+    store = ProductStore(tmp_path)
+    known = store.upsert_feed("Hukuk", "https://hukukihaber.net/rss", metadata={"lang": "tr"})
+    custom = store.upsert_feed("Lexpera", "https://blog.lexpera.com.tr/feed/", category="kişisel")
+    unknown = store.upsert_feed("Bilinmeyen", "https://example.org/feed")
+    reopened = ProductStore(tmp_path)
+    sources = {row["id"]: row for row in reopened.list_feeds()}
+    assert sources[known["id"]]["metadata"] == {"lang": "tr", "category": "turk_hukuku"}
+    assert sources[custom["id"]]["category"] == "kişisel"
+    assert sources[unknown["id"]]["metadata"] == {}
+    assert ProductStore(tmp_path).list_feeds() == reopened.list_feeds()
+    store.import_snapshot(
+        {
+            "sources": [
+                {
+                    "id": "import",
+                    "name": "Yeni",
+                    "url": "https://example.org/import",
+                    "category": "legaltech",
+                }
+            ]
+        },
+        "categories-test",
+    )
+    assert (
+        next(row for row in store.list_feeds() if row["id"] == "import")["category"] == "legaltech"
+    )
+
+
+def test_article_page_filters_before_pagination_and_keeps_decision_dates(tmp_path):
+    store = ProductStore(tmp_path)
+    old = store.upsert_feed("Hukuk", "https://example.org/hukuk", category="turk_hukuku")
+    other = store.upsert_feed("AI", "https://example.org/ai", category="dunya_ai")
+    store.add_articles(
+        old["id"],
+        [
+            {
+                "title": f"İŞÇİLİK kararı {i}",
+                "url": f"https://example.org/karar/{i}",
+                "published_at": None,
+                "provenance": {"decision_date": "2020-01-02"},
+            }
+            for i in range(3)
+        ],
+    )
+    store.add_articles(
+        other["id"],
+        [
+            {
+                "title": f"AI haberi {i}",
+                "url": f"https://example.org/ai/{i}",
+                "published_at": "2026-01-01",
+            }
+            for i in range(210)
+        ],
+    )
+    page = store.article_page(source_id=old["id"], category="turk_hukuku", query="iscilik", limit=2)
+    assert page["total"] == 3 and len(page["items"]) == 2
+    assert page["items"][0]["source_name"] == "Hukuk"
+    assert page["items"][0]["published_at"] is None
+    second = store.article_page(source_id=old["id"], query="İŞÇİLİK", limit=2, offset=2)
+    assert second["total"] == 3 and len(second["items"]) == 1
+    assert not {r["id"] for r in page["items"]} & {r["id"] for r in second["items"]}
+    assert store.article_page(query="%")["total"] == 0
+    assert store.article_page(source_id=old["id"], days=1)["total"] == 0
+    assert store.article_page(category="missing")["total"] == 0
+
+
 def test_articles_use_decision_date_when_publication_is_unknown(tmp_path):
     store = ProductStore(tmp_path)
     store.add_articles(

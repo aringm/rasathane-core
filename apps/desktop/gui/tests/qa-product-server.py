@@ -19,8 +19,10 @@ from starlette.staticfiles import StaticFiles
 root = Path(__file__).resolve().parents[4]
 run = Path(sys.argv[1])
 store = ProductStore(run / "data")
+news_feed = store.upsert_feed("Hukuk Gündemi QA", "https://example.org/rss", enabled=False, category="turk_hukuku")
+store.mark_feed(news_feed["id"])
 store.add_articles(
-    None,
+    news_feed["id"],
     [
         {
             "id": "synthetic-news",
@@ -34,7 +36,7 @@ store.add_articles(
     ],
 )
 store.add_articles(
-    None,
+    news_feed["id"],
     [
         {
             "id": "synthetic-metadata",
@@ -72,6 +74,8 @@ if "--seed-only" in sys.argv[2:]:
     # Frozen acceptance uses the real scheduler, while fixture records remain local.
     # Disable web through the normal persisted product setting, not a runtime bypass.
     store.save_settings({"web_enabled": False})
+    for feed in store.list_feeds():
+        store.update_feed(feed["id"], {"enabled": False})
     (run / "seed.json").write_text(json.dumps({"workspace": space["id"]}))
     sys.exit(0)
 

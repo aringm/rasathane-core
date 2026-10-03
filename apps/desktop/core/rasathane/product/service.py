@@ -129,17 +129,12 @@ class ProductService:
             return
         settings = self.store.settings()
         minutes = settings["topic_refresh_minutes"]
-        if not minutes or not settings["web_enabled"]:
-            return
-        jobs = self.store.list_jobs(brief=True)
-        pending_source_jobs = [
-            job
-            for job in jobs
-            if job["kind"] == "feed_refresh"
-            and job["status"] in {"queued", "running", "cancel_requested"}
-        ]
+        pending_source_jobs = self.store.rows(
+            "SELECT request FROM jobs WHERE kind='feed_refresh' "
+            "AND status IN ('queued','running','cancel_requested')"
+        )
         for feed in self.store.list_feeds():
-            if not feed["enabled"] or feed["kind"] not in {"resmi_gazete", "yargitay_public"}:
+            if not feed["enabled"] or not feed["supported"]:
                 continue
             if any(
                 job["request"].get("source_id") in {None, feed["id"]} for job in pending_source_jobs
@@ -150,13 +145,24 @@ class ProductService:
             next_attempt = meta.get("next_attempt_at")
             if next_attempt and datetime.fromisoformat(next_attempt) > datetime.now(UTC):
                 continue
-            interval = 360 if feed["kind"] == "yargitay_public" else 180
+            minimum = (
+                360
+                if feed["kind"] == "yargitay_public"
+                else (180 if feed["kind"] == "resmi_gazete" else 15)
+            )
+            try:
+                interval = max(minimum, min(10080, int(meta.get("fetch_interval_minutes", 180))))
+            except (ValueError, TypeError):
+                interval = max(minimum, 180)
             if (
                 not last
                 or (datetime.now(UTC) - datetime.fromisoformat(last)).total_seconds()
                 >= interval * 60
             ):
-                self.submit("feed_refresh", {"source_id": feed["id"]})
+                self.submit("feed_refresh", {"source_id": feed["id"], "automatic": True})
+        # Web search and topic timing are independent of subscribed publisher feeds.
+        if not minutes or not settings["web_enabled"]:
+            return
         pending = {
             job["request"].get("topic_id")
             for job in self.store.list_jobs(brief=True)
@@ -378,16 +384,18 @@ class ProductService:
         self, request: dict[str, Any], check: Callable[[], None], progress: Callable[[str], None]
     ) -> dict[str, Any]:
         feed_id = request.get("source_id")
-        feeds = [
-            row
-            for row in self.store.list_feeds()
-            if row["enabled"] and (feed_id is None or row["id"] == feed_id)
-        ]
+        feeds = [row for row in self.store.list_feeds() if feed_id is None or row["id"] == feed_id]
         if feed_id and not feeds:
-            raise ValueError("Etkin kaynak bulunamadı.")
+            raise ValueError("Kaynak bulunamadı.")
         result: dict[str, Any] = {"inserted": 0, "sources": [], "errors": [], "status": "completed"}
-        for feed in feeds:
+        for saved_feed in feeds:
             check()
+            feed = self.store.get_feed(saved_feed["id"])
+            if feed is None or not feed["enabled"]:
+                result["sources"].append(
+                    {"id": saved_feed["id"], "inserted": 0, "skipped": "paused_or_removed"}
+                )
+                continue
             if feed["kind"] in {"yargitay_public", "resmi_gazete"}:
                 cache_minutes = 360 if feed["kind"] == "yargitay_public" else 180
                 previous = feed["last_refreshed_at"]
@@ -406,33 +414,44 @@ class ProductService:
                         }
                     )
                     continue
-                next_attempt = feed["metadata"].get("next_attempt_at")
-                if next_attempt and datetime.fromisoformat(next_attempt) > datetime.now(UTC):
-                    result["errors"].append(
-                        {
-                            "id": feed["id"],
-                            "error": "Resmî kaynak bekleme aralığında.",
-                            "retry_after": next_attempt,
-                        }
-                    )
-                    continue
-                self.store.record_feed_attempt(feed["id"])
+            next_attempt = feed["metadata"].get("next_attempt_at")
+            if next_attempt and datetime.fromisoformat(next_attempt) > datetime.now(UTC):
+                result["errors"].append(
+                    {
+                        "id": feed["id"],
+                        "error": "Kaynak bekleme aralığında.",
+                        "retry_after": next_attempt,
+                    }
+                )
+                continue
+            if not self.store.begin_feed_attempt(feed):
+                result["sources"].append(
+                    {"id": feed["id"], "inserted": 0, "skipped": "configuration_changed"}
+                )
+                continue
             progress("feed_fetch")
             try:
                 articles = fetch_feed(feed)
                 check()
-                count = self.store.add_articles(feed["id"], articles)
-                self.store.mark_feed(feed["id"])
+                count = self.store.finish_feed_attempt(feed, articles)
+                if count is None:
+                    result["sources"].append(
+                        {"id": feed["id"], "inserted": 0, "skipped": "configuration_changed"}
+                    )
+                    continue
                 result["inserted"] += count
                 result["sources"].append({"id": feed["id"], "inserted": count})
             except JobCancelled:
                 raise
             except Exception as exc:
-                if feed["kind"] in {"yargitay_public", "resmi_gazete"}:
-                    self.store.record_feed_attempt(
-                        feed["id"], getattr(exc, "retry_after_seconds", 600)
+                recorded = self.store.finish_feed_attempt(
+                    feed, error=str(exc), delay_seconds=getattr(exc, "retry_after_seconds", 600)
+                )
+                if recorded is None:
+                    result["sources"].append(
+                        {"id": feed["id"], "inserted": 0, "skipped": "configuration_changed"}
                     )
-                self.store.mark_feed(feed["id"], str(exc))
+                    continue
                 result["errors"].append({"id": feed["id"], "error": str(exc)[:300]})
         if result["errors"]:
             result["status"] = "partial"

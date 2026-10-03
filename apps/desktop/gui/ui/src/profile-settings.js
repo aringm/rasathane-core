@@ -66,6 +66,19 @@ export function createProfileSettings({ $, onSettings }) {
 
   const heading = dialog.querySelector(".settings-heading");
   const form = $("urun-ayar-form");
+  const diagnostics = document.createElement("div");
+  diagnostics.className = "settings-diagnostics";
+  const diagnosticsStatus = document.createElement("span");
+  diagnosticsStatus.id = "ayarlar-baglanti-durum";
+  diagnosticsStatus.setAttribute("role", "status");
+  diagnosticsStatus.setAttribute("aria-live", "polite");
+  const reload = document.createElement("button");
+  reload.type = "button";
+  reload.className = "btn btn-ikincil mini";
+  reload.id = "ayarlar-yenile";
+  reload.textContent = "Durumu yenile";
+  reload.addEventListener("click", () => window.dispatchEvent(new Event("rasathane:settings-reload")));
+  diagnostics.append(diagnosticsStatus, reload);
   const sections = [...dialog.querySelectorAll(":scope > section")];
   const content = document.createElement("div");
   content.className = "settings-content";
@@ -131,13 +144,56 @@ export function createProfileSettings({ $, onSettings }) {
   network.append(webLabel, webNote);
   for (const section of sections) {
     if (section.id === "ayarlar-hesap-icerik") account.append(section);
-    else if (section.querySelector("#ayar-ollama-host, #ayar-motorlar")) models.append(section);
+    else if (section.querySelector("#ayar-ollama-host")) {
+      const advanced = document.createElement("details");
+      advanced.className = "settings-advanced";
+      const summary = document.createElement("summary");
+      summary.textContent = "Gelişmiş: Ollama bağlantısını test et";
+      section.querySelector("h3").textContent = "İsteğe bağlı bağlantı testi";
+      section.querySelector(".field-note").textContent = "Bu alan yalnız bu bilgisayardaki Ollama servisine erişimi test eder. Girilen adres kaydedilmez ve Rasathane'nin analiz motorunu değiştirmez. Birleşik analiz, yukarıdaki donanım profilinin yerel motorunu kullanır.";
+      section.querySelector('label[for="ayar-ollama-host"]').textContent = "Test edilecek yerel servis adresi";
+      $("ayar-test-btn").textContent = "Bağlantıyı test et";
+      advanced.append(summary, section);
+      models.append(advanced);
+    }
+    else if (section.querySelector("#ayar-motorlar")) models.append(section);
     else files.append(section);
   }
   models.prepend($("ilk-kurulum-btn"));
   form.querySelector(".settings-grid").remove();
   form.className = "settings-save";
-  dialog.append(form);
+  const discard = document.createElement("button");
+  discard.type = "button";
+  discard.className = "btn btn-ikincil";
+  discard.id = "ayarlar-vazgec";
+  discard.textContent = "Değişiklikleri geri al";
+  discard.disabled = true;
+  discard.addEventListener("click", () => {
+    window.dispatchEvent(new Event("rasathane:settings-discard"));
+    $("urun-ayar-sonuc").textContent = "Kayıtlı ayarlar geri yüklendi.";
+  });
+  const save = form.querySelector('button[type="submit"]');
+  save.id = "ayarlar-kaydet";
+  save.disabled = true;
+  save.after(discard);
+  const draftStatus = document.createElement("span");
+  draftStatus.id = "ayarlar-taslak-durum";
+  draftStatus.className = "field-note";
+  draftStatus.setAttribute("role", "status");
+  form.prepend(draftStatus);
+  window.addEventListener("rasathane:settings-state", ({ detail }) => {
+    discard.disabled = !detail?.dirty;
+    save.disabled = !detail?.ready || form.dataset.submitting === "true";
+    draftStatus.textContent = detail?.dirty ? "Kaydedilmemiş değişiklikler var." : "";
+  });
+  for (const eventName of ["input", "change"]) {
+    dialog.addEventListener(eventName, (event) => {
+      if (event.target.form !== form) return;
+      $("urun-ayar-sonuc").textContent = "";
+      window.dispatchEvent(new Event("rasathane:settings-edited"));
+    });
+  }
+  dialog.append(diagnostics, form);
   select("gorunum");
   nav.addEventListener("keydown", (event) => {
     const entries = [...pages.entries()];

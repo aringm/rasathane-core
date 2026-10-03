@@ -55,6 +55,50 @@ async def test_user_flow_workspace_note_search_export(service):
         assert "attachment" in exported.headers["content-disposition"]
 
 
+async def test_source_management_and_archive_filters(service):
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=gui_http_app()), base_url="http://localhost"
+    ) as client:
+        response = await client.post(
+            "/api/rasathane/sources",
+            json={"name": "Hukuk", "url": "https://example.org/feed", "category": "turk_hukuku"},
+        )
+        assert response.status_code == 201
+        source = response.json()
+        path = f"/api/rasathane/sources/{source['id']}/update"
+        paused = await client.post(path, json={"enabled": False})
+        assert paused.status_code == 200 and paused.json()["enabled"] is False
+        assert paused.json()["category"] == "turk_hukuku"
+        edited = await client.post(
+            path, json={"name": "Düzenlenen", "url": "https://example.org/new"}
+        )
+        assert edited.status_code == 200 and edited.json()["id"] == source["id"]
+        assert (await client.post(path, json={"enabled": "false"})).status_code == 422
+        assert (await client.post(path, json={"metadata": {"token": "test"}})).status_code == 422
+        assert (await client.post(path, json={"url": "http://127.0.0.1/"})).status_code == 400
+        assert (await client.post(path, json={"name": " "})).status_code == 400
+        service.store.add_articles(
+            source["id"], [{"title": "İşçilik", "url": "https://example.org/1"}]
+        )
+        result = await client.get(
+            "/api/rasathane/articles",
+            params={
+                "source_id": source["id"],
+                "category": "turk_hukuku",
+                "query": "iscilik",
+                "limit": 1,
+            },
+        )
+        assert result.status_code == 200 and result.json()["total"] == 1
+        assert result.json()["items"][0]["source_name"] == "Düzenlenen"
+        assert (await client.get("/api/rasathane/articles?limit=201")).status_code == 422
+        assert (await client.get("/api/rasathane/articles?offset=-1")).status_code == 422
+        assert (await client.get("/api/rasathane/articles?days=bad")).status_code == 422
+        listed = (await client.get("/api/rasathane/sources")).json()["items"]
+        current = next(row for row in listed if row["id"] == source["id"])
+        assert current["article_count"] == 1 and current["supported"] is True
+
+
 async def test_topic_detail_restores_latest_completed_result_outside_recent_jobs(service):
     store = service.store
     topic = store.create_topic("İş hukuku", "işçilik alacağı")

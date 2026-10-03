@@ -1347,6 +1347,7 @@ async function kurulumDurumu() {
 /* ---- 7. görünüm geçişi + kütüphane ------------------------------------- */
 const GORUNUMLER = [
   "akis",
+  "kaynaklar",
   "analiz",
   "arastir",
   "calisma",
@@ -1514,10 +1515,17 @@ function kutuphaneKart(k) {
 }
 
 /* ---- 8. Ayarlar (Ollama yapılandırma + test + model tespit) ------------- */
-let ayarIlkTest = false; // ilk açılışta bir kez otomatik test
 let ayarOutputBase = "";
+let ayarlarYukleniyor = false;
 
 async function ayarlarYukle() {
+  if (ayarlarYukleniyor) return;
+  const status = $("ayarlar-baglanti-durum");
+  ayarlarYukleniyor = true;
+  if (status) {
+    status.textContent = "Yerel motor ve dosya konumu okunuyor…";
+    status.classList.remove("status-error");
+  }
   if (demoAktif && demoPaket) {
     const d = demoPaket.DEMO_AYARLAR;
     $("ayar-ollama-host").value = d.ollama_host;
@@ -1528,13 +1536,17 @@ async function ayarlarYukle() {
     $("ayar-motor-durum").textContent = `Bulundu: ${d.motor_kok}`;
     await renderMotorlar();
     ayarTest();
+    ayarlarYukleniyor = false;
+    if (status) status.textContent = "Demo yapılandırması gösteriliyor.";
     return;
   }
   try {
     const r = await sidecarFetch(`${SIDECAR}/gui/ayarlar`);
+    if (!r.ok) throw new Error("Yerel ayarlar okunamadı. Yeniden yükleyin.");
     if (r.ok) {
       const d = await r.json();
-      $("ayar-ollama-host").value = d.ollama_host || "";
+      if ($("ayar-ollama-host").dataset.edited !== "true")
+        $("ayar-ollama-host").value = d.ollama_host || "";
       ayarOutputBase = d.output_base || "";
       $("ayar-output-base").textContent = ayarOutputBase || "—";
       const kaynak = {
@@ -1548,19 +1560,24 @@ async function ayarlarYukle() {
       $("ayar-motor-durum").textContent =
         "Yeni analizlerin çalışma dosyaları burada tutulur. Varsayılan konum uygulamanın yerel veri alanıdır. OneDrive gibi eşitleme kapsamındaki bir klasörü seçerseniz o servis dosyaları eşitleyebilir. Veritabanı uygulamanın yerel veri alanında kalır.";
     }
-  } catch {
-    /* sessiz */
-  }
-  await renderMotorlar();
-  if (!ayarIlkTest) {
-    ayarIlkTest = true;
-    ayarTest(); // ilk açılışta otomatik: kurulu Ollama + modelleri tespit et
+    await renderMotorlar();
+    if (status) status.textContent = "Yerel yapılandırma güncel. Bağlantı testleri isteğe bağlıdır.";
+  } catch (error) {
+    if (status) {
+      status.textContent = error.message || "Yerel ayarlar okunamadı. Yeniden yükleyin.";
+      status.classList.add("status-error");
+    }
+  } finally {
+    ayarlarYukleniyor = false;
   }
 }
 
 async function ayarTest() {
-  const host = $("ayar-ollama-host").value.trim();
+  const input = $("ayar-ollama-host").value.trim();
+  const host = input && !input.includes("://") ? `http://${input}` : input;
   const durum = $("ayar-ollama-durum");
+  const button = $("ayar-test-btn");
+  button.disabled = true;
   durum.className = "ayar-durum bekle";
   durum.textContent = "Test ediliyor…";
   $("ayar-modeller").replaceChildren();
@@ -1570,6 +1587,7 @@ async function ayarTest() {
     $("ayar-modeller").replaceChildren(
       ...demoPaket.DEMO_MODELLER.map((m) => el("span", { class: "kw" }, m)),
     );
+    button.disabled = false;
     return;
   }
   try {
@@ -1587,11 +1605,13 @@ async function ayarTest() {
       );
     } else {
       durum.className = "ayar-durum kotu";
-      durum.textContent = `✕ ${(d && d.hata) || "Ulaşılamadı"}`;
+      durum.textContent = `Bağlantı kurulamadı: ${d?.hata || d?.error || "Bu adreste çalışan Ollama bulunamadı."}`;
     }
-  } catch {
+  } catch (error) {
     durum.className = "ayar-durum kotu";
-    durum.textContent = "✕ Motora ulaşılamadı (sidecar çalışıyor mu?)";
+    durum.textContent = error.message || "Bağlantı testi tamamlanamadı. Yerel servisi kontrol ederek yeniden deneyin.";
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -1624,7 +1644,7 @@ async function renderMotorlar() {
   }
   try {
     const r = await sidecarFetch(`${SIDECAR}/gui/kurulum`);
-    if (!r.ok) return;
+    if (!r.ok) throw new Error("Yerel motorların durumu okunamadı.");
     const d = await r.json();
     const ogeler = [
       el(
@@ -1654,8 +1674,9 @@ async function renderMotorlar() {
       ),
     ];
     kap.replaceChildren(...ogeler);
-  } catch {
-    /* sessiz */
+  } catch (error) {
+    kap.replaceChildren(el("p", { class: "status-error", role: "status" }, error.message || "Yerel motorların durumu okunamadı. Ayarları yeniden yükleyin."));
+    throw error;
   }
 }
 
@@ -1728,8 +1749,15 @@ $("ayar-test-btn").addEventListener("click", ayarTest);
 $("ayar-motor-kaydet").addEventListener("click", ayarMotorKaydet);
 $("onboarding-btn").addEventListener("click", () => setGorunum("ayarlar"));
 $("ayar-ollama-host").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") ayarTest();
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (!$("ayar-test-btn").disabled) ayarTest();
+  }
 });
+$("ayar-ollama-host").addEventListener("input", () => {
+  $("ayar-ollama-host").dataset.edited = "true";
+});
+window.addEventListener("rasathane:settings-reload", ayarlarYukle);
 $("ayar-klasor-ac").addEventListener("click", () =>
   klasorAc(ayarOutputBase, $("ayar-klasor-geri")),
 );

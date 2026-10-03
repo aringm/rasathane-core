@@ -2,8 +2,8 @@
   "name": "rasathane-desktop",
   "productName": "Rasathane",
   "private": true,
-  "version": "0.5.5",
-  "engineVersion": "0.5.4",
+  "version": "0.6.0",
+  "engineVersion": "0.6.0",
   "license": "AGPL-3.0-or-later",
   "packageManager": "pnpm@11.23.0",
   "engines": {

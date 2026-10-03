@@ -1,3 +1,6 @@
+import { createSourceManager } from "./source-manager.js";
+import { createRadarFeed } from "./radar-feed.js";
+import { createSettingsDraft } from "./settings-controller.js";
 import { createResearchChat } from "./research-chat.js";
 import { createNewsSummary } from "./news-summary.js";
 import { createNewsBulletin } from "./news-bulletin.js";
@@ -29,7 +32,6 @@ export function createProductUI({
   let accountLoading = false;
   let accountState = "unknown";
   let entitlement = null;
-  let feedVisible = 25;
   const pendingJobs = new Set();
   const terminal = new Set(["completed", "failed", "cancelled", "interrupted"]);
   const jobLabels = {
@@ -61,141 +63,7 @@ export function createProductUI({
     web_source: "Konu / web kaynağı",
     bulletin: "Bülten",
   };
-  const feedRefresh = el(
-    "button",
-    { type: "button", class: "btn btn-ikincil", id: "kaynak-kontrol-btn" },
-    "Kaynakları kontrol et",
-  );
-  $("akis-yenile").textContent = "Kayıtları yenile";
-  $("gorunum-akis")
-    .querySelector(".page-heading")
-    .append(
-      el(
-        "div",
-        { class: "form-actions feed-controls" },
-        $("akis-yenile"),
-        feedRefresh,
-      ),
-    );
-  const feedSource = el(
-    "select",
-    { id: "akis-kaynak-filter" },
-    el("option", { value: "" }, "Tüm kaynaklar"),
-  );
-  const feedSearch = el("input", {
-    id: "akis-ara",
-    type: "search",
-    maxlength: 200,
-    placeholder: "Başlık veya açıklamada ara",
-  });
-  const feedCount = el("span", {
-    class: "field-note",
-    role: "status",
-    "aria-live": "polite",
-  });
-  const feedScope = el("p", { class: "field-note gizli" });
-  const feedMore = el(
-    "button",
-    { type: "button", class: "btn btn-ikincil mini" },
-    "Daha fazla göster",
-  );
-  $("akis-liste").before(
-    feedScope,
-    el(
-      "div",
-      { class: "feed-filters" },
-      el(
-        "div",
-        { class: "alan" },
-        el("label", { for: "akis-ara" }, "Akışta ara"),
-        feedSearch,
-      ),
-      el(
-        "div",
-        { class: "alan" },
-        el("label", { for: "akis-kaynak-filter" }, "Akış kaynağı"),
-        feedSource,
-      ),
-    ),
-  );
-  $("akis-liste").after(
-    el("div", { class: "feed-pagination form-actions" }, feedMore, feedCount),
-  );
-  const sourceName = el("input", {
-    id: "yeni-kaynak-ad",
-    required: true,
-    maxlength: 120,
-    autocomplete: "off",
-  });
-  const sourceURL = el("input", {
-    id: "yeni-kaynak-url",
-    type: "url",
-    required: true,
-    maxlength: 2048,
-    placeholder: "https://…",
-    autocomplete: "off",
-  });
-  const sourceKind = el(
-    "select",
-    { id: "yeni-kaynak-tur" },
-    el("option", { value: "rss" }, "RSS / Atom"),
-    el("option", { value: "resmi_gazete" }, "Resmî Gazete"),
-    el(
-      "option",
-      { value: "yargitay_public" },
-      "Yargıtay · resmî karar künyeleri",
-    ),
-    el("option", { value: "yargitay" }, "Yargıtay · yapılandırılmış bağlantı"),
-    el("option", { value: "mevzuat" }, "Mevzuat · yapılandırılmış bağlantı"),
-  );
-  const sourceForm = el(
-    "form",
-    { class: "source-form", id: "kaynak-ekle-form" },
-    el(
-      "div",
-      { class: "alan" },
-      el("label", { for: "yeni-kaynak-ad" }, "Kaynak adı"),
-      sourceName,
-    ),
-    el(
-      "div",
-      { class: "alan" },
-      el("label", { for: "yeni-kaynak-tur" }, "Kaynak türü"),
-      sourceKind,
-    ),
-    el(
-      "div",
-      { class: "alan" },
-      el("label", { for: "yeni-kaynak-url" }, "Kaynak adresi"),
-      sourceURL,
-    ),
-    el(
-      "button",
-      { type: "submit", class: "btn btn-ikincil mini" },
-      "Kaynağı ekle",
-    ),
-    el(
-      "p",
-      { class: "field-note" },
-      "Kaynak kontrolü internet erişimi kullanır. Yapılandırılmış Yargıtay ve Mevzuat bağlantıları yönetilen hizmet kurulumu gerektirir.",
-    ),
-  );
-  const sourceFormStatus = el("div", {
-    class: "product-status",
-    role: "status",
-    "aria-live": "polite",
-  });
-  $("gorunum-akis")
-    .querySelector(".feed-sources")
-    .append(
-      el(
-        "details",
-        { class: "source-add" },
-        el("summary", {}, "Kaynak ekle"),
-        sourceForm,
-        sourceFormStatus,
-      ),
-    );
+  const feedRefresh = $("kaynak-kontrol-btn");
   const jobList = el("div", { id: "islem-liste", class: "record-list" });
   $("gorunum-akis").append(
     el(
@@ -456,144 +324,8 @@ export function createProductUI({
     );
   }
   function renderFeed() {
-    news.stopAll();
-    const sources = state?.sources || [];
-    const selected = feedSource.value;
-    feedSource.replaceChildren(
-      el("option", { value: "" }, "Tüm kaynaklar"),
-      ...sources.map((source) =>
-        el("option", { value: source.id }, source.name),
-      ),
-    );
-    if (sources.some((source) => source.id === selected))
-      feedSource.value = selected;
-    const query = feedSearch.value.trim().toLocaleLowerCase("tr-TR");
-    const items = (state?.articles || []).filter(
-      (item) =>
-        (!feedSource.value || item.source_id === feedSource.value) &&
-        (!query ||
-          `${item.title || ""} ${item.summary || ""}`
-            .toLocaleLowerCase("tr-TR")
-            .includes(query)),
-    );
-    bulletin.updateItems(items);
-    $("akis-liste").replaceChildren(
-      ...(items.length
-        ? items.slice(0, feedVisible).map((item) =>
-            record(item, {
-              action: el(
-                "div",
-                { class: "news-actions" },
-                news.control(item),
-                safeURL(item.url) &&
-                  item.analysis_supported !== false &&
-                  item.provenance?.analysis_supported !== false &&
-                  !["official_metadata", "managed_summary"].includes(
-                    item.provenance?.text_scope,
-                  )
-                  ? el(
-                      "button",
-                      {
-                        type: "button",
-                        class: "btn btn-ikincil mini",
-                        onclick: () => {
-                          $("url").value = item.url;
-                          $("url").dispatchEvent(new Event("input"));
-                          setView("analiz");
-                          $("url").focus();
-                        },
-                      },
-                      "Analize al",
-                    )
-                  : null,
-              ),
-            }),
-          )
-        : [
-            empty(
-              query || feedSource.value
-                ? "Bu filtreyle eşleşen içerik yok."
-                : "Henüz içerik yok. Kaynakları kontrol et düğmesiyle takip kaynaklarını yenileyin.",
-            ),
-          ]),
-    );
-    feedCount.textContent = `${Math.min(items.length, feedVisible)} / ${items.length} içerik gösteriliyor`;
-    const recent = (state?.articles || []).length;
-    const partialFeed = (state?.counts?.articles || 0) > recent;
-    feedScope.classList.toggle("gizli", !partialFeed);
-    feedScope.textContent = partialFeed
-      ? `Son ${count(recent)} akış kaydı yüklenmiş durumda. Tüm yerel arşivde aramak için Araştır görünümünü kullanın.`
-      : "";
-    feedMore.classList.toggle("gizli", items.length <= feedVisible);
-    const official = state?.integrations?.official_sources || [];
-    const officialStatus = {
-      connector_available: "Bağlayıcı mevcut",
-      not_configured: "Entegrasyon kurulmadı",
-      configured_unverified: "Yapılandırıldı · veri akışı doğrulanmadı",
-    };
-    $("kaynak-liste").replaceChildren(
-      ...(sources.length
-        ? sources.map((source) =>
-            el(
-              "div",
-              { class: "source-record" },
-              el("strong", {}, source.name || "Kaynak"),
-              el(
-                "span",
-                { class: source.last_error ? "record-error" : "" },
-                source.last_error
-                  ? "Son kontrol tamamlanamadı"
-                  : source.enabled
-                    ? "Takip açık"
-                    : "Takip kapalı",
-              ),
-              el("span", {}, date(source.last_refreshed_at)),
-              sourceLink(source.url, "Kaynak adresi"),
-              source.last_error
-                ? el(
-                    "details",
-                    {},
-                    el("summary", {}, "Kontrol hatası"),
-                    el("p", {}, errorMessage(source.last_error)),
-                  )
-                : null,
-              el(
-                "button",
-                {
-                  type: "button",
-                  class: "btn btn-ikincil mini",
-                  disabled: !source.enabled,
-                  onclick: (event) =>
-                    refreshFeeds(source.id, event.currentTarget),
-                },
-                "Kaynağı kontrol et",
-              ),
-            ),
-          )
-        : [empty("Takip kaynağı henüz eklenmedi.")]),
-      ...(official.length
-        ? [
-            el(
-              "h3",
-              { class: "official-sources-heading" },
-              "Resmî kaynak entegrasyonları",
-            ),
-            ...official.map((source) =>
-              el(
-                "div",
-                { class: "source-record" },
-                el("strong", {}, source.name),
-                el(
-                  "span",
-                  {},
-                  officialStatus[source.status] || "Durum doğrulanmadı",
-                ),
-                sourceLink(source.source_link, "Resmî kaynağı aç"),
-              ),
-            ),
-          ]
-        : []),
-    );
+    sourcesUI.update(state?.sources || []);
+    dashboard.update(state || {});
   }
   function renderTopics() {
     const topics = state?.topics || [];
@@ -914,7 +646,7 @@ export function createProductUI({
   }
   function renderSettings() {
     const settings = state?.settings || {};
-    $("urun-profil").value = settings.analysis_profile || "ram8";
+    draft.receive(settings);
     $("model").replaceChildren(
       el(
         "option",
@@ -926,10 +658,6 @@ export function createProductUI({
         }[settings.analysis_profile || "ram8"] || "Profil okunamadı",
       ),
     );
-    $("urun-tema").value = settings.theme || "system";
-    $("urun-arama-saglayici").value = settings.search_provider || "auto";
-    $("urun-takip-sikligi").value = settings.topic_refresh_minutes ?? 180;
-    $("urun-web").checked = !!settings.web_enabled;
     $("arastir-web").disabled = !settings.web_enabled;
     if (!settings.web_enabled) $("arastir-web").checked = false;
     applyTheme(settings.theme || "system");
@@ -941,8 +669,9 @@ export function createProductUI({
       return load();
     }
     loadingPromise = (async () => {
+      const loadStatus = currentView === "kaynaklar" ? $("kaynak-yonetim-durum") : $("urun-durum");
       message(
-        $("urun-durum"),
+        loadStatus,
         lastSuccess ? "Kayıtlar yenileniyor…" : "Yerel kayıtlar yükleniyor…",
       );
       try {
@@ -958,7 +687,7 @@ export function createProductUI({
         bulletin.refreshHistory();
         const counts = state.counts || {};
         message(
-          $("urun-durum"),
+          loadStatus,
           `${count(counts.articles)} içerik · ${count(counts.workspaces)} çalışma alanı · Son okuma: ${date(lastSuccess)}`,
         );
         if (currentView === "calisma") await loadNotes();
@@ -972,9 +701,10 @@ export function createProductUI({
         } catch {
           /* Kalıcı tercih erişimi yoksa Ayarlar'dan ilk kurulum açılabilir. */
         }
+        return true;
       } catch (error) {
         message(
-          $("urun-durum"),
+          loadStatus,
           `${errorMessage(error, "Yerel kayıtlar okunamadı.")}${lastSuccess ? ` Son başarılı okuma: ${date(lastSuccess)}. Son bilinen kayıtlar gösteriliyor.` : " Yenile düğmesiyle tekrar deneyin."}`,
           true,
         );
@@ -986,10 +716,11 @@ export function createProductUI({
           );
           $("kaynak-liste").replaceChildren(empty("Kaynak durumu okunamadı."));
         }
+        return false;
       }
     })();
     try {
-      await loadingPromise;
+      return await loadingPromise;
     } finally {
       loadingPromise = null;
     }
@@ -1061,6 +792,20 @@ export function createProductUI({
   const research = createResearchChat({ $, el, api, waitJob, sourceLink });
   const news = createNewsSummary({ el, api, request });
   const bulletin = createNewsBulletin({ el, api, request, sourceLink, beforePlay: () => news.pauseAll() });
+  const sourcesUI = createSourceManager({ $, el, api, sourceLink, date, onChange: async () => { if (!await load()) throw new Error("Kaynak kaydedildi ancak liste yenilenemedi. Listeyi yenile düğmesini kullanın."); }, onRefresh: refreshFeeds,
+    onFilter: id => { setView("akis"); dashboard.filterSource(id); } });
+  const dashboard = createRadarFeed({ $, el, api, news, bulletin, onSources: () => setView("kaynaklar"),
+    renderRecord: item => record(item, { action: el("div", { class: "news-actions" }, news.control(item),
+      safeURL(item.url) && item.analysis_supported !== false && item.provenance?.analysis_supported !== false && !["official_metadata", "managed_summary"].includes(item.provenance?.text_scope)
+        ? el("button", { type: "button", class: "btn btn-ikincil mini", onclick: () => { $("url").value = item.url; $("url").dispatchEvent(new Event("input")); setView("analiz"); $("url").focus(); } }, "Derinlemesine analiz") : null) }) });
+  const draft = createSettingsDraft({
+    read: () => ({ theme: $("urun-tema").value, analysis_profile: $("urun-profil").value, search_provider: $("urun-arama-saglayici").value, topic_refresh_minutes: Number($("urun-takip-sikligi").value), web_enabled: $("urun-web").checked }),
+    write: value => { $("urun-tema").value = value.theme; $("urun-profil").value = value.analysis_profile; $("urun-arama-saglayici").value = value.search_provider; $("urun-takip-sikligi").value = value.topic_refresh_minutes; $("urun-web").checked = value.web_enabled; },
+    onState: detail => window.dispatchEvent(new CustomEvent("rasathane:settings-state", { detail })),
+  });
+  window.addEventListener("rasathane:settings-edited", () => draft.changed());
+  window.addEventListener("rasathane:settings-discard", () => draft.reset());
+
   document.addEventListener("play", (event) => {
     if (event.target instanceof HTMLMediaElement)
       for (const audio of document.querySelectorAll("audio")) if (audio !== event.target) audio.pause();
@@ -1082,6 +827,8 @@ export function createProductUI({
   }
   async function submit(form, status, action) {
     const button = form.querySelector('button[type="submit"]');
+    if (form.dataset.submitting === "true") return;
+    form.dataset.submitting = "true";
     if (button) button.disabled = true;
     message(status, "İstek gönderiliyor…");
     try {
@@ -1089,84 +836,42 @@ export function createProductUI({
     } catch (error) {
       message(status, errorMessage(error), true);
     } finally {
+      delete form.dataset.submitting;
       if (button) button.disabled = false;
     }
   }
   async function refreshFeeds(id, button) {
+    const statusNode = currentView === "kaynaklar" ? $("kaynak-yonetim-durum") : $("urun-durum");
     button.disabled = true;
-    message($("urun-durum"), "Kaynak kontrolü başlatılıyor…");
+    message(statusNode, "Kaynak kontrolü başlatılıyor…");
     try {
       const job = await api(
         `/sources/${encodeURIComponent(id || "all")}/refresh`,
         { method: "POST" },
       );
-      await waitJob(job, $("urun-durum"));
+      await waitJob(job, statusNode);
       await load();
       const failed = (state?.sources || []).some(
         (source) => (!id || source.id === id) && source.last_error,
       );
       message(
-        $("urun-durum"),
+        statusNode,
         failed
           ? "Bazı kaynaklara ulaşılamadı. Son kontrol zamanı ve erişim hataları kaynak listesinde görünür."
           : "Kaynak kontrolü tamamlandı. Yeni kayıtlar ve son kontrol zamanı akışta görünür.",
         failed,
       );
     } catch (error) {
-      message($("urun-durum"), errorMessage(error), true);
+      message(statusNode, errorMessage(error), true);
     } finally {
       button.disabled = false;
     }
   }
   feedRefresh.addEventListener("click", () => refreshFeeds(null, feedRefresh));
-  feedSearch.addEventListener("input", () => {
-    feedVisible = 25;
-    renderFeed();
-  });
-  feedSource.addEventListener("change", () => {
-    feedVisible = 25;
-    renderFeed();
-  });
-  feedMore.addEventListener("click", () => {
-    feedVisible += 25;
-    renderFeed();
-  });
-  sourceKind.addEventListener("change", () => {
-    const presets = {
-      resmi_gazete: ["Resmî Gazete", "https://www.resmigazete.gov.tr/"],
-      yargitay_public: [
-        "Yargıtay karar künyeleri",
-        "https://mevzuat.adalet.gov.tr/",
-      ],
-    };
-    if (presets[sourceKind.value]) {
-      sourceName.value = presets[sourceKind.value][0];
-      sourceURL.value = presets[sourceKind.value][1];
-    }
-  });
-  sourceForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    submit(sourceForm, sourceFormStatus, async () => {
-      await api("/sources", {
-        method: "POST",
-        body: {
-          name: sourceName.value.trim(),
-          url: sourceURL.value.trim(),
-          kind: sourceKind.value,
-          enabled: true,
-        },
-      });
-      sourceName.value = "";
-      sourceURL.value = "";
-      await load();
-      message(
-        sourceFormStatus,
-        "Kaynak eklendi. İlk edinim için Kaynağı kontrol et'e basın.",
-      );
-    });
-  });
   $("akis-yenile").addEventListener("click", load);
-  $("akis-konu-git").addEventListener("click", () => setView("konular"));
+  $("kaynaklar-yenile").addEventListener("click", load);
+  $("kaynaklar-kontrol").addEventListener("click", event => refreshFeeds(null, event.currentTarget));
+  $("akis-kaynaklar-git").addEventListener("click", () => setView("kaynaklar"));
   $("calisma-ekle-form").addEventListener("submit", (event) => {
     event.preventDefault();
     submit(event.currentTarget, $("calisma-durum"), async () => {
@@ -1223,22 +928,18 @@ export function createProductUI({
   $("urun-ayar-form").addEventListener("submit", (event) => {
     event.preventDefault();
     submit(event.currentTarget, $("urun-ayar-sonuc"), async () => {
+      if (!state?.settings) throw new Error("Ayarlar henüz okunamadı. Yerel durumu yenileyip yeniden deneyin.");
       if ($("urun-profil").value === "ram16" && !advancedProfileReady)
         throw new Error(
           "Gelişmiş model doğrulanmadı. Bu paket için temel 8 GB profilini seçin.",
         );
-      await api("/settings", {
-        method: "POST",
-        body: {
-          theme: $("urun-tema").value,
-          analysis_profile: $("urun-profil").value,
-          search_provider: $("urun-arama-saglayici").value,
-          topic_refresh_minutes: Number($("urun-takip-sikligi").value),
-          web_enabled: $("urun-web").checked,
-        },
-      });
+      const submitted = draft.read();
+      const saved = await api("/settings", { method: "POST", body: submitted });
+      draft.saved(saved, submitted);
+      state.settings = saved;
+      applyTheme(saved.theme);
       await load();
-      message($("urun-ayar-sonuc"), "Ayarlar kaydedildi.");
+      message($("urun-ayar-sonuc"), draft.hasChanges() ? "Önceki değişiklikler kaydedildi; yeni değişiklikler henüz kaydedilmedi." : "Ayarlar kaydedildi.");
       onSettings?.();
     });
   });
@@ -1661,6 +1362,8 @@ export function createProductUI({
       research.reset();
       news.stopAll();
       bulletin.reset();
+      dashboard.reset();
+      sourcesUI.reset();
       topicResultBody.replaceChildren();
       topicResultDialog.close();
       for (const id of [
@@ -1679,7 +1382,7 @@ export function createProductUI({
       if (view === "arastir") research.refreshHistory();
       currentView = view;
       if (view === "calisma") loadNotes();
-      if ((view === "akis" || view === "konular") && !pendingJobs.size) load();
+      if ((view === "akis" || view === "konular" || view === "kaynaklar") && !pendingJobs.size) load();
     },
   };
 }

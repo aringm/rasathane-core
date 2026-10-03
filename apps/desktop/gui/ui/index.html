@@ -10,6 +10,7 @@
     <title>Rasathane — Takip, analiz ve araştırma</title>
     <link rel="icon" href="/brand/rasathane-mark.svg" />
     <link rel="stylesheet" href="/styles.css?v=urun-1" />
+    <link rel="stylesheet" href="/radar.css" />
   </head>
   <body class="session-locked">
     <section
@@ -161,6 +162,7 @@
         >
           <span aria-hidden="true">◎</span>Konu takibi</button
         >
+        <button class="sekme" id="sekme-kaynaklar" type="button" role="tab" data-gorunum="kaynaklar" aria-controls="gorunum-kaynaklar" aria-selected="false" tabindex="-1"><span aria-hidden="true">▥</span>Kaynaklar</button>
       </nav>
       <div class="sidebar-foot profile-card">
         <div id="profil-menu" class="profile-menu" role="menu" aria-label="Hesap ve ayarlar" hidden>
@@ -186,12 +188,10 @@
       >
         <div class="page-heading">
           <div>
-            <h1>Akış</h1>
-            <p>Takip ettiğiniz kaynakların son içerikleri.</p>
+            <h1>Gündem</h1>
+            <p>Günlük bülteniniz ve takip ettiğiniz kaynaklardan haberler.</p>
           </div>
-          <button class="btn btn-ikincil" id="akis-yenile" type="button">
-            Yenile
-          </button>
+          <div class="form-actions"><button class="btn btn-ikincil" id="akis-yenile" type="button">Kayıtları yenile</button><button class="btn" id="kaynak-kontrol-btn" type="button">Akışı yenile</button></div>
         </div>
         <div
           class="product-status"
@@ -203,21 +203,15 @@
         </div>
         <div class="feed-layout">
           <section class="feed-main" aria-labelledby="akis-icerik-baslik">
-            <h2 id="akis-icerik-baslik">Son içerikler</h2>
+            <div class="radar-stream-heading"><h2 id="akis-icerik-baslik">Canlı akış</h2><button class="source-feed-link" id="akis-kaynaklar-git" type="button"><span id="akis-kaynak-ozet">Takip kaynakları</span></button></div>
             <div id="akis-liste" class="record-list"></div>
           </section>
-          <aside class="feed-sources" aria-labelledby="akis-kaynak-baslik">
-            <h2 id="akis-kaynak-baslik">Takip kaynakları</h2>
-            <div id="kaynak-liste"></div>
-            <button
-              class="btn btn-ikincil mini"
-              id="akis-konu-git"
-              type="button"
-            >
-              Konu ekle
-            </button>
-          </aside>
+
         </div>
+      </section>
+      <section id="gorunum-kaynaklar" class="gizli" role="tabpanel" aria-labelledby="sekme-kaynaklar" tabindex="0">
+        <div class="page-heading"><div><h1>Kaynaklar</h1><p>Haber kaynaklarını düzenleyin, kategorilere ayırın ve takibi yönetin.</p></div><div class="form-actions"><button id="kaynaklar-yenile" class="btn btn-ikincil" type="button">Listeyi yenile</button><button id="kaynaklar-kontrol" class="btn btn-ikincil" type="button">Tümünü kontrol et</button><button id="kaynak-ekle-ac" class="btn" type="button">Kaynak ekle</button></div></div>
+        <div id="kaynak-yonetimi"><div id="kaynak-liste" class="source-table-scroll"></div></div>
       </section>
       <div
         id="gorunum-analiz"
@@ -852,7 +846,7 @@
           <div class="settings-grid">
             <div class="alan">
               <label for="urun-profil">Donanım profili</label
-              ><select id="urun-profil">
+              ><select id="urun-profil"><option value="auto">Otomatik donanım profili</option>
                 <option value="ram8">8 GB RAM · temel yerel profil</option>
                 <option
                   value="ram16"

@@ -4,16 +4,19 @@ import html
 import os
 import re
 import threading
+import time
 import xml.etree.ElementTree as ET
 from datetime import date, timedelta
 from email.utils import parsedate_to_datetime
 from typing import Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 
 from rasathane.product.web import safe_get, safe_json_request, validate_public_url
 
 _session_lock = threading.Lock()
 _service_access_token: str | None = None
+_arxiv_lock = threading.Lock()
+_arxiv_last_request = 0.0
 
 
 def set_service_session(access_token: str | None) -> None:
@@ -53,7 +56,14 @@ def fetch_rss(url: str) -> list[dict[str, Any]]:
         )
         link = entry.findtext("link")
         if not link:
-            atom_link = entry.find("a:link", ns)
+            atom_link = next(
+                (
+                    node
+                    for node in entry.findall("a:link", ns)
+                    if node.attrib.get("rel", "alternate") == "alternate"
+                ),
+                None,
+            )
             link = atom_link.attrib.get("href", "") if atom_link is not None else ""
         if not link or not link.strip():
             continue
@@ -71,7 +81,15 @@ def fetch_rss(url: str) -> list[dict[str, Any]]:
                 published = parsedate_to_datetime(published).isoformat()
             except (ValueError, TypeError):
                 pass
-        summary = entry.findtext("description") or entry.findtext("a:summary", namespaces=ns) or ""
+        summary = (
+            entry.findtext("description")
+            or entry.findtext("a:summary", namespaces=ns)
+            or entry.findtext("a:content", namespaces=ns)
+            or entry.findtext(
+                "{http://search.yahoo.com/mrss/}group/{http://search.yahoo.com/mrss/}description"
+            )
+            or ""
+        )
         articles.append(
             {
                 "title": _plain(title),
@@ -276,9 +294,81 @@ def fetch_muhakeme(kind: str) -> list[dict[str, Any]]:
     return results
 
 
+def _legacy_feed_url(feed: dict[str, Any]) -> str:
+    parts = urlparse(validate_public_url(feed["url"]))
+    kind = feed["kind"]
+    if kind == "arxiv":
+        if parts.hostname not in {"export.arxiv.org", "arxiv.org", "rss.arxiv.org"}:
+            raise ValueError("arXiv kaynağı arxiv.org üzerinde olmalı.")
+        return urlunparse(parts._replace(scheme="https"))
+    if kind == "reddit":
+        if parts.hostname not in {"reddit.com", "www.reddit.com", "old.reddit.com"}:
+            raise ValueError("Reddit kaynağı reddit.com üzerinde olmalı.")
+        match = re.fullmatch(
+            r"/r/([A-Za-z0-9_]+)(?:/(top|new|hot|rising)(?:\.json|\.rss)?)?/?", parts.path
+        )
+        if not match:
+            raise ValueError("Reddit için bir topluluk akış adresi girin.")
+        subreddit, order = match.groups()
+        query = {
+            key: values[0] for key, values in parse_qs(parts.query).items() if key in {"t", "limit"}
+        }
+        return urlunparse(
+            (
+                "https",
+                "www.reddit.com",
+                f"/r/{subreddit}/{order or 'new'}.rss",
+                "",
+                urlencode(query),
+                "",
+            )
+        )
+    if parts.hostname not in {"youtube.com", "www.youtube.com"}:
+        raise ValueError("YouTube kaynağı youtube.com üzerinde olmalı.")
+    channel = re.fullmatch(r"/channel/(UC[A-Za-z0-9_-]{22})(?:/videos)?/?", parts.path)
+    if channel:
+        channel_id = channel.group(1)
+    elif parts.path == "/feeds/videos.xml":
+        channel_id = parse_qs(parts.query).get("channel_id", [""])[0]
+    elif re.fullmatch(
+        r"/(?:@[A-Za-z0-9_.%-]+|c/[A-Za-z0-9_.%-]+|user/[A-Za-z0-9_.%-]+)(?:/videos)?/?", parts.path
+    ):
+        page = safe_get(
+            urlunparse(parts._replace(scheme="https", netloc="www.youtube.com", query=""))
+        ).decode("utf-8", errors="replace")
+        # channelId also occurs on unrelated recommendation cards. Only page-level
+        # externalId or the publisher's RSS discovery link identifies this channel.
+        match = re.search(r'"externalId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"', page)
+        if match is None:
+            match = re.search(
+                r"feeds/videos\.xml\?channel_id=(UC[A-Za-z0-9_-]{22})", html.unescape(page)
+            )
+        if match is None:
+            raise ValueError("YouTube kanal kimliği bulunamadı; /channel/UC… adresini kullanın.")
+        channel_id = match.group(1)
+    else:
+        raise ValueError("YouTube için kanal veya kanal RSS adresi girin.")
+    if not re.fullmatch(r"UC[A-Za-z0-9_-]{22}", channel_id):
+        raise ValueError("YouTube kanal kimliği geçersiz.")
+    return "https://www.youtube.com/feeds/videos.xml?channel_id=" + channel_id
+
+
 def fetch_feed(feed: dict[str, Any]) -> list[dict[str, Any]]:
     if feed["kind"] == "rss":
         return fetch_rss(feed["url"])
+    if feed["kind"] in {"arxiv", "reddit", "youtube_channel"}:
+        target = _legacy_feed_url(feed)
+        if feed["kind"] == "arxiv":
+            global _arxiv_last_request
+            with _arxiv_lock:
+                time.sleep(max(0, 3 - (time.monotonic() - _arxiv_last_request)))
+                _arxiv_last_request = time.monotonic()
+                rows = fetch_rss(target)
+        else:
+            rows = fetch_rss(target)
+        for row in rows:
+            row["provenance"].update(connector=feed["kind"], configured_url=feed["url"])
+        return rows
     if feed["kind"] == "resmi_gazete":
         return fetch_resmi_gazete()
     if feed["kind"] == "yargitay_public":

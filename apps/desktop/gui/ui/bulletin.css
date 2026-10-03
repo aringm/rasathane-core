@@ -1,17 +1,57 @@
-.news-bulletin { margin: 0 0 28px; padding: 22px 0; border-block: 1px solid var(--cizgi); }
-.bulletin-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-.bulletin-heading h2, .bulletin-heading h3 { margin: 0; }
-.bulletin-options { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin: 18px 0 10px; }
+.news-bulletin { margin: 0 0 24px; padding: 22px 24px 16px; border: 1px solid var(--cizgi); border-radius: 12px; background: var(--yuzey-1); }
+.news-bulletin [hidden] { display: none !important; }
+.bulletin-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.bulletin-heading h2 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.5px; }
+.bulletin-date { margin: 0 0 7px; font-size: 12px; color: var(--metin-ikincil); }
+.bulletin-intro { margin: 7px 0 0; }
+.bulletin-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding-top: 6px; }
+.bulletin-actions .btn { white-space: nowrap; }
+.bulletin-lead { margin: 17px 0 0; max-width: 85ch; font-size: 14px; line-height: 1.7; color: var(--metin-ikincil); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.bulletin-empty { margin: 18px 0 5px; color: var(--metin-ikincil); line-height: 1.65; font-size: 14px; }
+.bulletin-status:empty { display: none; }
+.bulletin-status { margin: 12px 0 0; }
+.bulletin-options-row { display: flex; justify-content: flex-end; margin-top: 14px; }
+.bulletin-options-toggle { color: var(--metin-ikincil); padding: 6px 0 6px 12px; background: transparent; border: 0; cursor: pointer; font: inherit; font-size: 12px; }
+.bulletin-options-toggle::after { content: ' ＋'; }
+.bulletin-options-toggle[aria-expanded='true']::after { content: ' −'; }
+.bulletin-options-toggle:hover { color: var(--metin); }
+.bulletin-options-toggle:focus-visible, .bulletin-history-item:focus-visible { outline: 2px solid var(--metin-ikincil); outline-offset: 4px; }
+.bulletin-options { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin: 16px 0 10px; }
 .bulletin-options label { display: grid; gap: 7px; color: var(--metin-ikincil); font-size: 13px; }
 .bulletin-options input, .bulletin-options select { width: 100%; min-width: 0; }
-.bulletin-form details { margin: 10px 0 16px; }
+.bulletin-form { border-top: 1px solid var(--cizgi); margin-top: 8px; }
+.bulletin-form details { margin: 10px 0 16px; font-size: 13px; }
+.bulletin-form summary, .bulletin-sources summary { cursor: pointer; }
 .bulletin-preview { max-height: 180px; overflow: auto; padding-left: 24px; color: var(--metin-ikincil); }
 .bulletin-preview li { margin: 6px 0; }
-#bulten-gecmis { max-width: min(400px, 100%); }
-#bulten-sonuc { border-top: 1px solid var(--cizgi); margin-top: 20px; padding-top: 20px; }
-.bulletin-items { padding-left: 24px; }
-.bulletin-items li { padding: 10px 0; }
-.bulletin-items h4 { margin: 0 0 6px; }
-.bulletin-items p { margin: 0 0 8px; line-height: 1.65; white-space: pre-wrap; }
-#bulten-ses { width: 100%; margin-top: 10px; }
-@media (max-width: 780px) { .bulletin-options { grid-template-columns: 1fr; gap: 10px; } .bulletin-heading { flex-wrap: wrap; } }
+#bulten-sonuc { border-top: 1px solid var(--cizgi); margin-top: 18px; padding-top: 14px; }
+.bulletin-notice { margin: 0 0 8px; }
+.bulletin-items { list-style: none; padding: 0; margin: 0; }
+.bulletin-items li { padding: 18px 0; border-bottom: 1px solid var(--cizgi); }
+.bulletin-items li:last-child { border-bottom: 0; }
+.bulletin-items h4 { margin: 0 0 7px; font-size: 16px; line-height: 1.5; }
+.bulletin-items p { margin: 0 0 8px; line-height: 1.7; white-space: pre-wrap; }
+.bulletin-items .bulletin-item-source { margin: 0 0 5px; color: var(--metin-ikincil); font-size: 12px; }
+.bulletin-items a, .bulletin-sources a { font-size: 13px; }
+.bulletin-sources { padding-top: 14px; margin-top: 6px; border-top: 1px solid var(--cizgi); font-size: 13px; }
+.bulletin-sources h4 { margin: 18px 0 7px; }
+.bulletin-sources ul { padding-left: 20px; }
+.bulletin-sources li { margin: 6px 0; line-height: 1.5; }
+.bulletin-player { display: flex; align-items: center; gap: 12px; padding-top: 16px; }
+#bulten-ses { min-width: 0; flex: 1; width: 100%; height: 40px; }
+.bulletin-player label { display: flex; align-items: center; gap: 6px; color: var(--metin-ikincil); font-size: 12px; }
+.bulletin-player select { width: 74px; min-width: 74px; padding: 6px; }
+.bulletin-download { white-space: nowrap; font-size: 12px; }
+.bulletin-history { border-top: 1px solid var(--cizgi); margin-top: 10px; padding-top: 14px; }
+.bulletin-history-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.bulletin-history h3 { margin: 0; font-size: 13px; font-weight: 500; color: var(--metin-ikincil); }
+#bulten-gecmis { max-width: min(340px, 55%); font-size: 12px; padding: 7px 10px; }
+.bulletin-history-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.bulletin-history-list:empty { display: none; }
+.bulletin-history-item { border: 0; border-top: 1px solid var(--cizgi); padding: 12px 0 0; margin-top: 14px; background: transparent; text-align: left; color: var(--metin); cursor: pointer; display: grid; gap: 6px; min-width: 0; }
+.bulletin-history-item > span:first-child { font-size: 12px; color: var(--metin-ikincil); }
+.bulletin-history-item strong { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bulletin-history-item:hover strong { text-decoration: underline; }
+.bulletin-history-item:disabled { cursor: wait; opacity: .65; }
+@media (max-width: 1100px) { .bulletin-heading { flex-wrap: wrap; } .bulletin-actions { justify-content: flex-start; padding-top: 0; } }
+@media (max-width: 780px) { .news-bulletin { padding: 18px 16px 12px; } .bulletin-options { grid-template-columns: 1fr; gap: 10px; } .bulletin-history-list { grid-template-columns: 1fr; gap: 0; } .bulletin-player { flex-wrap: wrap; } #bulten-ses { flex-basis: 100%; } .bulletin-history-heading { align-items: flex-start; flex-direction: column; gap: 10px; } #bulten-gecmis { max-width: 100%; width: 100%; } }
