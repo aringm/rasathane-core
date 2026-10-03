@@ -98,7 +98,9 @@ async function verifyProductUI(window) {
     await wait(`!document.querySelector('#analiz-btn').disabled`);
     const started = Date.now();
     await pointer('#analiz-btn');
-    const deadline = started + 10 * 60000;
+    // Full local analysis also generates a mind map and narrated summary.
+    const deadline = started + 15 * 60000;
+    let lastStage = "queued";
     let selected = null, completed = null;
     while (Date.now() < deadline) {
       if (!selected) {
@@ -110,6 +112,7 @@ async function verifyProductUI(window) {
         const response = await js(`window.rasathane.request(${JSON.stringify(`/api/rasathane/jobs/${selected.id}`)})`);
         if (!response.ok) throw new Error("Analiz kalıcı işlem kaydı okunamadı.");
         const job = response.data;
+        lastStage = job.stage;
         if (["failed", "cancelled", "interrupted"].includes(job.status)) {
           console.log(JSON.stringify({smoke:"product-source-analysis", url, jobId:job.id, status:job.status, error:job.error, durationMs:Date.now()-started}));
           throw new Error("Gerçek kaynak analizi tamamlanamadı.");
@@ -120,7 +123,7 @@ async function verifyProductUI(window) {
       if (error) throw new Error(`Analiz ekranı hata verdi: ${String(error).slice(0, 350)}`);
       await pause(1500);
     }
-    if (!completed) throw new Error("Gerçek UI kaynak analizi 10 dakika içinde tamamlanamadı.");
+    if (!completed) throw new Error(`Gerçek UI kaynak analizi 15 dakika içinde tamamlanamadı. Son tamamlanan aşama: ${lastStage}.`);
     const receipt = pdfAcceptanceReceipt(completed, url);
     await wait(`!document.querySelector('#sonuc').classList.contains('gizli') && document.querySelector('#kaynak-icerik-kapsami').dataset.format==='pdf' && !document.querySelector('#analiz-btn').disabled`, 15000);
     const visible = await js(`(() => { const node=document.querySelector('#kaynak-icerik-kapsami'); return {format:node.dataset.format,pages:Number(node.dataset.pages),textPages:Number(node.dataset.textPages),sha256:node.dataset.sha256,notice:node.textContent,summary:document.querySelector('#ozet-detay')?.textContent,hero:document.querySelector('#kaynak-hero-etiket')?.textContent}; })()`);
