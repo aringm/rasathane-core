@@ -532,7 +532,7 @@
   border: 1px solid var(--rs-line);
   border-radius: 10px;
 }
-.release-section svg {
+.release-section img {
   flex: none;
 }
 .release-section h2 {
@@ -751,7 +751,7 @@
   }
 }
 @media (max-width: 420px) {
-  .site-brand svg {
+  .site-brand img {
     width: 33px;
     height: 33px;
   }
@@ -789,7 +789,7 @@
   .observation-center strong {
     font-size: 12px;
   }
-  .observation-center svg {
+  .observation-center img {
     width: 56px;
     height: 56px;
   }
@@ -829,7 +829,7 @@
   .release-section h2 {
     font-size: 23px;
   }
-  .release-section svg {
+  .release-section img {
     width: 40px;
     height: 40px;
   }

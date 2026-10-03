@@ -32,9 +32,9 @@
     },
     {
       "path": "AGENTS.md",
-      "source_sha256": "b60ae12b3ec7b70ddbfe7b68037f67c2f7a7e4de05f7d361161add6409cbbb19",
-      "sha256": "d017a1e548ca93cfe12709af87358852353fdcb29d11e11619a117c8f73c424e",
-      "bytes": 3017
+      "source_sha256": "afb515b7acfaa027e60fe0bc5486cdf88fe92e9bb583c7344ecda3ee93874d0d",
+      "sha256": "84269eb1c07dfc1f548e0b9116181ca77278b9019b1776e394db39a20da8091a",
+      "bytes": 3039
     },
     {
       "path": "CONTRIBUTING.md",
@@ -764,9 +764,9 @@
     },
     {
       "path": "apps/desktop/gui/electron/build-brand.cjs",
-      "source_sha256": "eff4d62c602f198f4f07a982747d7f15ca822eb7bc9b9916abe69231e54050aa",
-      "sha256": "eff4d62c602f198f4f07a982747d7f15ca822eb7bc9b9916abe69231e54050aa",
-      "bytes": 2927
+      "source_sha256": "c5791b854f3208a99d4c0516418186919a33e6b0460b61820e45102213d5e41a",
+      "sha256": "c5791b854f3208a99d4c0516418186919a33e6b0460b61820e45102213d5e41a",
+      "bytes": 3019
     },
     {
       "path": "apps/desktop/gui/electron/installer.nsh",
@@ -854,8 +854,8 @@
     },
     {
       "path": "apps/desktop/gui/package.json",
-      "source_sha256": "51e5a9e23ee711eb233d905bcf325fe874ac1111f2a1d1685f5726234e68876e",
-      "sha256": "51e5a9e23ee711eb233d905bcf325fe874ac1111f2a1d1685f5726234e68876e",
+      "source_sha256": "4b75536d85d3b08fab666b6f26fb4fb445aa3676604a44ae996ba2b53232bfff",
+      "sha256": "4b75536d85d3b08fab666b6f26fb4fb445aa3676604a44ae996ba2b53232bfff",
       "bytes": 4242
     },
     {
@@ -908,117 +908,117 @@
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/128x128.png",
-      "source_sha256": "6b8de48bc20a2c2e7dd8964b6d13e32969c66fd426216eb0a5b377a9fea9f142",
-      "sha256": "6b8de48bc20a2c2e7dd8964b6d13e32969c66fd426216eb0a5b377a9fea9f142",
-      "bytes": 5687
+      "source_sha256": "6b3df57d2f7cace0905317996d0788bbed0edbbfb2ac6af9dbd9e92c16556a05",
+      "sha256": "6b3df57d2f7cace0905317996d0788bbed0edbbfb2ac6af9dbd9e92c16556a05",
+      "bytes": 1882
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/128x128@2x.png",
-      "source_sha256": "28db8241307805b0d89fb339148533876b568938731bdcfa59fdcf522dbb8afe",
-      "sha256": "28db8241307805b0d89fb339148533876b568938731bdcfa59fdcf522dbb8afe",
-      "bytes": 11985
+      "source_sha256": "39267e286373b49954e088f0f925d689246970f79d59b911db142c5b6788a73b",
+      "sha256": "39267e286373b49954e088f0f925d689246970f79d59b911db142c5b6788a73b",
+      "bytes": 4461
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/32x32.png",
-      "source_sha256": "24893fbbc1df77096d75fcb10bb5a2eba71d833e31c1aa4772c596d4ca0329b7",
-      "sha256": "24893fbbc1df77096d75fcb10bb5a2eba71d833e31c1aa4772c596d4ca0329b7",
-      "bytes": 1342
+      "source_sha256": "7d62326afa381ed76c6420ca0f4138da1a7e87e7cf38064b4aaaa556d9a84176",
+      "sha256": "7d62326afa381ed76c6420ca0f4138da1a7e87e7cf38064b4aaaa556d9a84176",
+      "bytes": 448
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/64x64.png",
-      "source_sha256": "60cccd849ff8acbc0839330da236522c23d9ad1cbd1731804b6b5ae9dd376afb",
-      "sha256": "60cccd849ff8acbc0839330da236522c23d9ad1cbd1731804b6b5ae9dd376afb",
-      "bytes": 2839
+      "source_sha256": "4df78e80ee50828680310ff1f964282b68a85bbc08974fee320c27095f8470a2",
+      "sha256": "4df78e80ee50828680310ff1f964282b68a85bbc08974fee320c27095f8470a2",
+      "bytes": 855
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/Square107x107Logo.png",
-      "source_sha256": "878b4145c2d345a731c7ed7e7731857327611621aa7ba64e6d1fc549ed2b397b",
-      "sha256": "878b4145c2d345a731c7ed7e7731857327611621aa7ba64e6d1fc549ed2b397b",
-      "bytes": 4830
+      "source_sha256": "18fb44f928176fc3aad8c76e60a932a48f4673c408d30726c82e84f2b85e8e6b",
+      "sha256": "18fb44f928176fc3aad8c76e60a932a48f4673c408d30726c82e84f2b85e8e6b",
+      "bytes": 1563
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/Square142x142Logo.png",
-      "source_sha256": "79a2426062c8e65d141a221089f4cacf0309f6f50725e360735d5d4855d02df3",
-      "sha256": "79a2426062c8e65d141a221089f4cacf0309f6f50725e360735d5d4855d02df3",
-      "bytes": 6391
+      "source_sha256": "053d370f66926a8da16979465c895dbe045b3ee68be8c7c999537f20d6b868b0",
+      "sha256": "053d370f66926a8da16979465c895dbe045b3ee68be8c7c999537f20d6b868b0",
+      "bytes": 2152
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/Square150x150Logo.png",
-      "source_sha256": "5b4d39a45932655c5170c36e64a6b734ae41348bceec4952f8e27d5365ba106e",
-      "sha256": "5b4d39a45932655c5170c36e64a6b734ae41348bceec4952f8e27d5365ba106e",
-      "bytes": 6747
+      "source_sha256": "395aec9648b66d5b20d2da304aed660122b4383adee20fc24c277c3198fd7fd0",
+      "sha256": "395aec9648b66d5b20d2da304aed660122b4383adee20fc24c277c3198fd7fd0",
+      "bytes": 2326
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/Square284x284Logo.png",
-      "source_sha256": "fbf39bec4cdeea32a23518dbde0f398a43fed1f8dc14d4e2d8c149e5707918b8",
-      "sha256": "fbf39bec4cdeea32a23518dbde0f398a43fed1f8dc14d4e2d8c149e5707918b8",
-      "bytes": 13928
+      "source_sha256": "4ec43259572687cc5abe6d0e871959df9c25f4e24dad4f8bd350a6d7ad1edff6",
+      "sha256": "4ec43259572687cc5abe6d0e871959df9c25f4e24dad4f8bd350a6d7ad1edff6",
+      "bytes": 5153
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/Square30x30Logo.png",
-      "source_sha256": "3da51488588b62e6d0440836e6cc7dd3ffa83a63adae2c08bf87f80e9a0f1e4e",
-      "sha256": "3da51488588b62e6d0440836e6cc7dd3ffa83a63adae2c08bf87f80e9a0f1e4e",
-      "bytes": 1288
+      "source_sha256": "8726c64e6200c277e3b21bec92d53c5ea140306b0fa2ad721704df0bf8261fa6",
+      "sha256": "8726c64e6200c277e3b21bec92d53c5ea140306b0fa2ad721704df0bf8261fa6",
+      "bytes": 432
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/Square310x310Logo.png",
-      "source_sha256": "a3b9c089bd16d513028b0ffa1284f44be97befe76cd10e248e6c82bb2b817c2f",
-      "sha256": "a3b9c089bd16d513028b0ffa1284f44be97befe76cd10e248e6c82bb2b817c2f",
-      "bytes": 15402
+      "source_sha256": "23d3b6a9f91a70942dd81d646fa3997040a72578937233a3126e0f4cb5957b28",
+      "sha256": "23d3b6a9f91a70942dd81d646fa3997040a72578937233a3126e0f4cb5957b28",
+      "bytes": 5910
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/Square44x44Logo.png",
-      "source_sha256": "d59e4d15bb9f32b51201f4875f436b2f5dc51ef933b9a4ce765db6b7106e2999",
-      "sha256": "d59e4d15bb9f32b51201f4875f436b2f5dc51ef933b9a4ce765db6b7106e2999",
-      "bytes": 1960
+      "source_sha256": "88adea5361ebafc95f0541503bc8070ab650a7fab1b6be075aed9f68ad77753f",
+      "sha256": "88adea5361ebafc95f0541503bc8070ab650a7fab1b6be075aed9f68ad77753f",
+      "bytes": 624
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/Square71x71Logo.png",
-      "source_sha256": "15ff5d73a87d234be46cfd75d71ccf53df9b9b15cedc01e2e6058f20fb3139bd",
-      "sha256": "15ff5d73a87d234be46cfd75d71ccf53df9b9b15cedc01e2e6058f20fb3139bd",
-      "bytes": 3189
+      "source_sha256": "890d3d603cf2f0aeb243f34c1be21080f61c94c14a8933e488a0026cbfbb3b47",
+      "sha256": "890d3d603cf2f0aeb243f34c1be21080f61c94c14a8933e488a0026cbfbb3b47",
+      "bytes": 932
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/Square89x89Logo.png",
-      "source_sha256": "1eb5afcc6931d083d05869dc9185d3b9e70ad53c07941d94f414827a413bc15a",
-      "sha256": "1eb5afcc6931d083d05869dc9185d3b9e70ad53c07941d94f414827a413bc15a",
-      "bytes": 4119
+      "source_sha256": "73644939bfc475a1e5b48d4ed42ef552b723c8c22707064428e51816a13b59d4",
+      "sha256": "73644939bfc475a1e5b48d4ed42ef552b723c8c22707064428e51816a13b59d4",
+      "bytes": 1218
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/StoreLogo.png",
-      "source_sha256": "15461633abb0453df35c7adf36a0c7294121ef10d47f5884e3368824e1ef32e7",
-      "sha256": "15461633abb0453df35c7adf36a0c7294121ef10d47f5884e3368824e1ef32e7",
-      "bytes": 2277
+      "source_sha256": "febd5e21b94af4d0a483db2c4761d5a81d87378782d1655665aa1f564acc1901",
+      "sha256": "febd5e21b94af4d0a483db2c4761d5a81d87378782d1655665aa1f564acc1901",
+      "bytes": 706
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/icon.icns",
-      "source_sha256": "7a624618d75cbe206816c78117e7ce0a61d02522a108eedb2bd0a0f7d7c4b2f5",
-      "sha256": "7a624618d75cbe206816c78117e7ce0a61d02522a108eedb2bd0a0f7d7c4b2f5",
-      "bytes": 119763
+      "source_sha256": "23e980430cb1aaf04091afbd248f5c94ef533aab7308b187a5c47cd663126920",
+      "sha256": "23e980430cb1aaf04091afbd248f5c94ef533aab7308b187a5c47cd663126920",
+      "bytes": 53978
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/icon.ico",
-      "source_sha256": "379b5d8d18b502637fe5033c356a97c474cb2385c7827509e90cc7ce66067860",
-      "sha256": "379b5d8d18b502637fe5033c356a97c474cb2385c7827509e90cc7ce66067860",
-      "bytes": 25711
+      "source_sha256": "9a055ae6123803dc12084d0dc5283a02ec92c3f8355552f087772f94bec0deb3",
+      "sha256": "9a055ae6123803dc12084d0dc5283a02ec92c3f8355552f087772f94bec0deb3",
+      "bytes": 9035
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/icon.png",
-      "source_sha256": "844afb5f0c69f1afff1cb653c6191fa2e468b0fc6ebf2aec8f3b24eefef5bedf",
-      "sha256": "844afb5f0c69f1afff1cb653c6191fa2e468b0fc6ebf2aec8f3b24eefef5bedf",
-      "bytes": 28508
+      "source_sha256": "c493ecd46b06b6393c15b2d4d1648ea64eaadde364abda6fc8a27e9f099f1cef",
+      "sha256": "c493ecd46b06b6393c15b2d4d1648ea64eaadde364abda6fc8a27e9f099f1cef",
+      "bytes": 12046
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/rasathane-logo.png",
-      "source_sha256": "844afb5f0c69f1afff1cb653c6191fa2e468b0fc6ebf2aec8f3b24eefef5bedf",
-      "sha256": "844afb5f0c69f1afff1cb653c6191fa2e468b0fc6ebf2aec8f3b24eefef5bedf",
-      "bytes": 28508
+      "source_sha256": "c493ecd46b06b6393c15b2d4d1648ea64eaadde364abda6fc8a27e9f099f1cef",
+      "sha256": "c493ecd46b06b6393c15b2d4d1648ea64eaadde364abda6fc8a27e9f099f1cef",
+      "bytes": 12046
     },
     {
       "path": "apps/desktop/gui/src-tauri/icons/rasathane-logo.svg",
-      "source_sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
-      "sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
-      "bytes": 918
+      "source_sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
+      "sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
+      "bytes": 454
     },
     {
       "path": "apps/desktop/gui/src-tauri/src/main.rs",
@@ -1052,9 +1052,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/brand/rasathane-mark.svg",
-      "source_sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
-      "sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
-      "bytes": 918
+      "source_sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
+      "sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
+      "bytes": 454
     },
     {
       "path": "apps/desktop/gui/ui/bulletin.css",
@@ -1142,9 +1142,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/index.html",
-      "source_sha256": "afb45ab9cca9ca65d7ceccff38e2da324b941c6247a6e32692da802bdfee8f4c",
-      "sha256": "afb45ab9cca9ca65d7ceccff38e2da324b941c6247a6e32692da802bdfee8f4c",
-      "bytes": 44289
+      "source_sha256": "2a2416b131f0d5e9a5355e8d67cd250eed8b399796b149a61b8ce0af398d8353",
+      "sha256": "2a2416b131f0d5e9a5355e8d67cd250eed8b399796b149a61b8ce0af398d8353",
+      "bytes": 43062
     },
     {
       "path": "apps/desktop/gui/ui/lib/pdfjs/LICENSE",
@@ -2438,9 +2438,9 @@
     },
     {
       "path": "apps/desktop/gui/ui/styles.css",
-      "source_sha256": "f24ebf0d0a52b3fd4508ec332350f841b25093edeeca589d526e4042bad68197",
-      "sha256": "f24ebf0d0a52b3fd4508ec332350f841b25093edeeca589d526e4042bad68197",
-      "bytes": 74370
+      "source_sha256": "9e7084a6eb2c7941a06e09a99e3c6db2ff323e762721f3a44c87cec4f9a3cf6b",
+      "sha256": "9e7084a6eb2c7941a06e09a99e3c6db2ff323e762721f3a44c87cec4f9a3cf6b",
+      "bytes": 74111
     },
     {
       "path": "apps/desktop/gui/ui/tests/artifact-data.test.mjs",
@@ -4406,9 +4406,9 @@
     },
     {
       "path": "apps/web/public/brand/rasathane-mark.svg",
-      "source_sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
-      "sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
-      "bytes": 918
+      "source_sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
+      "sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
+      "bytes": 454
     },
     {
       "path": "apps/web/public/font-licenses/Cormorant-Garamond-OFL.txt",
@@ -4520,9 +4520,9 @@
     },
     {
       "path": "apps/web/src/app/icon.svg",
-      "source_sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
-      "sha256": "7c8f4d0833668bb332cfc8c8a88f5b6a924ee9a12d9ceedc92bfbc32d7aa6577",
-      "bytes": 918
+      "source_sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
+      "sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
+      "bytes": 454
     },
     {
       "path": "apps/web/src/app/iletisim/page.tsx",
@@ -4544,8 +4544,8 @@
     },
     {
       "path": "apps/web/src/app/landing.css",
-      "source_sha256": "1ff9ae3cc68903a6747fa7ec8d78eca89f8ca6346d9c07bf374a1561f899dbec",
-      "sha256": "1ff9ae3cc68903a6747fa7ec8d78eca89f8ca6346d9c07bf374a1561f899dbec",
+      "source_sha256": "7522d1fb9ed29ef7e2b04f829ae0461af04a01f72a54bf328e5e1485de7fd2dc",
+      "sha256": "7522d1fb9ed29ef7e2b04f829ae0461af04a01f72a54bf328e5e1485de7fd2dc",
       "bytes": 15222
     },
     {
@@ -4598,9 +4598,9 @@
     },
     {
       "path": "apps/web/src/components/BrandMark.tsx",
-      "source_sha256": "421172361a6ea0e0fc23f34b4ac4e9924145ddaaedbd4d33e64032d439361da1",
-      "sha256": "421172361a6ea0e0fc23f34b4ac4e9924145ddaaedbd4d33e64032d439361da1",
-      "bytes": 1483
+      "source_sha256": "337272318f929f5aa0d0bea103f67c13afb3d55d8a3590b691da2be57675bf0d",
+      "sha256": "337272318f929f5aa0d0bea103f67c13afb3d55d8a3590b691da2be57675bf0d",
+      "bytes": 543
     },
     {
       "path": "apps/web/src/components/ProductMark.tsx",
@@ -4679,6 +4679,12 @@
       "source_sha256": "0d9e003271475ca5dfa175e851bb573810a0abffd1d634628f4f8f368a306dbf",
       "sha256": "0d9e003271475ca5dfa175e851bb573810a0abffd1d634628f4f8f368a306dbf",
       "bytes": 36535
+    },
+    {
+      "path": "docs/urun/LOGO.md",
+      "source_sha256": "b2636d18c4abcaff39bd6eaddebf75793cbbe05c5e180fea3c533b948906d10e",
+      "sha256": "b2636d18c4abcaff39bd6eaddebf75793cbbe05c5e180fea3c533b948906d10e",
+      "bytes": 816
     },
     {
       "path": "docs/urun/MIMARI.md",

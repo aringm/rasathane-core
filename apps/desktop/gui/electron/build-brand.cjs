@@ -42,6 +42,7 @@ async function main() {
   const icnsHeader = Buffer.alloc(8); icnsHeader.write("icns"); icnsHeader.writeUInt32BE(8 + icnsChunks.reduce((total, value) => total + value.length, 0), 4);
   await fs.writeFile(path.join(icons, "icon.icns"), Buffer.concat([icnsHeader, ...icnsChunks]));
   await fs.writeFile(path.resolve(root, "../../web/src/app/icon.svg"), svg);
+  await fs.writeFile(path.resolve(root, "../../web/public/brand/rasathane-mark.svg"), svg);
   console.log("Rasathane PNG, ICO ve web ikonları üretildi.");
 }
 main().catch(error => { console.error(error.message); process.exitCode = 1; });

@@ -211,15 +211,7 @@ a {
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--cizgi);
 }
-/* Marka işareti tek <symbol> olarak tanımlı (index.html); sprite kökü akışa girmez. */
-.sprite {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-/* Logo kendi renklerini taşır (#3A3D63 zemin + krem harf) — currentColor ile boyanmaz.
-   Koyu zeminde lacivert kare kaybolmasın diye saç-teli bir çevre. */
+/* Ortak SVG koyu yeşil zemin ve krem r içerir; currentColor ile boyanmaz. */
 .marka {
   flex: none;
   border-radius: 5px;
