@@ -32,9 +32,9 @@
     },
     {
       "path": "AGENTS.md",
-      "source_sha256": "a951510a284411a93d4501c1bd70a3dfb2af0ac0790b8f55df474422162d1a93",
-      "sha256": "3c47ed4b5b9e98f202a672d55bf83652866dc22203ff37c3078a11d336664718",
-      "bytes": 3039
+      "source_sha256": "83da9f422e44ab90e7dd1cf26bb9566c11b43f668868f7ba23be9fe3be0f63fc",
+      "sha256": "5e5bbb2b7d06d3e59d10c3dc29fc5b09ffad44016cc0c0ef0f37de8fe4253e65",
+      "bytes": 3079
     },
     {
       "path": "CONTRIBUTING.md",
@@ -50,9 +50,9 @@
     },
     {
       "path": "NOTICE.md",
-      "source_sha256": "7363651bec0ee23ce8f986ab74a5fc313e3bc117bd523b6ab3c1f3b6518c714c",
-      "sha256": "7363651bec0ee23ce8f986ab74a5fc313e3bc117bd523b6ab3c1f3b6518c714c",
-      "bytes": 2418
+      "source_sha256": "7cf78f4508f578ecf061c3745407c9ee43ce76050d54fe2631d3f52488c8477e",
+      "sha256": "7cf78f4508f578ecf061c3745407c9ee43ce76050d54fe2631d3f52488c8477e",
+      "bytes": 2540
     },
     {
       "path": "README.md",
@@ -4526,9 +4526,9 @@
     },
     {
       "path": "apps/web/AGENTS.md",
-      "source_sha256": "baf6aae5570fc638386d7b8c9a96591a2343f48942f2846f8dbd17107db29261",
-      "sha256": "baf6aae5570fc638386d7b8c9a96591a2343f48942f2846f8dbd17107db29261",
-      "bytes": 1500
+      "source_sha256": "207a1bdffaeac60cc5c1638b431667229850f81f80b22800016eb8bbc8ff0c33",
+      "sha256": "207a1bdffaeac60cc5c1638b431667229850f81f80b22800016eb8bbc8ff0c33",
+      "bytes": 1522
     },
     {
       "path": "apps/web/eslint.config.mjs",
@@ -4567,10 +4567,40 @@
       "bytes": 94
     },
     {
+      "path": "apps/web/public/brand/atlas-backdrop.svg",
+      "source_sha256": "02b51a4f56714853dbfa1d11785b8ae0e65038ae20686118fb408827eef02b9c",
+      "sha256": "02b51a4f56714853dbfa1d11785b8ae0e65038ae20686118fb408827eef02b9c",
+      "bytes": 588
+    },
+    {
+      "path": "apps/web/public/brand/iotinn-lockup-primary.svg",
+      "source_sha256": "3d71f1a0ee9ce61a30871ec8009a6f26e2ab5063edae2eef656604512311297a",
+      "sha256": "3d71f1a0ee9ce61a30871ec8009a6f26e2ab5063edae2eef656604512311297a",
+      "bytes": 7273
+    },
+    {
+      "path": "apps/web/public/brand/rasathane-icon.svg",
+      "source_sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
+      "sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
+      "bytes": 454
+    },
+    {
       "path": "apps/web/public/brand/rasathane-mark.svg",
       "source_sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
       "sha256": "46a0a41b3ab166aa925bbc6b90e1f7042c1026677dc7d1e5e6aadb301b68bbee",
       "bytes": 454
+    },
+    {
+      "path": "apps/web/public/brand/rasathane-primary.svg",
+      "source_sha256": "3275c9fafc47c14f5040ca120c67d80f65d252400a925f4fc739ceafc3c538a6",
+      "sha256": "3275c9fafc47c14f5040ca120c67d80f65d252400a925f4fc739ceafc3c538a6",
+      "bytes": 4770
+    },
+    {
+      "path": "apps/web/public/brand/rasathane-reverse.svg",
+      "source_sha256": "a584d4010031150e7cdf8aab15b3152f3d061d78f622a95149f0df6f0310a00b",
+      "sha256": "a584d4010031150e7cdf8aab15b3152f3d061d78f622a95149f0df6f0310a00b",
+      "bytes": 4770
     },
     {
       "path": "apps/web/public/font-licenses/Cormorant-Garamond-OFL.txt",
@@ -4586,9 +4616,9 @@
     },
     {
       "path": "apps/web/public/font-licenses/IBM-Plex-OFL.txt",
-      "source_sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
-      "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
-      "bytes": 4456
+      "source_sha256": "37784b44044a4ffd9256702b7c0982c37e5c8887ba90c6dca0479aea93dc898d",
+      "sha256": "37784b44044a4ffd9256702b7c0982c37e5c8887ba90c6dca0479aea93dc898d",
+      "bytes": 4363
     },
     {
       "path": "apps/web/public/font-licenses/Inter-OFL.txt",
@@ -4607,6 +4637,30 @@
       "source_sha256": "017a9b1c484e09ef4746ad5242e0d8e2f69a1581c7310597f9a2dfd804b60426",
       "sha256": "017a9b1c484e09ef4746ad5242e0d8e2f69a1581c7310597f9a2dfd804b60426",
       "bytes": 2515
+    },
+    {
+      "path": "apps/web/public/fonts/Cormorant-OFL.txt",
+      "source_sha256": "6f5a41d57400577a50aae88475b11f292f3d7de78ee7d5113c69577331d8ad31",
+      "sha256": "6f5a41d57400577a50aae88475b11f292f3d7de78ee7d5113c69577331d8ad31",
+      "bytes": 4386
+    },
+    {
+      "path": "apps/web/public/fonts/Inter-OFL.txt",
+      "source_sha256": "5dd548d31a85f756e01d63e00d7faf1e324103ed3e9102fcbbabf2cc2db6dd39",
+      "sha256": "5dd548d31a85f756e01d63e00d7faf1e324103ed3e9102fcbbabf2cc2db6dd39",
+      "bytes": 4376
+    },
+    {
+      "path": "apps/web/public/fonts/cormorant.woff2",
+      "source_sha256": "af76b5a22af735caadc29527959615a9a25e3ab171a24796eaacc50970024c2e",
+      "sha256": "af76b5a22af735caadc29527959615a9a25e3ab171a24796eaacc50970024c2e",
+      "bytes": 209460
+    },
+    {
+      "path": "apps/web/public/fonts/inter.woff2",
+      "source_sha256": "296ea99ec21dbd43d8fd27ce1312833b748033a13c7bb16d4d0a7044549bcc7d",
+      "sha256": "296ea99ec21dbd43d8fd27ce1312833b748033a13c7bb16d4d0a7044549bcc7d",
+      "bytes": 350556
     },
     {
       "path": "apps/web/public/landing/assets/atolye.png",
@@ -4651,6 +4705,12 @@
       "bytes": 228257
     },
     {
+      "path": "apps/web/public/media/rasathane-optical.webp",
+      "source_sha256": "79ac12b23a38736156c213250555b31ae80db254e0dc66493f8bf206c697f6fe",
+      "sha256": "79ac12b23a38736156c213250555b31ae80db254e0dc66493f8bf206c697f6fe",
+      "bytes": 118018
+    },
+    {
       "path": "apps/web/scripts/gen-narrative.mjs",
       "source_sha256": "c09b95c780f795123581b90e1a5af12a2c5b753e7aa4c233f13c36ada1d5b4dc",
       "sha256": "c09b95c780f795123581b90e1a5af12a2c5b753e7aa4c233f13c36ada1d5b4dc",
@@ -4663,22 +4723,28 @@
       "bytes": 2060
     },
     {
+      "path": "apps/web/src/app/brand-family.css",
+      "source_sha256": "7d84be6cb631eea471ac52bf1bdb0e2213775bc105a0ed78fc85652bab2843ef",
+      "sha256": "7d84be6cb631eea471ac52bf1bdb0e2213775bc105a0ed78fc85652bab2843ef",
+      "bytes": 5082
+    },
+    {
       "path": "apps/web/src/app/gizlilik/page.tsx",
-      "source_sha256": "190a9d4e07374ecb0d203687d6a398a7e50df4b177f0bdd586eac2474c734058",
-      "sha256": "190a9d4e07374ecb0d203687d6a398a7e50df4b177f0bdd586eac2474c734058",
-      "bytes": 3975
+      "source_sha256": "0bf7b9acf67d0b23dcfb36a33dbbb305117bdfaf416aa040b8b3b785119172ac",
+      "sha256": "0bf7b9acf67d0b23dcfb36a33dbbb305117bdfaf416aa040b8b3b785119172ac",
+      "bytes": 4017
     },
     {
       "path": "apps/web/src/app/globals.css",
-      "source_sha256": "16e64b4b58de4ff93a031dcce35cddd0a3911cbe36c75065c08e091a0cda17ab",
-      "sha256": "16e64b4b58de4ff93a031dcce35cddd0a3911cbe36c75065c08e091a0cda17ab",
-      "bytes": 359
+      "source_sha256": "6272b084757b1ef774c4fc507302ceae7f9928a31af2caab7a2875b402f0006f",
+      "sha256": "6272b084757b1ef774c4fc507302ceae7f9928a31af2caab7a2875b402f0006f",
+      "bytes": 11558
     },
     {
       "path": "apps/web/src/app/hesap/page.tsx",
-      "source_sha256": "4e909ba52df988bcbb7ea1a23bd0e6a90a30f9da303f18987302f3cb52b7cf58",
-      "sha256": "4e909ba52df988bcbb7ea1a23bd0e6a90a30f9da303f18987302f3cb52b7cf58",
-      "bytes": 1360
+      "source_sha256": "51882dc788a771059f2dc4e3fd3fc3825a63fd27c5727b615aaf47fa7dd94f7a",
+      "sha256": "51882dc788a771059f2dc4e3fd3fc3825a63fd27c5727b615aaf47fa7dd94f7a",
+      "bytes": 1636
     },
     {
       "path": "apps/web/src/app/icon.svg",
@@ -4688,39 +4754,39 @@
     },
     {
       "path": "apps/web/src/app/iletisim/page.tsx",
-      "source_sha256": "c89ebbdd5dff0b98c23a811ea4d0be70e40ccc9397ac1a16b8faf413db40548c",
-      "sha256": "c89ebbdd5dff0b98c23a811ea4d0be70e40ccc9397ac1a16b8faf413db40548c",
-      "bytes": 1828
+      "source_sha256": "b77f91708f6307a708614fc7c341ad7d97a5ece2d0af02290a0147aa665af0d3",
+      "sha256": "b77f91708f6307a708614fc7c341ad7d97a5ece2d0af02290a0147aa665af0d3",
+      "bytes": 2713
     },
     {
       "path": "apps/web/src/app/indir/page.tsx",
-      "source_sha256": "c1ba1657461da12582c641f3d3f5cee7d5bdfe1127472f878b2149ec7365f0e2",
-      "sha256": "c1ba1657461da12582c641f3d3f5cee7d5bdfe1127472f878b2149ec7365f0e2",
-      "bytes": 2307
+      "source_sha256": "81c2e4a4f8d4c68a4e795d084707af8c29f499ab0c43a570d2e8d7c149465452",
+      "sha256": "81c2e4a4f8d4c68a4e795d084707af8c29f499ab0c43a570d2e8d7c149465452",
+      "bytes": 2463
     },
     {
       "path": "apps/web/src/app/kvkk/page.tsx",
-      "source_sha256": "b4b8cae35762bdddc9f8f22e84e2f868daf3a9806ef3f694e8f4a0fd5d1ec963",
-      "sha256": "b4b8cae35762bdddc9f8f22e84e2f868daf3a9806ef3f694e8f4a0fd5d1ec963",
-      "bytes": 6881
+      "source_sha256": "5676e2e41401ce4e50f4a9834e8b0763ddb337436b26175c1977dfcf5dc90d6a",
+      "sha256": "5676e2e41401ce4e50f4a9834e8b0763ddb337436b26175c1977dfcf5dc90d6a",
+      "bytes": 6919
     },
     {
       "path": "apps/web/src/app/landing.css",
-      "source_sha256": "7522d1fb9ed29ef7e2b04f829ae0461af04a01f72a54bf328e5e1485de7fd2dc",
-      "sha256": "7522d1fb9ed29ef7e2b04f829ae0461af04a01f72a54bf328e5e1485de7fd2dc",
-      "bytes": 15222
+      "source_sha256": "3bef0066217356d55753cfafdcb741fa4511491b9012b52f82c95c6fbfbc1964",
+      "sha256": "3bef0066217356d55753cfafdcb741fa4511491b9012b52f82c95c6fbfbc1964",
+      "bytes": 14565
     },
     {
       "path": "apps/web/src/app/layout.tsx",
-      "source_sha256": "30d84d51026ecc08764ec158753bd9766f60940b74313742c0f3e31370940de1",
-      "sha256": "30d84d51026ecc08764ec158753bd9766f60940b74313742c0f3e31370940de1",
-      "bytes": 3158
+      "source_sha256": "81c8a0ae5ad2e681a7708ee6c96632ba340097ba238fdc4b410006b6ee5ab118",
+      "sha256": "81c8a0ae5ad2e681a7708ee6c96632ba340097ba238fdc4b410006b6ee5ab118",
+      "bytes": 2671
     },
     {
       "path": "apps/web/src/app/legal.css",
-      "source_sha256": "1b90b69a1e1669bc85cf0f84365eda62fcc99f9825c3f9ad2aabf09eebfa4d12",
-      "sha256": "1b90b69a1e1669bc85cf0f84365eda62fcc99f9825c3f9ad2aabf09eebfa4d12",
-      "bytes": 3599
+      "source_sha256": "70e0492ca5d1ac27a5c5ec0c0fded1b70700b171ea886a319e1ebb5f7efcea1a",
+      "sha256": "70e0492ca5d1ac27a5c5ec0c0fded1b70700b171ea886a319e1ebb5f7efcea1a",
+      "bytes": 3772
     },
     {
       "path": "apps/web/src/app/logo-laboratuvari/logo-lab.css",
@@ -4736,15 +4802,21 @@
     },
     {
       "path": "apps/web/src/app/manifest.ts",
-      "source_sha256": "8563a08b7fe4e89cf065a38f7e6707cb1366f38b004329217cc4a945ef195439",
-      "sha256": "8563a08b7fe4e89cf065a38f7e6707cb1366f38b004329217cc4a945ef195439",
-      "bytes": 496
+      "source_sha256": "57d6b881c04c59a772c7fe25a80bc4659c23b07f40de6e4e1056cc2afd5d7bee",
+      "sha256": "57d6b881c04c59a772c7fe25a80bc4659c23b07f40de6e4e1056cc2afd5d7bee",
+      "bytes": 577
+    },
+    {
+      "path": "apps/web/src/app/not-found.tsx",
+      "source_sha256": "8d47ec69e9ba9a02a9bd5fc8cbcd5218525d0f2fc8a093497721e9d51d038c6c",
+      "sha256": "8d47ec69e9ba9a02a9bd5fc8cbcd5218525d0f2fc8a093497721e9d51d038c6c",
+      "bytes": 594
     },
     {
       "path": "apps/web/src/app/page.tsx",
-      "source_sha256": "958d27f96f999f4417fa61c98baa219673315fbf4c49fdd9f8022fff68933acf",
-      "sha256": "958d27f96f999f4417fa61c98baa219673315fbf4c49fdd9f8022fff68933acf",
-      "bytes": 12397
+      "source_sha256": "47e7a9f6b4225973994dd20b44ae809fd3d98eb8a1d0958096e7cca3386ad022",
+      "sha256": "47e7a9f6b4225973994dd20b44ae809fd3d98eb8a1d0958096e7cca3386ad022",
+      "bytes": 12307
     },
     {
       "path": "apps/web/src/app/robots.ts",
@@ -4759,16 +4831,16 @@
       "bytes": 643
     },
     {
-      "path": "apps/web/src/components/BrandMark.tsx",
-      "source_sha256": "337272318f929f5aa0d0bea103f67c13afb3d55d8a3590b691da2be57675bf0d",
-      "sha256": "337272318f929f5aa0d0bea103f67c13afb3d55d8a3590b691da2be57675bf0d",
-      "bytes": 543
+      "path": "apps/web/src/components/ProductTour.tsx",
+      "source_sha256": "9e1a8ee8dcf2c09bdbcdb5a771eab7e57e0e7666b433985c17d25366b2e8e988",
+      "sha256": "9e1a8ee8dcf2c09bdbcdb5a771eab7e57e0e7666b433985c17d25366b2e8e988",
+      "bytes": 4785
     },
     {
-      "path": "apps/web/src/components/ProductMark.tsx",
-      "source_sha256": "61337e668b81cad6223261e7c7b8a94ca10a2ce4d19591bbd412d66deb15553e",
-      "sha256": "61337e668b81cad6223261e7c7b8a94ca10a2ce4d19591bbd412d66deb15553e",
-      "bytes": 56
+      "path": "apps/web/src/components/SiteShell.tsx",
+      "source_sha256": "5e128a37f02015d27df0d8f2b3c6c5fb9a4e3974f7e63ead951d059a4d18074d",
+      "sha256": "5e128a37f02015d27df0d8f2b3c6c5fb9a4e3974f7e63ead951d059a4d18074d",
+      "bytes": 11301
     },
     {
       "path": "apps/web/src/components/landing/ChapterNav.tsx",
@@ -4802,9 +4874,9 @@
     },
     {
       "path": "apps/web/src/lib/rasathane-hesap.ts",
-      "source_sha256": "cf5840232c35cdd6e6b7c18130c7399a7268f4a9ecff49772f28c0e1c8c2aead",
-      "sha256": "cf5840232c35cdd6e6b7c18130c7399a7268f4a9ecff49772f28c0e1c8c2aead",
-      "bytes": 2956
+      "source_sha256": "bd8b233144f1e4f2ef4c0b95dca0d30910cdb42eaea704e24db1b1b05669d2f4",
+      "sha256": "bd8b233144f1e4f2ef4c0b95dca0d30910cdb42eaea704e24db1b1b05669d2f4",
+      "bytes": 2881
     },
     {
       "path": "apps/web/tsconfig.json",
@@ -4903,6 +4975,12 @@
       "bytes": 13597
     },
     {
+      "path": "docs/urun/WEB-YAYIN-0.8.1.md",
+      "source_sha256": "6587d0702b3f25113d32da46a8e566a94179c14a80e53ddd9666ff5a4cedbd05",
+      "sha256": "6587d0702b3f25113d32da46a8e566a94179c14a80e53ddd9666ff5a4cedbd05",
+      "bytes": 2386
+    },
+    {
       "path": "docs/urun/YEREL-MODEL-PROFILLERI.md",
       "source_sha256": "ab349e9bfc5aa055504b9cd42e20ff6a1749b70f1d60bc493b15614e2b47c7cc",
       "sha256": "ab349e9bfc5aa055504b9cd42e20ff6a1749b70f1d60bc493b15614e2b47c7cc",
@@ -4950,5 +5028,22 @@
       "sha256": "1fc001b404f9dc31576cc018f8216d9117ce35efeee4a0fa5a4e9f42b60b6b77",
       "bytes": 1895
     }
-  ]
+  ],
+  "snapshot": {
+    "scope": "post_release_web_source_update",
+    "canonical_commit": "4cc5cfd2e90b473a33d3a14018e842f6a6a1baf1",
+    "source_dirty": false,
+    "web_publication_commit": "a6a79bd1a0dde9f72cb478938df1f70a6ba932ef",
+    "web_tree": "1d184c9ce8df07f1d2224214d571ca55fe70f286",
+    "desktop_release": {
+      "version": "0.8.1",
+      "canonical_commit": "43b038d95958de06bd0da7756bc16026668f57f1",
+      "public_commit": "3503245313907636b33abe391385f5b6e3569e8b",
+      "source_tag": "v0.8.1",
+      "desktop_tree": "a16395bb426bbf53078198c201dd8e6725620cf2",
+      "installer_sha256": "b82939f60d4b6d8325a4b5bb213847b84f4b9b41f2c97bb7755864b9a7318373",
+      "installer_bytes": 1335922184,
+      "immutable_release_unchanged": true
+    }
+  }
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { indirmeUrl, publicUrunOku, RASATHANE_HESAP_URL } from "../../lib/rasathane-hesap";
+import { indirmeUrl, publicUrunOku } from "../../lib/rasathane-hesap";
 import "../legal.css";
 
 export const dynamic = "force-dynamic";
@@ -28,8 +28,8 @@ export default async function IndirPage() {
         </section>
       ))}
       <h2>Hesap ve deneme</h2>
-      <p>14 günlük deneme, hesap panelinden açıkça başlatılır. Aylık kullanım dönemi KDV dahil 49 TL’dir; otomatik tahsilat yapılmaz.</p>
-      <p><a href={RASATHANE_HESAP_URL}>Rasathane hesabına git →</a></p>
+      <p>Ücretsiz hesapla e-posta kodlu giriş uygulamada yapılır. 14 günlük servis denemesi Rasathane masaüstü uygulamasındaki profil kartından <strong>Hesap ve plan → 14 günlük denemeyi başlat</strong> adımıyla açılır. Yönetilen servis aylık KDV dahil 49 TL’dir; otomatik tahsilat yapılmaz.</p>
+      <p><Link href="/hesap">Uygulamada giriş ve deneme adımları →</Link></p>
       <p>İndirmeyi Muhakeme hesap hizmeti açar. Üyelik bilgileri bu siteye aktarılmaz; kurulum dosyası süreli, imzalı bağlantıyla teslim edilir.</p>
       <p className="legal-updated">Av. Mehmet Arın Gülüm · IOT INN BİLİŞİM TİCARET A.Ş.</p>
     </main>

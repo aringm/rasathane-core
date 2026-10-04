@@ -1,6 +1,5 @@
 /** Public ürün sözleşmesi. Hesap ve indirme tek güvenilir Muhakeme alanında açılır. */
 export const HESAP_TABANI = "https://www.muhakeme.ai";
-export const RASATHANE_HESAP_URL = `${HESAP_TABANI}/hesap?urun=rasathane`;
 export const RASATHANE_URUN_URL = `${HESAP_TABANI}/api/rasathane/urun`;
 export type Platform = "win" | "mac";
 export interface PlatformYayini {

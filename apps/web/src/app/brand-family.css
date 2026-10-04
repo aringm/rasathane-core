@@ -1,0 +1,207 @@
+/* Brand family v1: keep iotinn-website/site/css/brand-family.css and
+   rasathane-web/src/app/brand-family.css identical. */
+:root {
+  --family-sans: var(--font-inter, Inter), Arial, sans-serif;
+  --family-display: var(--font-cormorant, "Cormorant Garamond"), Georgia, serif;
+  --family-heading-weight: 500;
+  --family-body-leading: 1.65;
+  --family-hero-size: clamp(3.625rem, min(6.6vw, 11.3vh), 6.25rem);
+  --family-logo-height: 52px;
+  --family-header-height: 86px;
+  --family-header-width: min(1360px, calc(100% - 80px));
+}
+body {
+  font-family: var(--family-sans);
+  font-weight: 400;
+  line-height: var(--family-body-leading);
+  font-optical-sizing: auto;
+  font-synthesis: none;
+}
+body h1,
+body h2,
+body h3,
+body h4 {
+  font-family: var(--family-display);
+  font-weight: var(--family-heading-weight);
+}
+body .hero h1 {
+  font-size: var(--family-hero-size);
+  font-weight: var(--family-heading-weight);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  color: #153d34;
+}
+body .hero .lead,
+body .hero-lead {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.75;
+  color: #536056;
+}
+body .section-heading,
+body .section-head h2 {
+  font-size: clamp(2.625rem, 5vw, 4.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+body .button,
+body .text-link,
+body .hero .button,
+body .hero .text-link {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: var(--family-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+body .button {
+  min-height: 48px;
+  padding: 12px 24px;
+}
+/* The symbol height is shared. Wordmarks retain their natural aspect ratios. */
+header.family-header {
+  display: block;
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  z-index: 30;
+}
+.family-header .family-header-inner {
+  width: var(--family-header-width);
+  min-height: var(--family-header-height);
+  height: auto;
+  margin-inline: auto;
+  padding-block: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.family-header .brand {
+  display: block;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  line-height: 0;
+}
+.family-header .brand img {
+  display: block;
+  width: auto;
+  height: var(--family-logo-height);
+  max-width: none;
+}
+.family-header nav {
+  color: #153d34;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0 24px;
+  margin-left: auto;
+  font-family: var(--family-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.family-header nav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 0;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.family-header nav a[aria-current] {
+  color: #712538;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 7px;
+}
+.family-header nav a[aria-current]::after {
+  content: none;
+}
+.family-header nav .nav-contact {
+  margin: 0;
+  padding: 10px 23px;
+  gap: 14px;
+  border: 1px solid #9cae99;
+  border-radius: 100px;
+}
+.family-header nav .nav-contact[aria-current="page"] {
+  color: #f7f0df;
+  background: #153d34;
+  border-color: #153d34;
+  text-decoration: none;
+}
+.family-header .menu-toggle {
+  display: none;
+  flex-shrink: 0;
+  font-family: var(--family-sans);
+  font-weight: 500;
+}
+@media (max-width: 1050px) {
+  :root { --family-header-width: calc(100% - 48px); }
+  .family-header nav { column-gap: 20px; }
+}
+@media (max-width: 920px) {
+  :root {
+    --family-logo-height: 44px;
+    --family-header-height: 78px;
+    --family-header-width: calc(100% - 32px);
+  }
+  .family-header .family-header-inner { column-gap: 12px; }
+  .family-header .menu-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    min-height: 44px;
+    padding: 10px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #153d34;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .family-header .menu-toggle span { font-size: 1.25rem; line-height: 1; }
+  .family-header nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 6px;
+    right: 6px;
+    margin: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 14px 24px 24px;
+    background: #f7f0df;
+    border: 1px solid #cdd1be;
+    border-radius: 0 0 18px 18px;
+    box-shadow: 0 15px 25px #153d3420;
+    max-height: calc(100dvh - 160px);
+    overflow-y: auto;
+  }
+  .family-header nav.is-open { display: flex; gap: 0; }
+  .family-header nav a { padding: 13px 0; font-size: 1rem; white-space: normal; }
+  .family-header nav .nav-contact { justify-content: center; margin-top: 8px; padding: 10px 20px; }
+}
+@media (max-width: 760px) {
+  :root { --family-hero-size: clamp(2.875rem, 11vw, 4.25rem); }
+  body .hero h1 { line-height: 1; }
+  body .section-heading,
+  body .section-head h2 { font-size: clamp(2.4375rem, 9vw, 2.75rem); }
+}
+@media print { header.family-header { display: none; } }

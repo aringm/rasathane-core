@@ -17,7 +17,7 @@ pnpm lint     # eslint
 - `src/app/gizlilik/`, `src/app/kvkk/`, `src/app/iletisim/` — hukuki ve iletişim sayfaları (`legal.css` paylaşır)
 - `src/app/layout.tsx` — kök layout, meta etiketleri, fontlar
 - `src/app/manifest.ts`, `robots.ts`, `sitemap.ts` — PWA/SEO meta dosyaları
-- Pazarlama ve hukuki sayfalar statik prerender olur; `/indir` güncel release durumunu server'da okur. Site içeriği Türkçedir.
+- Hukuki ve hesap açıklama sayfaları statik prerender olur; ana sayfa ve `/indir` güncel release durumunu server'da okur. Site içeriği Türkçedir.
 
 ## Git ve deploy akışı
 
