@@ -3,6 +3,7 @@ import Link from "next/link";
 import "../legal.css";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/kvkk" },
   title: "KVKK Aydınlatma Metni",
   description:
     "rasathane.ai web sitesi kapsamında kişisel verilerinizin nasıl işlendiğine ilişkin KVKK aydınlatma metni.",

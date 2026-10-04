@@ -6,7 +6,7 @@ Rasathane'nin bu depoda yayımlanan özgün yerel uygulama ve çekirdek kodu, AG
 
 Muhakeme, Rasathane, IoT Inn adları ve logoları yazılım lisansı ile marka hakkı vermez. Değiştirilmiş dağıtımlar resmî ürün veya resmî destek gibi gösterilmemelidir. Ticari üyeliğin fiyatı resmî yönetilen hizmetin koşuludur; üçüncü kişilerin açık kod üzerinde ticari hizmet sunmasını engellemez.
 
-Muhakeme hesabı, ödeme ve yönetilen servis sunucularının implementation'ı bu açık çekirdeğin parçası değildir. Yerel çekirdek üyelik olmadan çalışır. Muhakeme İçtihat'ın tescilli çekirdeği bu depoda yayımlanmaz.
+Muhakeme hesabı, ödeme ve yönetilen servis sunucularının implementation'ı bu açık çekirdeğin parçası değildir. Yerel çekirdeğin kullanımı ücretli servis aboneliği gerektirmez. Resmî masaüstü uygulamasına ücretsiz hesap ve e-posta doğrulama koduyla giriş yapılır. Muhakeme İçtihat'ın tescilli çekirdeği bu depoda yayımlanmaz.
 
 Üçüncü taraf kod ve model ağırlıkları kendi lisanslarına tabidir. Model ağırlıkları kaynak Git deposuna dahil edilmez. Release manifest'i model kaynağı/revision/SHA256 ve lisans bağlantılarını taşır. Paketlenmiş üçüncü taraf bileşenlerin bildirimleri SBOM ve dağıtım dosyalarında korunur.
 

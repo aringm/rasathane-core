@@ -3,6 +3,7 @@ import Link from "next/link";
 import "../legal.css";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/gizlilik" },
   title: "Gizlilik Politikası",
   description:
     "rasathane.ai web sitesinde hangi verilerin işlendiği, çerez kullanımı ve üçüncü taraf hizmet sağlayıcılara ilişkin gizlilik politikası.",

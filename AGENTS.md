@@ -6,7 +6,7 @@ Sahip: **Av. Mehmet Arın Gülüm**. Kullanıcıya yönelik içerikler modern, s
 
 - `apps/desktop`: birleşik Rasathane 0.8.1 (Python motoru 0.8.1); Electron 43, Python/FastMCP, SQLite/FTS, bağımsız frozen worker ve yerel analiz.
 - `apps/radar`: eski hukuk + AI radarı; kaynak `rasathane/main`. İzleme, bülten, Stüdyo, derin GitHub/arXiv edinimi korunacak özelliklerdir.
-- `apps/web`: Next.js pazarlama sitesi; kaynak `rasathane-web/redesign`. Altındaki AGENTS.md ayrıca geçerlidir.
+- `apps/web`: Next.js ürün sitesi; kaynak `rasathane-web/main`, güncel site yayınları subtree ile alınır. Altındaki AGENTS.md ayrıca geçerlidir.
 - `docs/urun`: ürün planı, mimari, doğrulama ve yayın kayıtları. Yerel/özel envanter açık export'a alınmaz.
 
 Yeni özellikler `core/rasathane/product` altında bağımsız uygulanır; `ytcore` analiz sözleşmesi korunur. Muhakeme İçtihat'ın tescilli kaynak kodu ve prompt'ları public AGPL çekirdeğe kopyalanmaz. Ücretli servisler açık protokolle entegre edilir.
