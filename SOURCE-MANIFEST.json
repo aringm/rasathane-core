@@ -902,14 +902,14 @@
     },
     {
       "path": "apps/desktop/gui/package.json",
-      "source_sha256": "1dff08a841c8985c0cd485fdf3197fc9a28056badc29827f6f4cc0e9272018e4",
-      "sha256": "1dff08a841c8985c0cd485fdf3197fc9a28056badc29827f6f4cc0e9272018e4",
+      "source_sha256": "358c9d9897b320213fdfb9e10af4fb014b257477932a59d87193cdc063f5beea",
+      "sha256": "358c9d9897b320213fdfb9e10af4fb014b257477932a59d87193cdc063f5beea",
       "bytes": 4270
     },
     {
       "path": "apps/desktop/gui/pnpm-lock.yaml",
-      "source_sha256": "3abcd7df149fecb14c843136a2f191ffd1cbae66df76178aba979848a8abf599",
-      "sha256": "3abcd7df149fecb14c843136a2f191ffd1cbae66df76178aba979848a8abf599",
+      "source_sha256": "30913b133610b434a0bd391eb84799af53235b85252000cec41b95c49ad80825",
+      "sha256": "30913b133610b434a0bd391eb84799af53235b85252000cec41b95c49ad80825",
       "bytes": 89964
     },
     {
@@ -4544,15 +4544,15 @@
     },
     {
       "path": "apps/web/package.json",
-      "source_sha256": "0c5283f593265a00e54ea67aef88cbb903deed9a2b98f8616e241d9f62126cf1",
-      "sha256": "0c5283f593265a00e54ea67aef88cbb903deed9a2b98f8616e241d9f62126cf1",
+      "source_sha256": "b02e7997c4666f2fd631e89c31b19b7b25e7f464696b5440f3f6bbcbc8567482",
+      "sha256": "b02e7997c4666f2fd631e89c31b19b7b25e7f464696b5440f3f6bbcbc8567482",
       "bytes": 570
     },
     {
       "path": "apps/web/pnpm-lock.yaml",
-      "source_sha256": "4c15948daefaf808aecdaac6db91ff30c87d2d3d314a6f54699b726a37cdaef2",
-      "sha256": "4c15948daefaf808aecdaac6db91ff30c87d2d3d314a6f54699b726a37cdaef2",
-      "bytes": 137342
+      "source_sha256": "4914251f96e3800ffcd5c364c20ab413db4a643e48131b13e33f83a6598ce33f",
+      "sha256": "4914251f96e3800ffcd5c364c20ab413db4a643e48131b13e33f83a6598ce33f",
+      "bytes": 141452
     },
     {
       "path": "apps/web/pnpm-workspace.yaml",
