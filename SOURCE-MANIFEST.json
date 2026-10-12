@@ -20,8 +20,8 @@
     },
     {
       "path": ".github/workflows/verify.yml",
-      "source_sha256": "c2e724f897b74b6bc4de7fe73faffab3e1dcc8aae02a009fdaaf66e369884b4a",
-      "sha256": "c2e724f897b74b6bc4de7fe73faffab3e1dcc8aae02a009fdaaf66e369884b4a",
+      "source_sha256": "5b0bf3758703bb652c322c42bddc29da72c422f21febdd39873e520f92e6e961",
+      "sha256": "5b0bf3758703bb652c322c42bddc29da72c422f21febdd39873e520f92e6e961",
       "bytes": 3958
     },
     {
@@ -4544,14 +4544,14 @@
     },
     {
       "path": "apps/web/package.json",
-      "source_sha256": "b02e7997c4666f2fd631e89c31b19b7b25e7f464696b5440f3f6bbcbc8567482",
-      "sha256": "b02e7997c4666f2fd631e89c31b19b7b25e7f464696b5440f3f6bbcbc8567482",
+      "source_sha256": "016e21491e10a5205a026a6fa7b6af3d38c8c8efbb795e3be055739ba39e4e84",
+      "sha256": "016e21491e10a5205a026a6fa7b6af3d38c8c8efbb795e3be055739ba39e4e84",
       "bytes": 570
     },
     {
       "path": "apps/web/pnpm-lock.yaml",
-      "source_sha256": "4914251f96e3800ffcd5c364c20ab413db4a643e48131b13e33f83a6598ce33f",
-      "sha256": "4914251f96e3800ffcd5c364c20ab413db4a643e48131b13e33f83a6598ce33f",
+      "source_sha256": "1bdb1fab8cffc2aabc06e4fb6f96f5f7b59493f338f57c32abbd4a94864b860c",
+      "sha256": "1bdb1fab8cffc2aabc06e4fb6f96f5f7b59493f338f57c32abbd4a94864b860c",
       "bytes": 141452
     },
     {
